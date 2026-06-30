@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Single-package layout. For workspaces, run install/test/lint per workspace
+      # (e.g. add `working-directory: backend` steps) instead of these root steps.
+      - name: Install
+        run: npm install
+
+      - name: Test
+        run: npm test
+
+      - name: Lint
+        run: npm run lint --if-present

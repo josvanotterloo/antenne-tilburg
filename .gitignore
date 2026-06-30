@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+*.log
+
+# Claude Code local files (lesson: keep local permission files out of git)
+.claude/settings.local.json
