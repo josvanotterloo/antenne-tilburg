@@ -13,7 +13,9 @@ const DAYS = [
 async function getHours() {
   try {
     return await db.openingHours.findMany({ orderBy: { dayOfWeek: "asc" } });
-  } catch {
+  } catch (error) {
+    // Degrade gracefully but log — see NoticeBanner for the rationale.
+    console.error("SiteFooter: failed to load opening hours", error);
     return [];
   }
 }

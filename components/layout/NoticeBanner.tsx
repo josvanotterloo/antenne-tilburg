@@ -14,8 +14,10 @@ async function getActiveNotices() {
       },
       orderBy: { createdAt: "desc" },
     });
-  } catch {
-    // No database configured yet (e.g. building without one) — show nothing.
+  } catch (error) {
+    // Degrade gracefully (e.g. building/running without a database), but log so
+    // a real outage is visible to operators rather than silently swallowed.
+    console.error("NoticeBanner: failed to load active notices", error);
     return [];
   }
 }
