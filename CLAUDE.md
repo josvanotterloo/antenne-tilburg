@@ -1,10 +1,17 @@
 # Project Instructions
 
-> Template harness. Replace bracketed placeholders, adjust the Setup line, and
-> delete this note once the project is initialized.
+Antenne Tilburg — website for Antenne Recordshop (electronic-music vinyl & tapes,
+inside Sam-Sam vintage, Tilburg). Public site + admin for products, blog, events,
+notices, opening hours, newsletter and want-list. Full spec:
+`docs/antenne-tilburg-website-plan.md`.
+
+Stack: Next.js 14 (App Router, TypeScript) · Prisma + PostgreSQL · NextAuth
+(credentials) · Tailwind CSS.
 
 ## Setup
-To set up: [run `./init.sh` / `npm install` — adjust per project].
+`npm install`, then `npm run dev` to start the dev server on http://localhost:3000.
+Copy `.env.example` to `.env` and set `DATABASE_URL` / `NEXTAUTH_SECRET` first.
+Run `npm run prisma:migrate` and `npm run db:seed` to create and seed the database.
 
 ## Current Tasks
 See `tasks/todo.md` — active work, backlog, and done items.

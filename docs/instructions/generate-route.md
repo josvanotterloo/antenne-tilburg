@@ -1,13 +1,13 @@
-# Instruction: Generate a new module
+# Instruction: Generate a new module (Next.js App Router)
 
-This is the generic TDD discipline for adding a new unit of code (a route, service,
-component, command, etc.). Replace the bracketed placeholders with this project's
-specifics once they exist.
+TDD discipline for adding a new unit of code to this project — an admin CRUD
+section, a public page pulling real data, an API route, or a shared component.
 
 ## Role
 
-You are implementing a new module in this project. Follow this instruction exactly.
-Do not start writing code before completing all context requirements.
+You are implementing a new module in the Antenne Tilburg app (Next.js 14 App
+Router + TypeScript + Prisma + NextAuth + Tailwind). Follow this instruction
+exactly. Do not write code before completing the context requirements.
 
 ## Branching
 
@@ -16,9 +16,14 @@ Follow `docs/instructions/branching.md` before writing any code.
 ## Context requirements
 
 Before writing any code, read:
-- The project's architecture / conventions docs (layer boundaries, dependency rules)
-- The canonical existing example of the kind of module you're adding (find the closest one)
-- The canonical unit-test and integration-test for that module type
+- `docs/antenne-tilburg-website-plan.md` — the domain spec (fields, rules,
+  which lists are admin-managed, the "Just In" / notices / opening-hours logic).
+- `prisma/schema.prisma` — the source of truth for data shapes and relations.
+- The closest existing example of what you're adding, so you match its patterns:
+  - Admin section → `app/admin/<section>/page.tsx` (all currently placeholders).
+  - Public page → `app/(public)/<page>/page.tsx`.
+  - Data access → `lib/db.ts` (always import the `db` singleton; never `new
+    PrismaClient()` outside `lib/db.ts` and `prisma/seed.ts`).
 
 ## Before Writing Any Code
 
@@ -30,40 +35,35 @@ State explicitly:
 
 Only proceed after confirming these with the user.
 
-## Standards
+## Project conventions (must follow)
 
-### Must follow
-- Respect the project's layer boundaries / dependency rules (whatever the architecture
-  check enforces). Lower layers never import from upper layers.
-- Validate all required inputs at the boundary; reject bad input before any I/O.
-- TDD order: write failing tests first, run to confirm RED, implement, confirm GREEN.
-- Write the test file(s) before committing the implementation file.
-- Run the project's architecture / lint check after implementation; zero new violations.
+- **TypeScript throughout** — no plain JS.
+- **Prisma access via the `lib/db.ts` singleton.** Do the DB work in a Server
+  Component or a Route Handler / Server Action, never in a Client Component.
+- **Server vs Client:** default to Server Components. Add `"use client"` only
+  when you need state, effects, or event handlers (e.g. forms).
+- **Auth:** `/admin/*` is already gated by `middleware.ts`. For mutations, also
+  re-check the session server-side (`getServerSession(authOptions)`) — never
+  trust the client. Reject unauthenticated writes before any DB call.
+- **Validation at the boundary:** validate/parse all input before any I/O; reject
+  bad input first. Guard destructive deletes (e.g. don't delete a Label/Genre/
+  ProductType that still has linked products — surface a clear error instead).
+- **Managed lists drive filters:** public stock filtering and admin forms both
+  read Label / Genre / ProductType from the DB — keep them consistent.
+- **SEO:** export `metadata` (or `generateMetadata`) per page; fall back to
+  sensible defaults when `seoTitle` / `seoDescription` are unset.
+- **Resilience:** public server components that read the DB should degrade
+  gracefully if the query fails (see `NoticeBanner` / `SiteFooter`).
 
-### Should follow
-- Build output objects immutably — no mutation of upstream data shapes.
-- Handle partial failures explicitly; log before deciding how to surface an error.
+## TDD order
 
-### Nice to have
-- Name files after the resource/feature they implement.
-- Keep handlers/functions small; extract helpers to the layer below.
+1. Write the failing test first; run it to confirm RED.
+2. Implement the minimum to pass; confirm GREEN.
+3. Write the test file(s) before committing the implementation file.
+4. Run `npm run typecheck` and `npm run lint` after implementation — zero new
+   errors. Use the `run-tests` skill to run tests; never hand-roll test commands.
 
-## Output format
+## Close-out
 
-Create files in dependency order (the depended-on thing first), pairing each
-implementation file with its test:
-
-```
-1. <lower-layer module>        — core logic, no framework coupling
-2. <lower-layer module>.test   — unit test (mock external dependencies)
-3. <upper-layer module>        — wiring / validation, delegates downward
-4. <upper-layer module>.test   — unit test (mock the lower layer)
-5. <integration test>          — exercises the wired path, no internal mocks
-6. <entry point>               — register / mount the new module
-```
-
-Run the relevant tests after each implementation+test pair. Run the architecture/lint
-check after wiring.
-
-Follow the close-out checklist in `docs/instructions/branching.md` before ending any
-session.
+Follow the close-out checklist in `docs/instructions/branching.md` before ending
+the session.

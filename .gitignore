@@ -3,5 +3,18 @@ dist/
 build/
 *.log
 
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Env files (never commit real secrets; .env.example is tracked)
+.env
+.env*.local
+
+# OS
+.DS_Store
+
 # Claude Code local files (lesson: keep local permission files out of git)
 .claude/settings.local.json

@@ -1,0 +1,161 @@
+// Antenne Tilburg — database schema
+// See docs/antenne-tilburg-website-plan.md for the product/domain rationale.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Condition {
+  NEW
+  SECONDHAND
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum EventStatus {
+  UPCOMING
+  PAST
+}
+
+// Two equal admin accounts (shop owner + builder). No role tiers.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// --- Managed reference lists (each has its own admin CRUD) ---
+
+model Label {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Genre {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[] @relation("ProductGenres")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model ProductType {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Vinyl / tape records. `price` is present now so online purchasing can be
+// added later without a schema migration. "Just In" is derived from createdAt
+// (< 30 days) — no manual flag.
+model Product {
+  id            String      @id @default(cuid())
+  title         String
+  artist        String
+  labelId       String
+  label         Label       @relation(fields: [labelId], references: [id])
+  productTypeId String
+  productType   ProductType @relation(fields: [productTypeId], references: [id])
+  genres        Genre[]     @relation("ProductGenres")
+  condition     Condition
+  price         Decimal     @db.Decimal(10, 2)
+  description   String?
+  coverImage    String?
+  inStock       Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([labelId])
+  @@index([productTypeId])
+}
+
+// Blog posts (new arrivals, events, restocks). Also feeds SEO via fresh content.
+model Post {
+  id             String     @id @default(cuid())
+  title          String
+  slug           String     @unique
+  body           String
+  coverImage     String?
+  status         PostStatus @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  title          String
+  slug           String      @unique
+  date           DateTime
+  description    String?
+  image          String?
+  location       String      @default("Antenne / Sam-Sam, Tilburg")
+  status         EventStatus @default(UPCOMING)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+// Site-wide banners. Multiple can be active at once. If startsAt/endsAt are set
+// the notice activates/deactivates automatically; otherwise `active` is manual.
+model Notice {
+  id        String    @id @default(cuid())
+  message   String
+  active    Boolean   @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// One row per weekday (0 = Sunday ... 6 = Saturday). Times stored as "HH:MM".
+model OpeningHours {
+  id        String  @id @default(cuid())
+  dayOfWeek Int     @unique
+  opensAt   String
+  closesAt  String
+  closed    Boolean @default(false)
+}
+
+// Per-static-page SEO overrides (Home, About, FAQ, Visit, ...).
+model PageSeo {
+  id             String  @id @default(cuid())
+  page           String  @unique
+  seoTitle       String?
+  seoDescription String?
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+// Public "looking for" requests — feeds sourcing decisions.
+model WantListRequest {
+  id        String   @id @default(cuid())
+  artist    String
+  title     String
+  format    String
+  notes     String?
+  createdAt DateTime @default(now())
+}
