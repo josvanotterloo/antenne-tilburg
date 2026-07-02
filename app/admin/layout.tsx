@@ -1,4 +1,4 @@
-import { AdminNav } from "@/components/layout/AdminNav";
+import { AdminTopNav } from "@/components/layout/AdminTopNav";
 
 export default function AdminLayout({
   children,
@@ -6,9 +6,9 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      <AdminNav />
-      <main className="flex-1 p-8">{children}</main>
+    <div className="min-h-screen bg-neutral-50">
+      <AdminTopNav />
+      <main className="mx-auto max-w-6xl p-6">{children}</main>
     </div>
   );
 }
