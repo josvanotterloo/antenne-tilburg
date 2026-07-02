@@ -39,7 +39,8 @@ Separately managed lists, each with their own CRUD (add, rename, delete — with
 - **Genres** — e.g. techno, house, dubstep, jungle, dub, industrial, noise, electro, etc.
 
 **Product management (vinyl records)**
-- Fields: title, artist, label (→ managed list), genre/tags (→ managed list, multiple allowed), product type (→ managed list), condition (new/second-hand), price, description, cover image, stock status, created_at, updated_at
+- Fields: title, artist, catalog number, label (→ managed list), genre (→ managed list, exactly one per product), product type (→ managed list), condition (new/second-hand), price, description, cover image, stock status, created_at, updated_at
+- **Genre model:** each product has exactly one genre — a single foreign key, not many-to-many tags. Rationale: Antenne sells electronic music, and single-genre filing matches how the shop owner thinks about and files stock.
 - "Just In" badge automatically shown on public stock page for products added within the last 30 days (based on created_at, no manual toggle needed)
 - CRUD: add, edit, delete, mark sold/out of stock
 - List view with search/filter by genre, label, product type, and condition
