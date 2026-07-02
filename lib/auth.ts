@@ -24,19 +24,29 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
-        if (!user) {
+        try {
+          const user = await db.user.findUnique({
+            where: { email: credentials.email },
+          });
+          if (!user) {
+            return null;
+          }
+
+          const valid = await compare(
+            credentials.password,
+            user.passwordHash,
+          );
+          if (!valid) {
+            return null;
+          }
+
+          return { id: user.id, email: user.email };
+        } catch (error) {
+          // DB unreachable / query failure: log for operators and fail closed
+          // as invalid credentials instead of surfacing a 500.
+          console.error("authorize: login check failed", error);
           return null;
         }
-
-        const valid = await compare(credentials.password, user.passwordHash);
-        if (!valid) {
-          return null;
-        }
-
-        return { id: user.id, email: user.email };
       },
     }),
   ],
