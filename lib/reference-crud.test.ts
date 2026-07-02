@@ -85,6 +85,16 @@ describe("collectionHandlers", () => {
     expect(res.status).toBe(400);
     expect(fns.create).not.toHaveBeenCalled();
   });
+
+  it("POST returns 409 when the name already exists (P2002)", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.create.mockRejectedValue({ code: "P2002" });
+    const { POST } = collectionHandlers(delegate);
+
+    const res = await POST(jsonRequest({ name: "Techno" }));
+
+    expect(res.status).toBe(409);
+  });
 });
 
 describe("itemHandlers", () => {
@@ -115,6 +125,16 @@ describe("itemHandlers", () => {
 
     expect(res.status).toBe(400);
     expect(fns.update).not.toHaveBeenCalled();
+  });
+
+  it("PATCH returns 409 when renamed to an existing name (P2002)", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.update.mockRejectedValue({ code: "P2002" });
+    const { PATCH } = itemHandlers(delegate);
+
+    const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
+
+    expect(res.status).toBe(409);
   });
 
   it("DELETE returns 404 when the item does not exist", async () => {

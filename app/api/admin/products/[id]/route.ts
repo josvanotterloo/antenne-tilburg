@@ -44,6 +44,14 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
 
   // Products are leaf entities — no dependents, so no delete guard.
   const { id } = await ctx.params;
-  await db.product.delete({ where: { id } });
+  try {
+    await db.product.delete({ where: { id } });
+  } catch (error) {
+    // Prisma "record not found" (e.g. already deleted by another admin).
+    if ((error as { code?: string } | null)?.code === "P2025") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw error;
+  }
   return NextResponse.json({ ok: true });
 }

@@ -167,4 +167,10 @@ describe("DELETE /api/admin/products/[id]", () => {
     expect(res.status).toBe(200);
     expect(product.delete).toHaveBeenCalledWith({ where: { id: "p1" } });
   });
+
+  it("returns 404 when the product does not exist (P2025)", async () => {
+    product.delete.mockRejectedValue({ code: "P2025" });
+    const res = await DELETE(jsonReq("DELETE", null), ctx("missing"));
+    expect(res.status).toBe(404);
+  });
 });

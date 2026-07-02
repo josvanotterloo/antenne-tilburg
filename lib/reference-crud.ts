@@ -34,6 +34,11 @@ function readName(body: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+// Prisma unique-constraint violation (duplicate name).
+function isUniqueViolation(error: unknown): boolean {
+  return (error as { code?: string } | null)?.code === "P2002";
+}
+
 export function collectionHandlers(delegate: ReferenceDelegate) {
   async function GET() {
     const denied = await requireAdmin();
@@ -49,8 +54,18 @@ export function collectionHandlers(delegate: ReferenceDelegate) {
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
-    const created = await delegate.create({ data: { name } });
-    return NextResponse.json(created, { status: 201 });
+    try {
+      const created = await delegate.create({ data: { name } });
+      return NextResponse.json(created, { status: 201 });
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return NextResponse.json(
+          { error: `"${name}" already exists` },
+          { status: 409 },
+        );
+      }
+      throw error;
+    }
   }
 
   return { GET, POST };
@@ -65,8 +80,18 @@ export function itemHandlers(delegate: ReferenceDelegate) {
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
-    const updated = await delegate.update({ where: { id }, data: { name } });
-    return NextResponse.json(updated);
+    try {
+      const updated = await delegate.update({ where: { id }, data: { name } });
+      return NextResponse.json(updated);
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        return NextResponse.json(
+          { error: `"${name}" already exists` },
+          { status: 409 },
+        );
+      }
+      throw error;
+    }
   }
 
   async function DELETE(_req: Request, ctx: RouteContext) {
