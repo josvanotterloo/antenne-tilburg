@@ -1,14 +1,15 @@
 import { Placeholder } from "@/components/ui/Placeholder";
 
-export default function BlogPostPage({
+export default async function BlogPostPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const { slug } = await params;
   return (
     <Placeholder
       title="Blog post"
-      description={`Post "${params.slug}" will render here once posts are wired to the database.`}
+      description={`Post "${slug}" will render here once posts are wired to the database.`}
     />
   );
 }

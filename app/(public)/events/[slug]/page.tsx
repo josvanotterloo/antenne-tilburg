@@ -1,14 +1,15 @@
 import { Placeholder } from "@/components/ui/Placeholder";
 
-export default function EventPage({
+export default async function EventPage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
+  const { slug } = await params;
   return (
     <Placeholder
       title="Event"
-      description={`Event "${params.slug}" will render here once events are wired to the database.`}
+      description={`Event "${slug}" will render here once events are wired to the database.`}
     />
   );
 }
