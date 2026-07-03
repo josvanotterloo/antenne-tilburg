@@ -4,15 +4,15 @@ Current work queue. Keep Active short — move items to Backlog if not in-flight
 
 ## Active
 
-### Public catalog & search (`feature/public-catalog-search`) — implementation done, awaiting close-out
-Full plan: `docs/superpowers/plans/public-catalog-search.md`. Server-side only.
-- [x] Unit 0 — DB: indexes (condition, inStock, createdAt) + tsvector column + GIN
-- [x] Unit 1 — `lib/catalog.ts` (buildCatalogWhere / buildCatalogOrderBy / paging)
-- [x] Unit 2 — `/stock` list (URL filters, chips, sort, grid, pagination, search)
-- [x] Unit 3 — `/stock/[id]` detail (SEO, 404 if missing/out-of-stock)
-- [x] Unit 4 — `/stock/feed.xml` RSS (last 50 arrivals)
-- [x] Unit 5 — admin `/admin/catalog` search + pagination
-- [ ] Close-out: `/code-review`, merge to master, feature doc + session log
+### Admin CRUD slices (each: TDD, own branch, full close-out)
+IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-list, users}.
+- [x] Blog posts — `docs/features/admin-blog-posts.md`
+- [ ] Events — CRUD, upcoming/past status (next)
+- [ ] Notices — CRUD, active toggle, optional start/end scheduling
+- [ ] Opening hours — edit per weekday + adjusted/holiday hours
+- [ ] Newsletter subscribers — view + CSV export
+- [ ] Want-list requests — read-only admin view
+- [ ] Users — manage the two admin accounts / change password
 
 ## Backlog
 
