@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import {
   getCatalogPage,
+  isJustIn,
   JUST_IN_DAYS,
   type CatalogProduct,
 } from "@/lib/catalog";
@@ -29,10 +30,6 @@ function stockHref(
   for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, v);
   const qs = sp.toString();
   return qs ? `/stock?${qs}` : "/stock";
-}
-
-function isJustIn(createdAt: Date): boolean {
-  return Date.now() - new Date(createdAt).getTime() < JUST_IN_DAYS * 86_400_000;
 }
 
 const SORTS = [

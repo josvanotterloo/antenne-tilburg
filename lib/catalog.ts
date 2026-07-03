@@ -74,6 +74,15 @@ export function pageCount(total: number): number {
   return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
+// A product is "Just In" if created within the last JUST_IN_DAYS. `now` is
+// injectable for tests (and keeps time-reading out of component render bodies).
+export function isJustIn(
+  createdAt: Date | string,
+  now: number = Date.now(),
+): boolean {
+  return now - new Date(createdAt).getTime() < JUST_IN_DAYS * 86_400_000;
+}
+
 // Full-text search against the generated `search_vector` (GIN-indexed).
 // Returns matching product ids to inject into the Prisma where clause.
 export async function searchProductIds(q: string): Promise<string[]> {

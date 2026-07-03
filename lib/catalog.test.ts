@@ -18,6 +18,7 @@ import {
   pageCount,
   searchProductIds,
   getCatalogPage,
+  isJustIn,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -129,6 +130,16 @@ describe("pagination math", () => {
     expect(pageCount(50)).toBe(1);
     expect(pageCount(51)).toBe(2);
     expect(pageCount(120)).toBe(3);
+  });
+});
+
+describe("isJustIn", () => {
+  const now = new Date("2026-07-03T00:00:00.000Z").getTime();
+  it("is true within the JUST_IN_DAYS window", () => {
+    expect(isJustIn(new Date("2026-07-01T00:00:00.000Z"), now)).toBe(true);
+  });
+  it("is false outside the window", () => {
+    expect(isJustIn(new Date("2026-05-01T00:00:00.000Z"), now)).toBe(false);
   });
 });
 
