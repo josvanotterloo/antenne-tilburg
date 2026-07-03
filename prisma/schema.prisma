@@ -82,9 +82,17 @@ model Product {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  // Postgres full-text search column — a generated STORED tsvector defined in a
+  // manual migration. Declared here as Unsupported so Prisma treats it as
+  // existing (no drift) but does not try to query it directly.
+  searchVector  Unsupported("tsvector")? @map("search_vector")
+
   @@index([labelId])
   @@index([productTypeId])
   @@index([genreId])
+  @@index([condition])
+  @@index([inStock])
+  @@index([createdAt])
 }
 
 // Blog posts (new arrivals, events, restocks). Also feeds SEO via fresh content.
