@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/db", () => ({ db: { $queryRaw: vi.fn() } }));
+vi.mock("@/lib/db", () => ({
+  db: {
+    $queryRaw: vi.fn(),
+    product: { findMany: vi.fn(), count: vi.fn() },
+  },
+}));
 
 import {
   JUST_IN_DAYS,
@@ -12,6 +17,7 @@ import {
   pageToSkip,
   pageCount,
   searchProductIds,
+  getCatalogPage,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -141,5 +147,55 @@ describe("searchProductIds", () => {
     // the term is passed through the tagged-template values
     const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as { values: unknown[] };
     expect(arg.values).toContain("surgeon");
+  });
+});
+
+describe("getCatalogPage", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("runs findMany + count with pagination and returns a paged result", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([{ id: "p1" }] as never);
+    vi.mocked(db.product.count).mockResolvedValue(120 as never);
+
+    const res = await getCatalogPage({ page: "2", onlyInStock: true });
+
+    expect(res.total).toBe(120);
+    expect(res.page).toBe(2);
+    expect(res.pageCount).toBe(3);
+    expect(res.products).toHaveLength(1);
+    const arg = vi.mocked(db.product.findMany).mock.calls[0][0] as {
+      skip: number;
+      take: number;
+    };
+    expect(arg.skip).toBe(50);
+    expect(arg.take).toBe(PAGE_SIZE);
+  });
+
+  it("passes q to FTS and injects the matched ids into the where", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([{ id: "p9" }] as never);
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    vi.mocked(db.product.count).mockResolvedValue(0 as never);
+
+    await getCatalogPage({ q: "surgeon", onlyInStock: true });
+
+    const ftsArg = vi.mocked(db.$queryRaw).mock.calls[0][0] as {
+      values: unknown[];
+    };
+    expect(ftsArg.values).toContain("surgeon");
+    const where = (
+      vi.mocked(db.product.findMany).mock.calls[0][0] as {
+        where: { id?: { in: string[] } };
+      }
+    ).where;
+    expect(where.id).toEqual({ in: ["p9"] });
+  });
+
+  it("does not run FTS when there is no q", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    vi.mocked(db.product.count).mockResolvedValue(0 as never);
+
+    await getCatalogPage({ onlyInStock: true });
+
+    expect(db.$queryRaw).not.toHaveBeenCalled();
   });
 });

@@ -84,3 +84,73 @@ export async function searchProductIds(q: string): Promise<string[]> {
   );
   return rows.map((r) => r.id);
 }
+
+const CATALOG_INCLUDE = {
+  label: true,
+  genre: true,
+  productType: true,
+} as const;
+
+export type CatalogProduct = Prisma.ProductGetPayload<{
+  include: typeof CATALOG_INCLUDE;
+}>;
+
+export interface CatalogQuery {
+  q?: string;
+  genreId?: string | null;
+  labelId?: string | null;
+  productTypeId?: string | null;
+  condition?: "NEW" | "SECONDHAND" | null;
+  justIn?: boolean;
+  onlyInStock?: boolean;
+  sort?: string;
+  order?: string;
+  page?: string | number;
+}
+
+export interface CatalogResult {
+  products: CatalogProduct[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+// Orchestrates a full catalog page: optional FTS, filtered/sorted query and the
+// matching count run in parallel, server-side, always bounded by take/skip.
+// Shared by /stock (onlyInStock) and /admin/catalog.
+export async function getCatalogPage(
+  query: CatalogQuery,
+): Promise<CatalogResult> {
+  const ids = query.q?.trim()
+    ? await searchProductIds(query.q)
+    : undefined;
+
+  const where = buildCatalogWhere({
+    genreId: query.genreId,
+    labelId: query.labelId,
+    productTypeId: query.productTypeId,
+    condition: query.condition,
+    justIn: query.justIn,
+    onlyInStock: query.onlyInStock,
+    ids,
+  });
+  const orderBy = buildCatalogOrderBy(query.sort, query.order);
+
+  const [products, total] = await Promise.all([
+    db.product.findMany({
+      where,
+      orderBy,
+      skip: pageToSkip(query.page),
+      take: PAGE_SIZE,
+      include: CATALOG_INCLUDE,
+    }),
+    db.product.count({ where }),
+  ]);
+
+  return {
+    products,
+    total,
+    page: parsePage(query.page),
+    pageCount: pageCount(total),
+  };
+}
