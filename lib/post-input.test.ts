@@ -51,4 +51,9 @@ describe("parsePostInput", () => {
   it("rejects a title that produces an empty slug", () => {
     expect(parsePostInput({ ...VALID, title: "!!!", slug: "" }).ok).toBe(false);
   });
+
+  it("falls back to the title when the explicit slug is unsluggable", () => {
+    const r = parsePostInput({ ...VALID, title: "Hello", slug: "!!!" });
+    expect(r.ok && r.data.slug).toBe("hello");
+  });
 });

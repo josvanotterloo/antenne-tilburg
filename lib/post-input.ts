@@ -27,8 +27,8 @@ export function parsePostInput(body: unknown): ParseResult {
   const bodyText = str(b.body);
   if (!bodyText) return { ok: false, error: "Body is required" };
 
-  const explicitSlug = str(b.slug);
-  const slug = slugify(explicitSlug || title);
+  // Prefer an explicit slug, but fall back to the title if it isn't sluggable.
+  const slug = slugify(str(b.slug)) || slugify(title);
   if (!slug) return { ok: false, error: "Could not generate a slug" };
 
   const status = b.status === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
