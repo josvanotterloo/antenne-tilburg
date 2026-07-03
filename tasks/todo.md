@@ -4,14 +4,15 @@ Current work queue. Keep Active short — move items to Backlog if not in-flight
 
 ## Active
 
-### Public catalog & search (`feature/public-catalog-search`)
+### Public catalog & search (`feature/public-catalog-search`) — implementation done, awaiting close-out
 Full plan: `docs/superpowers/plans/public-catalog-search.md`. Server-side only.
-- [ ] Unit 0 — DB: indexes (condition, inStock, createdAt) + tsvector column + GIN
-- [ ] Unit 1 — `lib/catalog.ts` (buildCatalogWhere / buildCatalogOrderBy / paging)
-- [ ] Unit 2 — `/stock` list (URL filters, chips, sort, grid, pagination, search)
-- [ ] Unit 3 — `/stock/[id]` detail (SEO, 404 if missing/out-of-stock)
-- [ ] Unit 4 — `/stock/feed.xml` RSS (last 50 arrivals)
-- [ ] Unit 5 — admin `/admin/catalog` search + pagination
+- [x] Unit 0 — DB: indexes (condition, inStock, createdAt) + tsvector column + GIN
+- [x] Unit 1 — `lib/catalog.ts` (buildCatalogWhere / buildCatalogOrderBy / paging)
+- [x] Unit 2 — `/stock` list (URL filters, chips, sort, grid, pagination, search)
+- [x] Unit 3 — `/stock/[id]` detail (SEO, 404 if missing/out-of-stock)
+- [x] Unit 4 — `/stock/feed.xml` RSS (last 50 arrivals)
+- [x] Unit 5 — admin `/admin/catalog` search + pagination
+- [ ] Close-out: `/code-review`, merge to master, feature doc + session log
 
 ## Backlog
 
