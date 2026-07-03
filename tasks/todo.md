@@ -9,6 +9,9 @@ _(nothing in-flight — scaffold complete, awaiting review/merge of
 
 ## Backlog
 
+- [ ] Rename middleware.ts to proxy.ts (Next.js 16 convention)
+      See: nextjs.org/docs/messages/middleware-to-proxy
+
 ### Admin CRUD (one feature branch per entity — see docs/instructions/generate-route.md)
 - [ ] Managed lists: Labels, Genres, Product types — add/rename/delete with a
       guard on delete when products are still linked
