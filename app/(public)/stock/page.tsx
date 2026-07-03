@@ -1,8 +1,10 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
 import {
+  catalogPageNumbers,
   getCatalogPage,
   isJustIn,
   JUST_IN_DAYS,
@@ -113,11 +115,17 @@ export default async function StockPage({
           className="flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
         />
         {/* preserve active filters when searching */}
-        {["genre", "label", "type", "condition", "sort", "order", "view"].map(
-          (k) =>
-            p[k] ? (
-              <input key={k} type="hidden" name={k} value={p[k]} />
-            ) : null,
+        {[
+          "genre",
+          "label",
+          "type",
+          "condition",
+          "just_in",
+          "sort",
+          "order",
+          "view",
+        ].map((k) =>
+          p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
         )}
         <button
           type="submit"
@@ -359,7 +367,7 @@ function Pagination({
   current: Record<string, string | undefined>;
 }) {
   if (pageCount <= 1) return null;
-  const pages = Array.from({ length: pageCount }, (_, i) => i + 1);
+  const pages = catalogPageNumbers(page, pageCount);
   return (
     <nav className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pagination">
       {page > 1 && (
@@ -370,19 +378,23 @@ function Pagination({
           Prev
         </Link>
       )}
-      {pages.map((n) => (
-        <Link
-          key={n}
-          href={stockHref(current, { page: String(n) })}
-          aria-current={n === page ? "page" : undefined}
-          className={`rounded px-2 py-1 ${
-            n === page
-              ? "bg-neutral-900 text-white"
-              : "border border-neutral-300 hover:bg-neutral-100"
-          }`}
-        >
-          {n}
-        </Link>
+      {pages.map((n, i) => (
+        <Fragment key={n}>
+          {i > 0 && n - pages[i - 1] > 1 && (
+            <span className="px-1 text-neutral-400">…</span>
+          )}
+          <Link
+            href={stockHref(current, { page: String(n) })}
+            aria-current={n === page ? "page" : undefined}
+            className={`rounded px-2 py-1 ${
+              n === page
+                ? "bg-neutral-900 text-white"
+                : "border border-neutral-300 hover:bg-neutral-100"
+            }`}
+          >
+            {n}
+          </Link>
+        </Fragment>
       ))}
       {page < pageCount && (
         <Link

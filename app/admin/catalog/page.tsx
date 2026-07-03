@@ -1,6 +1,7 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
-import { getCatalogPage } from "@/lib/catalog";
+import { catalogPageNumbers, getCatalogPage } from "@/lib/catalog";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 
@@ -157,19 +158,23 @@ export default async function CatalogPage({
               Prev
             </Link>
           )}
-          {Array.from({ length: result.pageCount }, (_, i) => i + 1).map((n) => (
-            <Link
-              key={n}
-              href={adminHref(q, n)}
-              aria-current={n === result.page ? "page" : undefined}
-              className={`rounded px-2 py-1 ${
-                n === result.page
-                  ? "bg-neutral-900 text-white"
-                  : "border border-neutral-300 hover:bg-neutral-100"
-              }`}
-            >
-              {n}
-            </Link>
+          {catalogPageNumbers(result.page, result.pageCount).map((n, i, arr) => (
+            <Fragment key={n}>
+              {i > 0 && n - arr[i - 1] > 1 && (
+                <span className="px-1 text-neutral-400">…</span>
+              )}
+              <Link
+                href={adminHref(q, n)}
+                aria-current={n === result.page ? "page" : undefined}
+                className={`rounded px-2 py-1 ${
+                  n === result.page
+                    ? "bg-neutral-900 text-white"
+                    : "border border-neutral-300 hover:bg-neutral-100"
+                }`}
+              >
+                {n}
+              </Link>
+            </Fragment>
           ))}
           {result.page < result.pageCount && (
             <Link

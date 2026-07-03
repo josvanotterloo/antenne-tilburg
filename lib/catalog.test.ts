@@ -19,6 +19,7 @@ import {
   searchProductIds,
   getCatalogPage,
   isJustIn,
+  catalogPageNumbers,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -130,6 +131,17 @@ describe("pagination math", () => {
     expect(pageCount(50)).toBe(1);
     expect(pageCount(51)).toBe(2);
     expect(pageCount(120)).toBe(3);
+  });
+});
+
+describe("catalogPageNumbers", () => {
+  it("returns a bounded window that never lists every page", () => {
+    expect(catalogPageNumbers(1, 1)).toEqual([1]);
+    expect(catalogPageNumbers(1, 5)).toEqual([1, 2, 5]);
+    expect(catalogPageNumbers(3, 10)).toEqual([1, 2, 3, 4, 10]);
+    expect(catalogPageNumbers(10, 10)).toEqual([1, 9, 10]);
+    // even with 200 pages the window stays small
+    expect(catalogPageNumbers(100, 200)).toEqual([1, 99, 100, 101, 200]);
   });
 });
 

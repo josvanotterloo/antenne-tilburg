@@ -74,6 +74,17 @@ export function pageCount(total: number): number {
   return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
+// Bounded set of page numbers to render: always first + last + the current
+// page and its neighbours. Keeps pagination small even at hundreds of pages;
+// the renderer inserts an ellipsis wherever the numbers are non-consecutive.
+export function catalogPageNumbers(page: number, pageCount: number): number[] {
+  const set = new Set<number>();
+  for (const n of [1, page - 1, page, page + 1, pageCount]) {
+    if (n >= 1 && n <= pageCount) set.add(n);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
 // A product is "Just In" if created within the last JUST_IN_DAYS. `now` is
 // injectable for tests (and keeps time-reading out of component render bodies).
 export function isJustIn(
