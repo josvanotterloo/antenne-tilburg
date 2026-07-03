@@ -42,7 +42,7 @@ Only proceed after confirming these with the user.
   Component or a Route Handler / Server Action, never in a Client Component.
 - **Server vs Client:** default to Server Components. Add `"use client"` only
   when you need state, effects, or event handlers (e.g. forms).
-- **Auth:** `/admin/*` is already gated by `middleware.ts`. For mutations, also
+- **Auth:** `/admin/*` is already gated by `proxy.ts`. For mutations, also
   re-check the session server-side (`getServerSession(authOptions)`) — never
   trust the client. Reject unauthenticated writes before any DB call.
 - **Validation at the boundary:** validate/parse all input before any I/O; reject
