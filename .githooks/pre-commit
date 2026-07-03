@@ -1,0 +1,13 @@
+#!/bin/sh
+# Gate every commit on lint + the full test suite so a red state can't land.
+# Activated via `git config core.hooksPath .githooks` (npm's prepare script
+# wires this up on install). Bypass in a genuine emergency with `git commit -n`.
+set -e
+
+echo "pre-commit: lint…"
+npm run lint
+
+echo "pre-commit: tests…"
+sh .claude/skills/run-tests/scripts/run-tests.sh
+
+echo "pre-commit: OK"
