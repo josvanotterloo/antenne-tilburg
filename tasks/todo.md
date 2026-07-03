@@ -7,8 +7,8 @@ Current work queue. Keep Active short — move items to Backlog if not in-flight
 ### Admin CRUD slices (each: TDD, own branch, full close-out)
 IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-list, users}.
 - [x] Blog posts — `docs/features/admin-blog-posts.md`
-- [ ] Events — CRUD, upcoming/past status (next)
-- [ ] Notices — CRUD, active toggle, optional start/end scheduling
+- [x] Events — `docs/features/admin-events.md`
+- [ ] Notices — CRUD, active toggle, optional start/end scheduling (next)
 - [ ] Opening hours — edit per weekday + adjusted/holiday hours
 - [ ] Newsletter subscribers — view + CSV export
 - [ ] Want-list requests — read-only admin view
