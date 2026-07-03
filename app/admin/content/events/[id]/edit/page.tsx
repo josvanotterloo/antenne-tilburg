@@ -2,13 +2,9 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { EventForm } from "@/components/admin/EventForm";
+import { toDateTimeLocal } from "@/lib/event-input";
 
 export const dynamic = "force-dynamic";
-
-// Format a stored date as a datetime-local value (YYYY-MM-DDTHH:mm).
-function toLocalInput(date: Date): string {
-  return new Date(date).toISOString().slice(0, 16);
-}
 
 export default async function EditEventPage({
   params,
@@ -27,7 +23,7 @@ export default async function EditEventPage({
           id: event.id,
           title: event.title,
           slug: event.slug,
-          date: toLocalInput(event.date),
+          date: toDateTimeLocal(event.date),
           description: event.description,
           image: event.image,
           location: event.location,
