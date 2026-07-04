@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -14,6 +14,9 @@ export default function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  // Unique per instance so the form is safe to render more than once per page
+  // (e.g. the newsletter page and the site footer).
+  const uid = useId();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,11 +56,11 @@ export default function NewsletterForm() {
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4" noValidate>
       <div className="space-y-1">
-        <label htmlFor="nl-name" className={labelClass}>
+        <label htmlFor={`${uid}-name`} className={labelClass}>
           Name
         </label>
         <input
-          id="nl-name"
+          id={`${uid}-name`}
           name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -68,11 +71,11 @@ export default function NewsletterForm() {
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="nl-email" className={labelClass}>
+        <label htmlFor={`${uid}-email`} className={labelClass}>
           Email
         </label>
         <input
-          id="nl-email"
+          id={`${uid}-email`}
           name="email"
           type="email"
           value={email}
