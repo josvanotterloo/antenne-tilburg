@@ -21,19 +21,10 @@ real admin UIs.
 
 ## Backlog
 
-### Admin CRUD (one feature branch per entity — see docs/instructions/generate-route.md)
-- [ ] Managed lists: Labels, Genres, Product types — add/rename/delete with a
-      guard on delete when products are still linked
-- [ ] Products — full CRUD, cover-image upload, mark sold / out of stock,
-      list view with search + filter (genre, label, product type, condition)
-- [ ] Blog posts — write/edit, publish/unpublish, draft state, cover image
-- [ ] Events — CRUD, upcoming/past status
-- [ ] Notices — CRUD, active toggle, optional start/end scheduling
-- [ ] Opening hours — edit per weekday + adjusted/holiday hours
-- [ ] Newsletter subscribers — view + CSV export
-- [ ] Want-list requests — read-only admin view
-- [ ] Users — manage the two admin accounts / change password
-- [ ] Per-page/product/post SEO metadata editor (PageSeo + entity seo fields)
+### Admin CRUD
+Complete — see the Active section above (managed lists, products, blog posts, events,
+notices, opening hours, subscribers, users all have real admin UIs). Remaining nuance:
+adjusted/holiday opening-hours overrides are deferred (noted in Active).
 
 ### Public pages pulling real data
 - [x] Design foundation — `DESIGN.md`/`PRODUCT.md`, tokens, fonts, chrome restyle
@@ -65,8 +56,9 @@ real admin UIs.
 - [ ] Server-side session re-check (getServerSession) on every admin mutation
 
 ### SEO
-- [ ] Extend sitemap.ts with dynamic product/post/event URLs
+- [ ] Extend sitemap.ts with dynamic product/post URLs
 - [ ] generateMetadata per entity with PageSeo fallbacks
+- [ ] Admin editor for per-page/product/post SEO metadata (PageSeo + entity seo fields)
 
 ### Social cross-posting (later phase — see plan §Social cross-posting)
 - [ ] Meta Graph API publish hook on post publish (Facebook Page + Instagram)
