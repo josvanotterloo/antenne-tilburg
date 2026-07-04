@@ -8,8 +8,8 @@ Current work queue. Keep Active short — move items to Backlog if not in-flight
 IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-list, users}.
 - [x] Blog posts — `docs/features/admin-blog-posts.md`
 - [x] Events — `docs/features/admin-events.md`
-- [ ] Notices — CRUD, active toggle, optional start/end scheduling (next)
-- [ ] Opening hours — edit per weekday + adjusted/holiday hours
+- [x] Notices — `docs/features/admin-notices.md`
+- [ ] Opening hours — edit per weekday + adjusted/holiday hours (next)
 - [ ] Newsletter subscribers — view + CSV export
 - [ ] Want-list requests — read-only admin view
 - [ ] Users — manage the two admin accounts / change password
