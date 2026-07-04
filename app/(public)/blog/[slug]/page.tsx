@@ -1,4 +1,37 @@
-import { Placeholder } from "@/components/ui/Placeholder";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+
+import {
+  getPublishedPostBySlug,
+  postDateLabel,
+  postExcerpt,
+} from "@/lib/blog";
+
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPublishedPostBySlug(slug);
+  if (!post) return { title: "Not found" };
+  return {
+    title: post.seoTitle ?? post.title,
+    description: post.seoDescription ?? postExcerpt(post.body),
+  };
+}
+
+// Plain-text body (admin textarea) → paragraphs split on blank lines. Rendered as
+// text, never HTML, so there's no injection surface.
+function paragraphs(body: string): string[] {
+  return body
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
 
 export default async function BlogPostPage({
   params,
@@ -6,10 +39,49 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const post = await getPublishedPostBySlug(slug);
+  if (!post) notFound();
+
+  const date = post.publishedAt ?? post.createdAt;
+
   return (
-    <Placeholder
-      title="Blog post"
-      description={`Post "${slug}" will render here once posts are wired to the database.`}
-    />
+    <article className="mx-auto max-w-prose space-y-8">
+      <Link
+        href="/blog"
+        className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+      >
+        ← Back to blog
+      </Link>
+
+      <header className="space-y-3">
+        <time
+          dateTime={new Date(date).toISOString()}
+          className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted"
+        >
+          {postDateLabel(date)}
+        </time>
+        <h1 className="text-balance text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+          {post.title}
+        </h1>
+      </header>
+
+      {post.coverImage && (
+        // Plain <img>: cover URLs are arbitrary and next/image has no remote config.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={post.coverImage}
+          alt=""
+          className="w-full border border-hairline"
+        />
+      )}
+
+      <div className="space-y-4 text-pretty text-ink">
+        {paragraphs(post.body).map((p, i) => (
+          <p key={i} className="whitespace-pre-line leading-relaxed">
+            {p}
+          </p>
+        ))}
+      </div>
+    </article>
   );
 }
