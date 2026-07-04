@@ -9,8 +9,9 @@ IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-lis
 - [x] Blog posts — `docs/features/admin-blog-posts.md`
 - [x] Events — `docs/features/admin-events.md`
 - [x] Notices — `docs/features/admin-notices.md`
-- [ ] Opening hours — edit per weekday + adjusted/holiday hours (next)
-- [ ] Newsletter subscribers — view + CSV export
+- [x] Opening hours — base weekly grid; `docs/features/admin-opening-hours.md`
+      (holiday/adjusted overrides deferred)
+- [ ] Newsletter subscribers — view + CSV export (next)
 - [ ] Want-list requests — read-only admin view
 - [ ] Users — manage the two admin accounts / change password
 
