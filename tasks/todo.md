@@ -36,9 +36,12 @@ real admin UIs.
 - [ ] Per-page/product/post SEO metadata editor (PageSeo + entity seo fields)
 
 ### Public pages pulling real data
-- [ ] Stock listing — filterable by the managed lists + "Just In" (createdAt < 30d)
+- [x] Design foundation — `DESIGN.md`/`PRODUCT.md`, tokens, fonts, chrome restyle
+      ("The Pirate Signal") — `docs/features/public-blog.md`
+- [x] Stock listing — filterable by the managed lists + "Just In" (createdAt < 30d)
+      — `docs/features/public-catalog-search.md`
 - [ ] Home "Just In" section + upcoming-events + visit teasers from the DB
-- [ ] Blog index + `[slug]` post pages
+- [x] Blog index + `[slug]` post pages — `docs/features/public-blog.md`
 - [ ] Events index + `[slug]` event pages
 - [ ] Visit/Contact — live opening hours + map
 - [ ] About + FAQ real content
