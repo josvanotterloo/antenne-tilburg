@@ -1,4 +1,4 @@
-import { PrismaClient, Condition } from "@prisma/client";
+import { PrismaClient, Condition, PostStatus } from "@prisma/client";
 import { hash } from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -80,6 +80,41 @@ const SAMPLE_PRODUCTS = [
   },
 ];
 
+// Sample blog posts. One draft is included to verify it never appears publicly.
+const SAMPLE_POSTS = [
+  {
+    title: "Fresh Tresor & Clone in the crate",
+    slug: "fresh-tresor-and-clone",
+    status: PostStatus.PUBLISHED,
+    publishedAt: new Date("2026-06-28T10:00:00.000Z"),
+    body:
+      "A heavy box landed this week. New Tresor reissues, a stack of Clone " +
+      "Basement Series 12\"s, and a couple of Rush Hour repress we've been " +
+      "chasing for months.\n\n" +
+      "Everything is out on the floor now. First come, first served — we don't " +
+      "hold copies. Swing by, or catch us on Discogs for next-day pickup.",
+  },
+  {
+    title: "Second-hand Saturday: dub, jazz & odd electronics",
+    slug: "second-hand-saturday",
+    status: PostStatus.PUBLISHED,
+    publishedAt: new Date("2026-06-14T09:00:00.000Z"),
+    body:
+      "The second-hand section got a big refresh. Plenty outside the usual " +
+      "electronic lane this time: spiritual jazz, roots dub, library oddities, " +
+      "and a small run of private-press weirdness.\n\n" +
+      "All graded honestly and priced to move. Bring your headphones — the " +
+      "listening station is free all day.",
+  },
+  {
+    title: "Draft: upcoming in-store (not published)",
+    slug: "draft-in-store",
+    status: PostStatus.DRAFT,
+    publishedAt: null,
+    body: "This is a draft and should never show on the public blog.",
+  },
+];
+
 async function main() {
   // --- Admin users (idempotent on unique email) ---
   for (const { email, password } of ADMIN_USERS) {
@@ -139,10 +174,20 @@ async function main() {
     });
   }
 
+  // --- Sample blog posts (idempotent on unique slug) ---
+  for (const post of SAMPLE_POSTS) {
+    await prisma.post.upsert({
+      where: { slug: post.slug },
+      update: {},
+      create: post,
+    });
+  }
+
   console.log(
     `Seed complete: ${ADMIN_USERS.length} users, ${LABELS.length} labels, ` +
       `${GENRES.length} genres, ${PRODUCT_TYPES.length} product types, ` +
-      `${OPENING_HOURS.length} opening-hours rows, ${SAMPLE_PRODUCTS.length} products.`,
+      `${OPENING_HOURS.length} opening-hours rows, ${SAMPLE_PRODUCTS.length} products, ` +
+      `${SAMPLE_POSTS.length} posts.`,
   );
 }
 
