@@ -24,25 +24,14 @@ export default function HomePage() {
         </p>
       </section>
 
-      <section className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold">Upcoming events</h2>
-          <p className="text-neutral-500">
-            Event teasers will appear here. —{" "}
-            <Link href="/events" className="underline">
-              See events
-            </Link>
-          </p>
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-xl font-semibold">Visit us</h2>
-          <p className="text-neutral-500">
-            Address, hours and map. —{" "}
-            <Link href="/visit" className="underline">
-              Plan your visit
-            </Link>
-          </p>
-        </div>
+      <section className="space-y-2">
+        <h2 className="text-xl font-semibold">Visit us</h2>
+        <p className="text-neutral-500">
+          Address, hours and map. —{" "}
+          <Link href="/visit" className="underline">
+            Plan your visit
+          </Link>
+        </p>
       </section>
     </div>
   );

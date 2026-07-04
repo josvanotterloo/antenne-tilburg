@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
-// Static public routes. Dynamic product / post / event URLs get added here once
-// those entities are wired to the database.
+// Static public routes. Dynamic product / post URLs get added here once those
+// entities are wired to the database. (Events are admin-internal, not public.)
 const routes = [
   "",
   "/about",
@@ -11,7 +11,6 @@ const routes = [
   "/visit",
   "/stock",
   "/blog",
-  "/events",
   "/newsletter",
 ];
 

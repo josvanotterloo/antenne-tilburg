@@ -16,7 +16,7 @@ export default async function BlogIndexPage() {
           Blog
         </h1>
         <p className="max-w-prose text-ink-muted">
-          New arrivals, restocks and events — straight from the shop floor.
+          New arrivals, restocks and shop news — straight from the shop floor.
         </p>
       </header>
 
