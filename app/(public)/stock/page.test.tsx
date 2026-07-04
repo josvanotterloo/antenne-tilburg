@@ -81,3 +81,53 @@ describe("/stock page", () => {
     );
   });
 });
+
+describe("/stock public filter restrictions", () => {
+  it("does not render Label or Product Type filters", async () => {
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.queryByRole("heading", { name: /^Label$/i })).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: /product type/i }),
+    ).toBeNull();
+  });
+
+  it("does not render the Just In quick-filter", async () => {
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.queryByText(/last \d+ days/i)).toBeNull();
+  });
+
+  it("renders Genre and Condition filters", async () => {
+    vi.mocked(db.genre.findMany).mockResolvedValue([
+      { id: "g1", name: "Techno" },
+    ] as never);
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+    expect(
+      screen.getByRole("heading", { name: /^Genre$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^Condition$/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Techno" })).toBeInTheDocument();
+  });
+
+  it("ignores label, type and just_in query params", async () => {
+    vi.mocked(db.genre.findMany).mockResolvedValue([
+      { id: "g1", name: "Techno" },
+    ] as never);
+    await StockPage({
+      searchParams: Promise.resolve({
+        genre: "Techno",
+        condition: "NEW",
+        label: "Warp Records",
+        type: "LP",
+        just_in: "true",
+      }),
+    });
+    const arg = vi.mocked(getCatalogPage).mock.calls[0][0];
+    expect(arg.genreId).toBe("g1");
+    expect(arg.condition).toBe("NEW");
+    expect(arg.labelId).toBeUndefined();
+    expect(arg.productTypeId).toBeUndefined();
+    expect(arg.justIn).toBeFalsy();
+  });
+});

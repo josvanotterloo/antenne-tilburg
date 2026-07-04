@@ -7,7 +7,6 @@ import {
   catalogPageNumbers,
   getCatalogPage,
   isJustIn,
-  JUST_IN_DAYS,
   type CatalogProduct,
 } from "@/lib/catalog";
 
@@ -46,24 +45,20 @@ export default async function StockPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
+  // Public visitors filter by Genre and Condition only. Label and product type are
+  // internal admin concerns and are not exposed here; any label/type/just_in query
+  // params are intentionally ignored.
   const p = {
     q: one(sp.q),
     genre: one(sp.genre),
-    label: one(sp.label),
-    type: one(sp.type),
     condition: one(sp.condition) === "SECONDHAND" ? "SECONDHAND" : one(sp.condition) === "NEW" ? "NEW" : undefined,
-    just_in: one(sp.just_in) === "true" ? "true" : undefined,
     sort: one(sp.sort),
     order: one(sp.order),
     view: one(sp.view) === "grid" ? "grid" : undefined,
     page: one(sp.page),
   } as Record<string, string | undefined>;
 
-  const [genres, labels, types] = await Promise.all([
-    db.genre.findMany({ orderBy: { name: "asc" } }),
-    db.label.findMany({ orderBy: { name: "asc" } }),
-    db.productType.findMany({ orderBy: { name: "asc" } }),
-  ]);
+  const genres = await db.genre.findMany({ orderBy: { name: "asc" } });
 
   const resolve = (
     list: { id: string; name: string }[],
@@ -77,10 +72,7 @@ export default async function StockPage({
   const result = await getCatalogPage({
     q: p.q,
     genreId: resolve(genres, p.genre),
-    labelId: resolve(labels, p.label),
-    productTypeId: resolve(types, p.type),
     condition: p.condition as "NEW" | "SECONDHAND" | undefined,
-    justIn: p.just_in === "true",
     onlyInStock: true,
     sort: p.sort,
     order: p.order,
@@ -90,15 +82,9 @@ export default async function StockPage({
   const activeChips = [
     p.q && { label: `“${p.q}”`, href: stockHref(p, { q: undefined }) },
     p.genre && { label: p.genre, href: stockHref(p, { genre: undefined }) },
-    p.label && { label: p.label, href: stockHref(p, { label: undefined }) },
-    p.type && { label: p.type, href: stockHref(p, { type: undefined }) },
     p.condition && {
       label: p.condition,
       href: stockHref(p, { condition: undefined }),
-    },
-    p.just_in && {
-      label: "Just In",
-      href: stockHref(p, { just_in: undefined }),
     },
   ].filter(Boolean) as { label: string; href: string }[];
 
@@ -115,16 +101,7 @@ export default async function StockPage({
           className="flex-1 rounded border border-neutral-300 px-3 py-2 text-sm"
         />
         {/* preserve active filters when searching */}
-        {[
-          "genre",
-          "label",
-          "type",
-          "condition",
-          "just_in",
-          "sort",
-          "order",
-          "view",
-        ].map((k) =>
+        {["genre", "condition", "sort", "order", "view"].map((k) =>
           p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
         )}
         <button
@@ -161,20 +138,6 @@ export default async function StockPage({
             param="genre"
             current={p}
           />
-          <FilterGroup
-            title="Label"
-            options={labels}
-            active={p.label}
-            param="label"
-            current={p}
-          />
-          <FilterGroup
-            title="Product type"
-            options={types}
-            active={p.type}
-            param="type"
-            current={p}
-          />
           <div>
             <h3 className="font-semibold">Condition</h3>
             {["NEW", "SECONDHAND"].map((c) => (
@@ -189,12 +152,6 @@ export default async function StockPage({
               </Link>
             ))}
           </div>
-          <Link
-            href={stockHref(p, { just_in: p.just_in ? undefined : "true" })}
-            className={`block ${p.just_in ? "font-semibold underline" : "text-neutral-600 hover:underline"}`}
-          >
-            Just In (last {JUST_IN_DAYS} days)
-          </Link>
         </aside>
 
         <section className="space-y-4">
