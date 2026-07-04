@@ -7,8 +7,8 @@ export function Placeholder({
 }) {
   return (
     <section className="space-y-3">
-      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-      <p className="max-w-prose text-neutral-500">
+      <h1 className="text-2xl font-bold tracking-tight text-ink">{title}</h1>
+      <p className="max-w-prose text-ink-muted">
         {description ?? "Coming soon."}
       </p>
     </section>

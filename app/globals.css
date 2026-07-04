@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Design system: "The Pirate Signal" — see DESIGN.md.
+   Brand base styles are scoped to `.site-dark` (applied by the public layout) so the
+   light admin surface, which shares the same document, is left untouched. */
+@layer base {
+  .site-dark {
+    color-scheme: dark;
+  }
+
+  .site-dark ::selection {
+    background: #6b7dc9;
+    color: #0a0b0d;
+  }
+
+  /* Flat Transmission Rule: focus is the one permitted non-flat cue. */
+  .site-dark :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px #0a0b0d,
+      0 0 0 3px #6b7dc9;
+  }
+}

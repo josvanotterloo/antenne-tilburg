@@ -21,10 +21,19 @@ export async function NoticeBanner() {
   if (notices.length === 0) return null;
 
   return (
-    <div className="bg-amber-100 text-amber-900">
+    <div className="border-b border-hairline bg-surface">
       {notices.map((notice) => (
-        <p key={notice.id} className="mx-auto max-w-5xl px-4 py-2 text-sm">
-          {notice.message}
+        <p
+          key={notice.id}
+          className="mx-auto flex max-w-5xl items-baseline gap-3 px-4 py-2 text-sm text-ink"
+        >
+          <span
+            aria-hidden
+            className="font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal"
+          >
+            Notice
+          </span>
+          <span>{notice.message}</span>
         </p>
       ))}
     </div>

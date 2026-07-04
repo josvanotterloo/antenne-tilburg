@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -8,23 +11,40 @@ const NAV = [
   { href: "/visit", label: "Visit" },
 ];
 
+function isActive(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
+
 export function SiteHeader() {
+  const pathname = usePathname() ?? "/";
+
   return (
-    <header className="border-b border-neutral-200">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-        <Link href="/" className="text-lg font-bold tracking-tight">
-          Antenne <span className="text-neutral-400">Tilburg</span>
+    <header className="border-b border-hairline bg-canvas">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4">
+        <Link
+          href="/"
+          className="font-mono text-lg font-bold lowercase tracking-tight text-ink"
+        >
+          antenne <span className="text-ink-muted">tilburg</span>
         </Link>
-        <nav className="flex gap-4 text-sm">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-neutral-600 hover:text-neutral-900"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.04em]">
+          {NAV.map((item) => {
+            const active = isActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={
+                  active
+                    ? "border-b border-signal pb-1 text-ink"
+                    : "pb-1 text-ink-muted transition-colors hover:text-ink"
+                }
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       </div>
     </header>
