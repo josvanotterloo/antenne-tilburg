@@ -1,17 +1,11 @@
 import { db } from "@/lib/db";
+import { activeNoticeWhere } from "@/lib/notice";
 
 // A notice shows when active AND (no start, or started) AND (no end, or not ended).
 async function getActiveNotices() {
-  const now = new Date();
   try {
     return await db.notice.findMany({
-      where: {
-        active: true,
-        AND: [
-          { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
-          { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
-        ],
-      },
+      where: activeNoticeWhere(new Date()),
       orderBy: { createdAt: "desc" },
     });
   } catch (error) {
