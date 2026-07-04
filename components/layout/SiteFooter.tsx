@@ -1,6 +1,11 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
+import {
+  DAY_NAMES,
+  formatHourRange,
+  orderOpeningHours,
+} from "@/lib/opening-hours";
 
 // Secondary navigation. The lean header carries the primary browse links; the footer
 // makes the info pages (About, FAQ, Newsletter) reachable too.
@@ -13,19 +18,9 @@ const FOOTER_LINKS = [
   { href: "/newsletter", label: "Newsletter" },
 ];
 
-const DAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
 async function getHours() {
   try {
-    return await db.openingHours.findMany({ orderBy: { dayOfWeek: "asc" } });
+    return await db.openingHours.findMany();
   } catch (error) {
     // Degrade gracefully but log — see NoticeBanner for the rationale.
     console.error("SiteFooter: failed to load opening hours", error);
@@ -34,7 +29,7 @@ async function getHours() {
 }
 
 export async function SiteFooter() {
-  const hours = await getHours();
+  const hours = orderOpeningHours(await getHours());
 
   return (
     <footer className="mt-16 border-t border-hairline bg-canvas">
@@ -59,12 +54,8 @@ export async function SiteFooter() {
             <ul className="mt-3 space-y-1 font-mono text-sm text-ink-muted">
               {hours.map((hour) => (
                 <li key={hour.id} className="flex justify-between gap-6">
-                  <span>{DAYS[hour.dayOfWeek]}</span>
-                  <span className="tabular-nums">
-                    {hour.closed
-                      ? "Closed"
-                      : `${hour.opensAt}–${hour.closesAt}`}
-                  </span>
+                  <span>{DAY_NAMES[hour.dayOfWeek]}</span>
+                  <span className="tabular-nums">{formatHourRange(hour)}</span>
                 </li>
               ))}
             </ul>
