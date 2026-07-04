@@ -7,7 +7,11 @@ export interface CsvColumn {
 }
 
 function escapeCell(value: unknown): string {
-  const s = value == null ? "" : String(value);
+  let s = value == null ? "" : String(value);
+  // Neutralize spreadsheet formula injection: a cell that a spreadsheet would
+  // treat as a formula (leading = + - @, tab or CR) is prefixed with a quote so
+  // it is read as text. Exported data (e.g. subscriber names) is untrusted.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
