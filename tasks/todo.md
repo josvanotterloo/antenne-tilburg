@@ -12,8 +12,12 @@ IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-lis
 - [x] Opening hours — base weekly grid; `docs/features/admin-opening-hours.md`
       (holiday/adjusted overrides deferred)
 - [x] Newsletter subscribers — `docs/features/admin-subscribers.md`
-- [ ] Users — change password (current-pw verified) + change email (409 dup) (next)
+- [x] Users — `docs/features/admin-users.md`
 - ~~Want-list requests~~ — **dropped** (removed from plan)
+
+**Admin CRUD sequence complete** (blog posts, events, notices, opening hours,
+subscribers, users). Remaining admin sections: none — all managed entities have
+real admin UIs.
 
 ## Backlog
 
