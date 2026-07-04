@@ -1,40 +1,76 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
-  ),
-}));
-vi.mock("@/lib/db", () => ({
-  db: { openingHours: { findMany: vi.fn() } },
+  default: ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => <a href={href}>{children}</a>,
 }));
 
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { db } from "@/lib/db";
 
-const HOURS = [
-  { id: "h0", dayOfWeek: 0, opensAt: "12:00", closesAt: "18:00", closed: true },
-  { id: "h1", dayOfWeek: 1, opensAt: "12:00", closesAt: "18:00", closed: false },
-  { id: "h6", dayOfWeek: 6, opensAt: "12:00", closesAt: "18:00", closed: false },
-];
-
-beforeEach(() => vi.clearAllMocks());
-
-describe("SiteFooter opening hours", () => {
-  it("lists the days Monday-first, not Sunday-first", async () => {
-    vi.mocked(db.openingHours.findMany).mockResolvedValue(HOURS as never);
-    render(await SiteFooter());
-    const days = screen
-      .getAllByText(/^(Monday|Saturday|Sunday)$/)
-      .map((el) => el.textContent);
-    expect(days.indexOf("Monday")).toBeLessThan(days.indexOf("Sunday"));
+describe("SiteFooter", () => {
+  it("renders the three column headings", () => {
+    render(<SiteFooter />);
+    expect(
+      screen.getByRole("heading", { name: /^follow$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^navigate$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^contact$/i }),
+    ).toBeInTheDocument();
   });
 
-  it("formats open and closed days", async () => {
-    vi.mocked(db.openingHours.findMany).mockResolvedValue(HOURS as never);
-    render(await SiteFooter());
-    expect(screen.getByText("Closed")).toBeInTheDocument();
-    expect(screen.getAllByText("12:00–18:00").length).toBeGreaterThan(0);
+  it("links to the five main pages", () => {
+    render(<SiteFooter />);
+    const nav: [string, string][] = [
+      ["Stock", "/stock"],
+      ["Blog", "/blog"],
+      ["Visit", "/visit"],
+      ["About", "/about"],
+      ["FAQ", "/faq"],
+    ];
+    for (const [name, href] of nav) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+  });
+
+  it("shows the contact details incl. a tappable phone", () => {
+    render(<SiteFooter />);
+    expect(screen.getByText(/Noordstraat 82/)).toBeInTheDocument();
+    expect(screen.getByText(/5038 EK Tilburg/)).toBeInTheDocument();
+    expect(screen.getByText(/Sam-Sam vintage/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /542 1708/ })).toHaveAttribute(
+      "href",
+      "tel:+31135421708",
+    );
+  });
+
+  it("embeds the reusable social links", () => {
+    render(<SiteFooter />);
+    expect(
+      screen.getByRole("link", { name: /facebook/i }),
+    ).toHaveAttribute("href", "https://www.facebook.com/antennerecordshop/");
+  });
+
+  it("has a bottom bar with the year and a Discogs link (new tab)", () => {
+    render(<SiteFooter />);
+    const year = new Date().getFullYear();
+    expect(
+      screen.getByText(new RegExp(`©\\s*${year}\\s*Antenne Recordshop`)),
+    ).toBeInTheDocument();
+    const discogs = screen.getByRole("link", { name: /discogs/i });
+    expect(discogs).toHaveAttribute(
+      "href",
+      "https://www.discogs.com/seller/antennetilburg",
+    );
+    expect(discogs).toHaveAttribute("target", "_blank");
+    expect(discogs).toHaveAttribute("rel", "noopener noreferrer");
   });
 });
