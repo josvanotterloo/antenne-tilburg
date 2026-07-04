@@ -10,13 +10,19 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// NOTE: generateMetadata and the page each query the post, so a /blog/[slug] render
+// issues two identical slug lookups. The clean dedup is React.cache(), but that's a
+// React 19 API and this project is on React 18.3.1 — so it's left as-is (a cheap,
+// indexed unique lookup), matching the same decision in /stock/[id].
+const getPost = getPublishedPostBySlug;
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPublishedPostBySlug(slug);
+  const post = await getPost(slug);
   if (!post) return { title: "Not found" };
   return {
     title: post.seoTitle ?? post.title,
@@ -39,7 +45,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await getPublishedPostBySlug(slug);
+  const post = await getPost(slug);
   if (!post) notFound();
 
   const date = post.publishedAt ?? post.createdAt;
