@@ -3,6 +3,7 @@ import { AdminSubNav } from "@/components/layout/AdminSubNav";
 const ITEMS = [
   { href: "/admin/settings/hours", label: "Opening hours" },
   { href: "/admin/settings/notices", label: "Notices" },
+  { href: "/admin/settings/subscribers", label: "Subscribers" },
 ];
 
 export default function SettingsLayout({

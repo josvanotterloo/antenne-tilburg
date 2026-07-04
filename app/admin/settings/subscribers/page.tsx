@@ -1,0 +1,72 @@
+import { db } from "@/lib/db";
+import { DeleteButton } from "@/components/admin/DeleteButton";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminSubscribersPage() {
+  const subscribers = await db.newsletterSubscriber.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Subscribers</h1>
+          <p className="text-sm text-neutral-500">
+            {subscribers.length} newsletter subscriber
+            {subscribers.length === 1 ? "" : "s"}
+          </p>
+        </div>
+        {subscribers.length > 0 && (
+          // Not a page: this is a file-download API route, so a real <a>
+          // (with download) is correct — <Link> would client-navigate instead.
+          // eslint-disable-next-line @next/next/no-html-link-for-pages
+          <a
+            href="/api/admin/subscribers/export"
+            download
+            className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-100"
+          >
+            Export CSV
+          </a>
+        )}
+      </div>
+
+      {subscribers.length === 0 ? (
+        <p className="rounded border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
+          No subscribers yet.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+              <tr>
+                <th className="px-3 py-2 font-medium">Name</th>
+                <th className="px-3 py-2 font-medium">Email</th>
+                <th className="px-3 py-2 font-medium">Signed up</th>
+                <th className="px-3 py-2 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {subscribers.map((s) => (
+                <tr key={s.id}>
+                  <td className="px-3 py-2">{s.name}</td>
+                  <td className="px-3 py-2">{s.email}</td>
+                  <td className="px-3 py-2 text-neutral-500">
+                    {new Date(s.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <DeleteButton
+                      endpoint={`/api/admin/subscribers/${s.id}`}
+                      label="Remove"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
