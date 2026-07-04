@@ -5,6 +5,8 @@ import {
   parseOpeningHoursInput,
   DAY_NAMES,
   WEEK_ORDER,
+  formatHourRange,
+  orderOpeningHours,
 } from "@/lib/opening-hours";
 
 const openRow = (dayOfWeek: number) => ({
@@ -73,5 +75,29 @@ describe("day helpers", () => {
   });
   it("orders the week Monday-first", () => {
     expect(WEEK_ORDER).toEqual([1, 2, 3, 4, 5, 6, 0]);
+  });
+});
+
+describe("formatHourRange", () => {
+  it("renders an open day as opens–closes", () => {
+    expect(
+      formatHourRange({ opensAt: "12:00", closesAt: "18:00", closed: false }),
+    ).toBe("12:00–18:00");
+  });
+  it("renders a closed day as Closed", () => {
+    expect(
+      formatHourRange({ opensAt: "00:00", closesAt: "00:00", closed: true }),
+    ).toBe("Closed");
+  });
+});
+
+describe("orderOpeningHours", () => {
+  it("reorders rows Monday-first regardless of input order", () => {
+    const rows = [0, 3, 1].map((dayOfWeek) => ({ dayOfWeek }));
+    expect(orderOpeningHours(rows).map((r) => r.dayOfWeek)).toEqual([1, 3, 0]);
+  });
+  it("skips days that are missing from the input", () => {
+    const rows = [{ dayOfWeek: 2 }, { dayOfWeek: 6 }];
+    expect(orderOpeningHours(rows).map((r) => r.dayOfWeek)).toEqual([2, 6]);
   });
 });

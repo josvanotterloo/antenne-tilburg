@@ -21,6 +21,25 @@ export interface HourRow {
   closed: boolean;
 }
 
+// "12:00–18:00" for an open day, "Closed" otherwise. Shared by the footer and
+// the Visit page so both read hours identically.
+export function formatHourRange(row: {
+  opensAt: string;
+  closesAt: string;
+  closed: boolean;
+}): string {
+  return row.closed ? "Closed" : `${row.opensAt}–${row.closesAt}`;
+}
+
+// Reorder day rows Monday-first (WEEK_ORDER); days absent from the input are skipped.
+export function orderOpeningHours<T extends { dayOfWeek: number }>(
+  rows: T[],
+): T[] {
+  return WEEK_ORDER.map((day) =>
+    rows.find((r) => r.dayOfWeek === day),
+  ).filter((r): r is T => r !== undefined);
+}
+
 export type ParseResult =
   | { ok: true; data: HourRow[] }
   | { ok: false; error: string };
