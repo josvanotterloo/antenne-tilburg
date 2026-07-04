@@ -49,8 +49,19 @@ real admin UIs.
 - [x] Newsletter signup form (name + email) → NewsletterSubscriber — `docs/features/public-newsletter.md`
 - [ ] Want-list / request form → WantListRequest
 
+### Platform / tech debt
+- [ ] **Upgrade React 18.3.1 → 19** (own branch, don't rush). Next 16 targets React 19;
+      the current 18.3.1 pairing blocks RSC dedup patterns. Scope: bump `react` +
+      `react-dom` to 19 and `@types/react(-dom)`; `@testing-library/react` 16 already
+      supports 19; run full tests + `tsc` + `next build` and fix breakages (client
+      components, hydration, test env). **Then** swap the double queries in
+      `/blog/[slug]` and `/stock/[id]` to `React.cache()` (see the notes at those call
+      sites). Risk: touches every client component + the whole test suite — treat as a
+      deliberate migration, not a drive-by.
+
 ### Auth hardening
-- [ ] Change seeded placeholder passwords; document real credential handoff
+- [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
+      document real credential handoff — **required before any deploy**
 - [ ] Server-side session re-check (getServerSession) on every admin mutation
 
 ### SEO
