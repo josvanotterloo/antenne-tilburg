@@ -44,52 +44,67 @@ export default async function ProductDetailPage({
 
   const justIn = isJustIn(product.createdAt);
 
+  const dt = "font-mono text-xs uppercase tracking-[0.04em] text-ink-muted";
+
   return (
-    <article className="space-y-6">
-      <Link href="/stock" className="text-sm text-neutral-500 hover:underline">
+    <article className="space-y-8">
+      <Link
+        href="/stock"
+        className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+      >
         ← Back to stock
       </Link>
 
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight">
+      <header className="space-y-2">
+        <h1 className="text-balance text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           {product.artist} — {product.title}
           {justIn && (
-            <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs align-middle text-amber-800">
+            <span className="ml-2 align-middle font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal">
               Just In
             </span>
           )}
         </h1>
-        <p className="text-neutral-500">
+        <p className="font-mono text-sm text-ink-muted">
           {product.label.name} · {product.genre.name} ·{" "}
           {product.productType.name}
         </p>
       </header>
 
-      <dl className="grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
-        <dt className="text-neutral-500">Artist</dt>
-        <dd>{product.artist}</dd>
-        <dt className="text-neutral-500">Title</dt>
-        <dd>{product.title}</dd>
+      <dl className="grid grid-cols-[8rem_1fr] border-t border-hairline text-sm">
+        <dt className={`${dt} border-b border-hairline py-2`}>Artist</dt>
+        <dd className="border-b border-hairline py-2 text-ink">{product.artist}</dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Title</dt>
+        <dd className="border-b border-hairline py-2 text-ink">{product.title}</dd>
         {product.catalogNumber && (
           <>
-            <dt className="text-neutral-500">Catalog no.</dt>
-            <dd>{product.catalogNumber}</dd>
+            <dt className={`${dt} border-b border-hairline py-2`}>Catalog no.</dt>
+            <dd className="border-b border-hairline py-2 font-mono text-ink">
+              {product.catalogNumber}
+            </dd>
           </>
         )}
-        <dt className="text-neutral-500">Label</dt>
-        <dd>{product.label.name}</dd>
-        <dt className="text-neutral-500">Genre</dt>
-        <dd>{product.genre.name}</dd>
-        <dt className="text-neutral-500">Type</dt>
-        <dd>{product.productType.name}</dd>
-        <dt className="text-neutral-500">Condition</dt>
-        <dd>{product.condition}</dd>
-        <dt className="text-neutral-500">Price</dt>
-        <dd className="tabular-nums">€{Number(product.price).toFixed(2)}</dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Label</dt>
+        <dd className="border-b border-hairline py-2 text-ink">{product.label.name}</dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Genre</dt>
+        <dd className="border-b border-hairline py-2 text-ink">{product.genre.name}</dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Type</dt>
+        <dd className="border-b border-hairline py-2 text-ink">
+          {product.productType.name}
+        </dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Condition</dt>
+        <dd className="border-b border-hairline py-2 font-mono text-ink">
+          {product.condition}
+        </dd>
+        <dt className={`${dt} border-b border-hairline py-2`}>Price</dt>
+        <dd className="border-b border-hairline py-2 font-mono tabular-nums text-ink">
+          €{Number(product.price).toFixed(2)}
+        </dd>
       </dl>
 
       {product.description && (
-        <p className="max-w-prose text-neutral-700">{product.description}</p>
+        <p className="max-w-prose text-pretty leading-relaxed text-ink">
+          {product.description}
+        </p>
       )}
     </article>
   );
