@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-04T00:00:00.000Z",
+  "title": "Design System: Antenne Tilburg",
+  "extensions": {
+    "colorMeta": {
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas Black",
+        "canonical": "oklch(0.16 0.006 260)",
+        "tonalRamp": ["oklch(0.12 0.006 260)", "oklch(0.16 0.006 260)", "oklch(0.23 0.006 260)", "oklch(0.28 0.007 260)", "oklch(0.31 0.008 260)", "oklch(0.45 0.01 260)", "oklch(0.69 0.012 260)", "oklch(0.94 0.003 260)"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "oklch(0.23 0.006 260)",
+        "tonalRamp": ["oklch(0.16 0.006 260)", "oklch(0.23 0.006 260)", "oklch(0.28 0.007 260)", "oklch(0.31 0.008 260)", "oklch(0.4 0.009 260)", "oklch(0.55 0.011 260)", "oklch(0.69 0.012 260)", "oklch(0.94 0.003 260)"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Bone Ink",
+        "canonical": "oklch(0.94 0.003 260)",
+        "tonalRamp": ["oklch(0.31 0.008 260)", "oklch(0.45 0.01 260)", "oklch(0.55 0.011 260)", "oklch(0.69 0.012 260)", "oklch(0.78 0.008 260)", "oklch(0.85 0.005 260)", "oklch(0.94 0.003 260)", "oklch(0.98 0.002 260)"]
+      },
+      "signal": {
+        "role": "primary",
+        "displayName": "Signal",
+        "canonical": "oklch(0.61 0.12 272)",
+        "tonalRamp": ["oklch(0.3 0.08 272)", "oklch(0.4 0.1 272)", "oklch(0.5 0.11 272)", "oklch(0.61 0.12 272)", "oklch(0.7 0.1 272)", "oklch(0.78 0.08 272)", "oklch(0.85 0.05 272)", "oklch(0.92 0.03 272)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero wordmark and page titles. Space Grotesk 700, clamp ceiling 5rem." },
+      "label": { "displayName": "Label / Mono", "purpose": "The catalog voice — data, nav, prices, badges. JetBrains Mono, often uppercase." }
+    },
+    "shadows": [
+      { "name": "signal-focus-ring", "value": "0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9", "purpose": "Keyboard-focus indicator; the only permitted non-flat material." }
+    ],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for state changes and staggered reveals." },
+      { "name": "duration-fast", "value": "160ms", "purpose": "Hover/focus state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "High-contrast inverse CTA — bone on black, Signal on hover.",
+      "html": "<button class=\"ds-btn-primary\">BROWSE STOCK</button>",
+      "css": ".ds-btn-primary { background: #ECEDEF; color: #0A0B0D; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 24px; border: none; border-radius: 0; cursor: pointer; transition: background 160ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: #6B7DC9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Hairline-bordered secondary action; the default public CTA.",
+      "html": "<button class=\"ds-btn-ghost\">PLAN YOUR VISIT</button>",
+      "css": ".ds-btn-ghost { background: #0A0B0D; color: #ECEDEF; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 24px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: background 160ms, color 160ms, border-color 160ms; } .ds-btn-ghost:hover { background: #15171B; color: #6B7DC9; border-color: #6B7DC9; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
+    },
+    {
+      "name": "Search Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Mono text field on black with a Signal focus border.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"artist, title, label…\" />",
+      "css": ".ds-input { background: #0A0B0D; color: #ECEDEF; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; padding: 10px 14px; border: 1px solid #2A2D34; border-radius: 0; } .ds-input::placeholder { color: #9BA1AC; } .ds-input:focus-visible { outline: none; border-color: #6B7DC9; box-shadow: 0 0 0 3px rgba(107,125,201,0.25); }"
+    },
+    {
+      "name": "Just In Badge",
+      "kind": "chip",
+      "refersTo": "badge-just-in",
+      "description": "Signal-filled badge marking arrivals from the last 30 days.",
+      "html": "<span class=\"ds-badge\">JUST IN</span>",
+      "css": ".ds-badge { display: inline-block; background: #6B7DC9; color: #0A0B0D; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 0; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "input",
+      "description": "Stock-page filter; selection shown by fill AND a leading glyph, never colour alone.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"true\">× TECHNO</button>",
+      "css": ".ds-chip { background: transparent; color: #9BA1AC; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 12px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: color 160ms, border-color 160ms, background 160ms; } .ds-chip:hover { color: #ECEDEF; border-color: #45505f; } .ds-chip[aria-pressed=\"true\"] { background: #6B7DC9; color: #0A0B0D; border-color: #6B7DC9; font-weight: 700; }"
+    },
+    {
+      "name": "Nav Link",
+      "kind": "nav",
+      "refersTo": "label",
+      "description": "Mono uppercase nav; active route carries a Signal underline.",
+      "html": "<a class=\"ds-nav-link\" href=\"#\">STOCK</a><a class=\"ds-nav-link ds-nav-link--active\" href=\"#\">BLOG</a>",
+      "css": ".ds-nav-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9BA1AC; text-decoration: none; padding-bottom: 4px; margin-right: 20px; transition: color 160ms; } .ds-nav-link:hover { color: #ECEDEF; } .ds-nav-link--active { color: #ECEDEF; border-bottom: 1px solid #6B7DC9; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Pirate Signal",
+    "overview": "A lone antenna broadcasting underground frequencies into the dark. The canvas is pure black; the monospace voice is the teletype readout of the transmission; a single muted-indigo accent is the signal cutting through the static; and the static itself — a drifting field of genre words — is the broadcast made visible. Monochrome by doctrine: colour is delivered by record covers placed into the black, not by the interface. Inherits antenne-tilburg.nl directly and modernizes its craft without sanitizing its character.",
+    "keyCharacteristics": [
+      "Pure-black canvas; monochrome interface, colour supplied only by imagery.",
+      "JetBrains Mono as the identity/data voice; Space Grotesk for headings and reading.",
+      "Zero border-radius everywhere — sharp, terminal-true corners.",
+      "Flat by default: depth from tonal layering and hairlines, never shadow.",
+      "One muted-indigo signal accent, used on ≤10% of any screen.",
+      "Two signature motifs from the old site: the genre-static field and the monospace stock table."
+    ],
+    "rules": [
+      { "name": "The One Signal Rule", "body": "Signal appears on ≤10% of any screen. It is the only hue in the interface. If a second colour is creeping in that isn't a record cover or event photo, delete it.", "section": "colors" },
+      { "name": "The Records Bring the Colour Rule", "body": "The interface is monochrome on purpose. All vibrancy comes from imagery placed into the black. Never tint a surface, badge, or heading to add warmth.", "section": "colors" },
+      { "name": "The Machine-Voice Rule", "body": "Anything that is data — a price, catalog number, label, date, opening-hours line, nav — is set in JetBrains Mono. Prose and headlines are Space Grotesk. The split is the system.", "section": "typography" },
+      { "name": "The Flat Transmission Rule", "body": "Surfaces are flat at rest. The only depth cue that appears in response to state is a tonal step or a Signal focus ring. If you reach for box-shadow to separate two black surfaces, add a hairline instead.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the canvas pure black (#0A0B0D) on every public page; let record covers be the only source of colour.",
+      "Do set all data in JetBrains Mono and all prose/headlines in Space Grotesk (the Machine-Voice Rule).",
+      "Do use zero border-radius everywhere; corners are sharp and terminal-true.",
+      "Do separate surfaces with a 1px Hairline or a one-step tonal shift, never a shadow.",
+      "Do reserve Signal for ≤10% of a screen; at ≈5.1:1 on black it carries body links directly while staying scarce.",
+      "Do give every animation a prefers-reduced-motion alternative, including the genre-static drift."
+    ],
+    "donts": [
+      "Don't introduce a cream/sand/paper/beige body background, or any warm-neutral surface.",
+      "Don't build a generic SaaS landing page: no gradient hero, no feature-card grid, no uppercase eyebrow above every section.",
+      "Don't make it a big-box retail marketplace grid with star ratings and badges on every product.",
+      "Don't add a second interface hue, tint surfaces for warmth, or use gradient text.",
+      "Don't use border-left/border-right colour stripes, glassmorphism, or drop-shadows to fake depth on black.",
+      "Don't convey state (selected filter, sold, error) with colour alone; pair it with text, weight, or a glyph."
+    ]
+  }
+}
