@@ -39,6 +39,7 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [x] About + FAQ real content — `docs/features/public-about.md`, `docs/features/public-faq.md`
 - [x] Newsletter signup form (name + email) → NewsletterSubscriber — `docs/features/public-newsletter.md`
 - [ ] Want-list / request form → WantListRequest
+- [ ] Reuse `SocialLinks` in the footer + home page — `docs/features/social-links.md`
 
 ### Platform / tech debt
 - [ ] **Upgrade React 18.3.1 → 19** (own branch, don't rush). Next 16 targets React 19;
