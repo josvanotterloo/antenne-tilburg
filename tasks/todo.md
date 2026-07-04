@@ -11,9 +11,9 @@ IA: Content = {posts, events}; Settings = {hours, notices, subscribers, want-lis
 - [x] Notices — `docs/features/admin-notices.md`
 - [x] Opening hours — base weekly grid; `docs/features/admin-opening-hours.md`
       (holiday/adjusted overrides deferred)
-- [ ] Newsletter subscribers — view + CSV export (next)
-- [ ] Want-list requests — read-only admin view
-- [ ] Users — manage the two admin accounts / change password
+- [x] Newsletter subscribers — `docs/features/admin-subscribers.md`
+- [ ] Users — change password (current-pw verified) + change email (409 dup) (next)
+- ~~Want-list requests~~ — **dropped** (removed from plan)
 
 ## Backlog
 
