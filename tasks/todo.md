@@ -40,12 +40,13 @@ real admin UIs.
       ("The Pirate Signal") — `docs/features/public-blog.md`
 - [x] Stock listing — filterable by the managed lists + "Just In" (createdAt < 30d)
       — `docs/features/public-catalog-search.md`
-- [ ] Home "Just In" section + upcoming-events + visit teasers from the DB
+- [x] Home "Just In" (100 latest) + blog teaser + visit teaser — `docs/features/public-home.md`
 - [x] Blog index + `[slug]` post pages — `docs/features/public-blog.md`
-- [ ] Events index + `[slug]` event pages
-- [ ] Visit/Contact — live opening hours + map
-- [ ] About + FAQ real content
-- [ ] Newsletter signup form (name + email) → NewsletterSubscriber
+- [x] ~~Events index + `[slug]`~~ — events removed from the public site (admin-internal);
+      `docs/features/public-surface-trim.md`
+- [x] Visit/Contact — live opening hours + map — `docs/features/public-visit.md`
+- [x] About + FAQ real content — `docs/features/public-about.md`, `docs/features/public-faq.md`
+- [x] Newsletter signup form (name + email) → NewsletterSubscriber — `docs/features/public-newsletter.md`
 - [ ] Want-list / request form → WantListRequest
 
 ### Auth hardening
