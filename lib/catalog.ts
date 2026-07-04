@@ -174,3 +174,14 @@ export async function getCatalogPage(
     pageCount: pageCount(total),
   };
 }
+
+// The N most recent in-stock arrivals, newest first. Powers the home "Just In"
+// section (100 latest by createdAt, no pagination).
+export function getLatestProducts(limit = 100): Promise<CatalogProduct[]> {
+  return db.product.findMany({
+    where: { inStock: true },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: CATALOG_INCLUDE,
+  });
+}

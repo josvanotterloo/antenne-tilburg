@@ -18,6 +18,7 @@ import {
   pageCount,
   searchProductIds,
   getCatalogPage,
+  getLatestProducts,
   isJustIn,
   catalogPageNumbers,
 } from "@/lib/catalog";
@@ -220,5 +221,27 @@ describe("getCatalogPage", () => {
     await getCatalogPage({ onlyInStock: true });
 
     expect(db.$queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("getLatestProducts", () => {
+  it("queries in-stock products newest-first, limited to the given count", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    await getLatestProducts(100);
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { inStock: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      }),
+    );
+  });
+
+  it("defaults to 100 when no limit is given", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    await getLatestProducts();
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 100 }),
+    );
   });
 });
