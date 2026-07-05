@@ -54,7 +54,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
       document real credential handoff — **required before any deploy**
-- [ ] Server-side session re-check (getServerSession) on every admin mutation
+- [x] Server-side session re-check (getServerSession) on every admin mutation —
+      already implemented: `requireAdmin` guards all `/api/admin/*` handlers (incl.
+      managed lists via the `reference-crud` factory), `withAuth` middleware gates
+      admin pages; unit-tested (`lib/api-auth.test.ts`)
 
 ### SEO
 - [ ] Extend sitemap.ts with dynamic product/post URLs
@@ -71,8 +74,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-- [ ] Add a test runner + wire the `run-tests` skill; cover managed-list delete
-      guards, auth authorize(), and notice active-window logic first
+Done — Vitest runner + `run-tests` skill in place; 250 tests cover managed-list
+delete guards, `authorize()`, notice active-window logic, and the public/admin flows.
 
 ## Done
 
