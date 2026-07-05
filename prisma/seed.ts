@@ -1,15 +1,11 @@
 import { PrismaClient, Condition, PostStatus } from "@prisma/client";
 import { hash } from "bcrypt";
 
+import { resolveAdminSeedUsers } from "../lib/seed-users";
+
 const prisma = new PrismaClient();
 
 const SALT_ROUNDS = 12;
-
-// Placeholder credentials — ROTATE before deploy. Both admins have equal access.
-const ADMIN_USERS = [
-  { email: "shop@antenne-tilburg.nl", password: "changeme123" }, // shop owner
-  { email: "dev@antenne-tilburg.nl", password: "changeme123" }, // website builder
-];
 
 const LABELS = [
   "Vinyl Fanatiks",
@@ -116,6 +112,10 @@ const SAMPLE_POSTS = [
 ];
 
 async function main() {
+  // Admin credentials come from the environment — never hardcoded. Throws with a
+  // clear message if strong passwords aren't set (see admin-credentials.md).
+  const ADMIN_USERS = resolveAdminSeedUsers(process.env);
+
   // --- Admin users (idempotent on unique email) ---
   for (const { email, password } of ADMIN_USERS) {
     const passwordHash = await hash(password, SALT_ROUNDS);
