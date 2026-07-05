@@ -11,6 +11,8 @@ Stack: Next.js 14 (App Router, TypeScript) · Prisma + PostgreSQL · NextAuth
 ## Setup
 `npm install`, then `npm run dev` to start the dev server on http://localhost:3000.
 Copy `.env.example` to `.env` and set `DATABASE_URL` / `NEXTAUTH_SECRET` first.
+Seeding also requires `SEED_ADMIN_SHOP_PASSWORD` / `SEED_ADMIN_DEV_PASSWORD` (min 8
+chars) — admin passwords are never hardcoded; see `docs/instructions/admin-credentials.md`.
 Run `npm run prisma:migrate` and `npm run db:seed` to create and seed the database.
 
 ## Current Tasks
