@@ -1,9 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
 import { getLatestProducts, isJustIn, type CatalogProduct } from "@/lib/catalog";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  description:
+    "Antenne Recordshop — electronic-music vinyl and tape in Tilburg, inside Sam-Sam vintage. New releases, a deep second-hand section, independent Discogs stock, and the 100 latest arrivals.",
+};
 
 // The genre-static field — the heritage motif, a faint field of broadcast static
 // behind the wordmark (DESIGN.md §5). Texture only, aria-hidden.
