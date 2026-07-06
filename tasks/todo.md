@@ -44,6 +44,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Reuse `SocialLinks` in the home page (footer done — `docs/features/footer-redesign.md`)
 
 ### Platform / tech debt
+- [ ] Move blog/post uploads from `public/uploads` to Hetzner Object Storage (only the
+      `/api/admin/uploads` handler changes; the returned URL is the contract). Add image
+      deletion/GC (orphaned uploads currently accumulate). See `docs/features/blog-photos.md`.
 - [ ] **Upgrade React 18.3.1 → 19** (own branch, don't rush). Next 16 targets React 19;
       the current 18.3.1 pairing blocks RSC dedup patterns. Scope: bump `react` +
       `react-dom` to 19 and `@types/react(-dom)`; `@testing-library/react` 16 already
