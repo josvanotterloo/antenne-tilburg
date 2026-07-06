@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 
 import { getLatestProducts, isJustIn, type CatalogProduct } from "@/lib/catalog";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
+import SocialLinks from "@/components/SocialLinks";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -152,6 +153,14 @@ export default async function HomePage() {
         >
           Opening hours &amp; map →
         </Link>
+      </section>
+
+      {/* Follow us */}
+      <section className="space-y-3">
+        <h2 className="font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted">
+          Follow us
+        </h2>
+        <SocialLinks />
       </section>
     </div>
   );
