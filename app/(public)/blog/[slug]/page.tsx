@@ -7,6 +7,7 @@ import {
   postDateLabel,
   postExcerpt,
 } from "@/lib/blog";
+import { PostBody } from "@/components/PostBody";
 
 export const dynamic = "force-dynamic";
 
@@ -28,15 +29,6 @@ export async function generateMetadata({
     title: post.seoTitle ?? post.title,
     description: post.seoDescription ?? postExcerpt(post.body),
   };
-}
-
-// Plain-text body (admin textarea) → paragraphs split on blank lines. Rendered as
-// text, never HTML, so there's no injection surface.
-function paragraphs(body: string): string[] {
-  return body
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
 }
 
 export default async function BlogPostPage({
@@ -81,13 +73,7 @@ export default async function BlogPostPage({
         />
       )}
 
-      <div className="space-y-4 text-pretty text-ink">
-        {paragraphs(post.body).map((p, i) => (
-          <p key={i} className="whitespace-pre-line leading-relaxed">
-            {p}
-          </p>
-        ))}
-      </div>
+      <PostBody body={post.body} />
     </article>
   );
 }

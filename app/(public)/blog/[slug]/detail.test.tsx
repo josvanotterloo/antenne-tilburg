@@ -59,6 +59,16 @@ describe("/blog/[slug] detail", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders inline markdown images from the body", async () => {
+    vi.mocked(getPublishedPostBySlug).mockResolvedValue({
+      ...POST,
+      body: "Intro text.\n\n![a cat](/uploads/cat.png)\n\nMore text.",
+    } as never);
+    render(await call("fresh-techno-drop"));
+    const img = screen.getByRole("img", { name: "a cat" });
+    expect(img).toHaveAttribute("src", "/uploads/cat.png");
+  });
+
   it("404s when no published post matches the slug", async () => {
     vi.mocked(getPublishedPostBySlug).mockResolvedValue(null as never);
     await expect(call("draft-or-missing")).rejects.toThrow("NEXT_NOT_FOUND");
