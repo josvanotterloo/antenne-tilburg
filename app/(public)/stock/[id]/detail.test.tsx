@@ -56,6 +56,18 @@ describe("/stock/[id] detail", () => {
     expect(screen.getByText("Hypnotic dub-techno LP.")).toBeInTheDocument();
   });
 
+  it("links artist and label to filtered stock views", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    render(await call("p1"));
+    expect(screen.getAllByRole("link", { name: "Vril" })[0]).toHaveAttribute(
+      "href",
+      "/stock?artist=Vril",
+    );
+    expect(
+      screen.getAllByRole("link", { name: "Zulema Records" })[0],
+    ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
+  });
+
   it("404s when the product does not exist", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(null as never);
     await expect(call("missing")).rejects.toThrow("NEXT_NOT_FOUND");

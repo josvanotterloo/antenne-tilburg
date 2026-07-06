@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
-import { isJustIn } from "@/lib/catalog";
+import { isJustIn, stockArtistHref, stockLabelHref } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +57,13 @@ export default async function ProductDetailPage({
 
       <header className="space-y-2">
         <h1 className="text-balance text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          {product.artist} — {product.title}
+          <Link
+            href={stockArtistHref(product.artist)}
+            className="transition-colors hover:text-signal"
+          >
+            {product.artist}
+          </Link>{" "}
+          — {product.title}
           {justIn && (
             <span className="ml-2 align-middle font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal">
               Just In
@@ -65,14 +71,26 @@ export default async function ProductDetailPage({
           )}
         </h1>
         <p className="font-mono text-sm text-ink-muted">
-          {product.label.name} · {product.genre.name} ·{" "}
-          {product.productType.name}
+          <Link
+            href={stockLabelHref(product.label.name)}
+            className="transition-colors hover:text-signal"
+          >
+            {product.label.name}
+          </Link>{" "}
+          · {product.genre.name} · {product.productType.name}
         </p>
       </header>
 
       <dl className="grid grid-cols-[8rem_1fr] border-t border-hairline text-sm">
         <dt className={`${dt} border-b border-hairline py-2`}>Artist</dt>
-        <dd className="border-b border-hairline py-2 text-ink">{product.artist}</dd>
+        <dd className="border-b border-hairline py-2">
+          <Link
+            href={stockArtistHref(product.artist)}
+            className="text-ink transition-colors hover:text-signal"
+          >
+            {product.artist}
+          </Link>
+        </dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Title</dt>
         <dd className="border-b border-hairline py-2 text-ink">{product.title}</dd>
         {product.catalogNumber && (
@@ -84,7 +102,14 @@ export default async function ProductDetailPage({
           </>
         )}
         <dt className={`${dt} border-b border-hairline py-2`}>Label</dt>
-        <dd className="border-b border-hairline py-2 text-ink">{product.label.name}</dd>
+        <dd className="border-b border-hairline py-2">
+          <Link
+            href={stockLabelHref(product.label.name)}
+            className="text-ink transition-colors hover:text-signal"
+          >
+            {product.label.name}
+          </Link>
+        </dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Genre</dt>
         <dd className="border-b border-hairline py-2 text-ink">{product.genre.name}</dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Type</dt>

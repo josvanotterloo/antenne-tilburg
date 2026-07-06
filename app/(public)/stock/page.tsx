@@ -7,6 +7,8 @@ import {
   catalogPageNumbers,
   getCatalogPage,
   isJustIn,
+  stockArtistHref,
+  stockLabelHref,
   type CatalogProduct,
 } from "@/lib/catalog";
 
@@ -59,12 +61,14 @@ export default async function StockPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  // Public visitors filter by Genre and Condition only. Label and product type are
-  // internal admin concerns and are not exposed here; any label/type/just_in query
-  // params are intentionally ignored.
+  // Sidebar filters are Genre + Condition only. Artist and label aren't sidebar
+  // facets — they arrive via the clickable artist/label links on products (and are
+  // shown as removable chips). Product type / just_in params are still ignored.
   const p = {
     q: one(sp.q),
+    artist: one(sp.artist),
     genre: one(sp.genre),
+    label: one(sp.label),
     condition: one(sp.condition) === "SECONDHAND" ? "SECONDHAND" : one(sp.condition) === "NEW" ? "NEW" : undefined,
     sort: one(sp.sort),
     order: one(sp.order),
@@ -72,7 +76,10 @@ export default async function StockPage({
     page: one(sp.page),
   } as Record<string, string | undefined>;
 
-  const genres = await db.genre.findMany({ orderBy: { name: "asc" } });
+  const [genres, labels] = await Promise.all([
+    db.genre.findMany({ orderBy: { name: "asc" } }),
+    db.label.findMany({ orderBy: { name: "asc" } }),
+  ]);
 
   const resolve = (
     list: { id: string; name: string }[],
@@ -85,7 +92,9 @@ export default async function StockPage({
 
   const result = await getCatalogPage({
     q: p.q,
+    artist: p.artist,
     genreId: resolve(genres, p.genre),
+    labelId: resolve(labels, p.label),
     condition: p.condition as "NEW" | "SECONDHAND" | undefined,
     onlyInStock: true,
     sort: p.sort,
@@ -95,7 +104,9 @@ export default async function StockPage({
 
   const activeChips = [
     p.q && { label: `“${p.q}”`, href: stockHref(p, { q: undefined }) },
+    p.artist && { label: p.artist, href: stockHref(p, { artist: undefined }) },
     p.genre && { label: p.genre, href: stockHref(p, { genre: undefined }) },
+    p.label && { label: p.label, href: stockHref(p, { label: undefined }) },
     p.condition && {
       label: p.condition,
       href: stockHref(p, { condition: undefined }),
@@ -117,8 +128,9 @@ export default async function StockPage({
           className="flex-1 border border-hairline bg-canvas px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-muted focus-visible:border-signal"
         />
         {/* preserve active filters when searching */}
-        {["genre", "condition", "sort", "order", "view"].map((k) =>
-          p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
+        {["artist", "genre", "label", "condition", "sort", "order", "view"].map(
+          (k) =>
+            p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
         )}
         <button
           type="submit"
@@ -275,54 +287,88 @@ function FilterGroup({
   );
 }
 
+// Rows carry three distinct links (artist → filter, title/price → detail, label →
+// filter) rather than one wrapping anchor, so no anchors are nested.
 function ProductRow({ product }: { product: CatalogProduct }) {
   return (
-    <Link
-      href={`/stock/${product.id}`}
-      className="group flex items-baseline justify-between gap-4 py-3 transition-colors hover:bg-surface"
-    >
+    <div className="flex items-baseline justify-between gap-4 py-3">
       <span className="min-w-0 flex-1">
-        <span className="font-medium text-ink transition-colors group-hover:text-signal">
+        <Link
+          href={stockArtistHref(product.artist)}
+          className="font-medium text-ink transition-colors hover:text-signal"
+        >
           {product.artist}
-        </span>
-        <span className="text-ink-muted"> — {product.title}</span>
+        </Link>
+        <span className="text-ink-muted"> — </span>
+        <Link
+          href={`/stock/${product.id}`}
+          className="text-ink-muted transition-colors hover:text-ink"
+        >
+          {product.title}
+        </Link>
         {isJustIn(product.createdAt) && <JustInBadge />}
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
-          {product.label.name} · {product.genre.name} ·{" "}
+          <Link
+            href={stockLabelHref(product.label.name)}
+            className="transition-colors hover:text-signal"
+          >
+            {product.label.name}
+          </Link>
+          {" · "}
+          {product.genre.name}
+          {" · "}
           {product.productType.name}
         </span>
       </span>
-      <span className="shrink-0 font-mono text-sm tabular-nums text-ink">
+      <Link
+        href={`/stock/${product.id}`}
+        className="shrink-0 font-mono text-sm tabular-nums text-ink transition-colors hover:text-signal"
+      >
         €{Number(product.price).toFixed(2)}
-      </span>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
 function ProductCard({ product }: { product: CatalogProduct }) {
   return (
-    <Link
-      href={`/stock/${product.id}`}
-      className="group block border border-hairline p-3 transition-colors hover:border-signal"
-    >
-      <div className="font-medium text-ink transition-colors group-hover:text-signal">
+    <div className="border border-hairline p-3">
+      <Link
+        href={stockArtistHref(product.artist)}
+        className="block font-medium text-ink transition-colors hover:text-signal"
+      >
         {product.artist}
-      </div>
-      <div className="text-sm text-ink-muted">{product.title}</div>
+      </Link>
+      <Link
+        href={`/stock/${product.id}`}
+        className="block text-sm text-ink-muted transition-colors hover:text-ink"
+      >
+        {product.title}
+      </Link>
       <div className="mt-1 font-mono text-xs text-ink-muted">
-        {product.label.name} · {product.genre.name}
+        <Link
+          href={stockLabelHref(product.label.name)}
+          className="transition-colors hover:text-signal"
+        >
+          {product.label.name}
+        </Link>
+        {" · "}
+        {product.genre.name}
       </div>
       <div className="mt-2 flex items-center justify-between">
-        <span className="font-mono text-sm tabular-nums text-ink">
+        <Link
+          href={`/stock/${product.id}`}
+          className="font-mono text-sm tabular-nums text-ink transition-colors hover:text-signal"
+        >
           €{Number(product.price).toFixed(2)}
-        </span>
+        </Link>
         {isJustIn(product.createdAt) && (
           <span className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
             Just In
           </span>
         )}
       </div>
-    </Link>
+    </div>
   );
 }
 

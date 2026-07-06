@@ -36,6 +36,12 @@ describe("buildCatalogWhere", () => {
     expect(buildCatalogWhere({})).toEqual({});
   });
 
+  it("filters by artist name, case-insensitively", () => {
+    expect(buildCatalogWhere({ artist: "Vril" })).toEqual({
+      artist: { equals: "Vril", mode: "insensitive" },
+    });
+  });
+
   it("maps scalar filters", () => {
     expect(
       buildCatalogWhere({

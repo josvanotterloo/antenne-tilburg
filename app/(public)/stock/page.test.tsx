@@ -110,12 +110,16 @@ describe("/stock public filter restrictions", () => {
     expect(screen.getByRole("link", { name: "Techno" })).toBeInTheDocument();
   });
 
-  it("ignores label, type and just_in query params", async () => {
+  it("honors artist and label params, still ignoring type and just_in", async () => {
     vi.mocked(db.genre.findMany).mockResolvedValue([
       { id: "g1", name: "Techno" },
     ] as never);
+    vi.mocked(db.label.findMany).mockResolvedValue([
+      { id: "l1", name: "Warp Records" },
+    ] as never);
     await StockPage({
       searchParams: Promise.resolve({
+        artist: "Vril",
         genre: "Techno",
         condition: "NEW",
         label: "Warp Records",
@@ -124,10 +128,22 @@ describe("/stock public filter restrictions", () => {
       }),
     });
     const arg = vi.mocked(getCatalogPage).mock.calls[0][0];
+    expect(arg.artist).toBe("Vril");
     expect(arg.genreId).toBe("g1");
+    expect(arg.labelId).toBe("l1");
     expect(arg.condition).toBe("NEW");
-    expect(arg.labelId).toBeUndefined();
     expect(arg.productTypeId).toBeUndefined();
     expect(arg.justIn).toBeFalsy();
+  });
+
+  it("links each product's artist and label to a filtered view", async () => {
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByRole("link", { name: "Vril" })).toHaveAttribute(
+      "href",
+      "/stock?artist=Vril",
+    );
+    expect(
+      screen.getByRole("link", { name: "Zulema Records" }),
+    ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
   });
 });

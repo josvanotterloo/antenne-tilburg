@@ -13,6 +13,8 @@ export type CatalogSort = "date" | "artist" | "label";
 export type SortOrder = "asc" | "desc";
 
 export interface CatalogFilters {
+  /** Exact artist name (case-insensitive) — powers the clickable artist link. */
+  artist?: string | null;
   genreId?: string | null;
   labelId?: string | null;
   productTypeId?: string | null;
@@ -29,6 +31,7 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
   if (f.onlyInStock) where.inStock = true;
   if (f.condition) where.condition = f.condition;
+  if (f.artist) where.artist = { equals: f.artist, mode: "insensitive" };
   if (f.genreId) where.genreId = f.genreId;
   if (f.labelId) where.labelId = f.labelId;
   if (f.productTypeId) where.productTypeId = f.productTypeId;
@@ -41,6 +44,13 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   if (f.ids) where.id = { in: f.ids };
   return where;
 }
+
+// Fresh /stock URLs filtering by a single artist or label — used by the clickable
+// artist/label links on the listing and detail pages.
+export const stockArtistHref = (artist: string) =>
+  `/stock?artist=${encodeURIComponent(artist)}`;
+export const stockLabelHref = (label: string) =>
+  `/stock?label=${encodeURIComponent(label)}`;
 
 export function buildCatalogOrderBy(
   sort?: string,
@@ -129,6 +139,7 @@ export type CatalogProduct = Prisma.ProductGetPayload<{
 
 export interface CatalogQuery {
   q?: string;
+  artist?: string | null;
   genreId?: string | null;
   labelId?: string | null;
   productTypeId?: string | null;
@@ -158,6 +169,7 @@ export async function getCatalogPage(
     : undefined;
 
   const where = buildCatalogWhere({
+    artist: query.artist,
     genreId: query.genreId,
     labelId: query.labelId,
     productTypeId: query.productTypeId,
