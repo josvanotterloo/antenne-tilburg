@@ -41,12 +41,15 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [x] ~~Want-list / request form~~ — dropped: removed the orphaned admin want-list page;
       no public form. `WantListRequest` model kept in the schema (harmless).
       `docs/features/remove-want-list.md`
-- [ ] Reuse `SocialLinks` in the home page (footer done — `docs/features/footer-redesign.md`)
+- [x] Reuse `SocialLinks` in the home page (footer + home done) —
+      `docs/features/home-social.md`
 
 ### Platform / tech debt
-- [ ] Move blog/post uploads from `public/uploads` to Hetzner Object Storage (only the
-      `/api/admin/uploads` handler changes; the returned URL is the contract). Add image
-      deletion/GC (orphaned uploads currently accumulate). See `docs/features/blog-photos.md`.
+- [ ] **Pre-scale task** — Move blog/post uploads from `public/uploads` to Hetzner Object
+      Storage (only the `/api/admin/uploads` handler changes; the returned URL is the
+      contract). Fine on a single instance for now; needed before scaling out / a real
+      deploy. Add image deletion/GC (orphaned uploads currently accumulate).
+      See `docs/features/blog-photos.md`.
 - [ ] **Upgrade React 18.3.1 → 19** (own branch, don't rush). Next 16 targets React 19;
       the current 18.3.1 pairing blocks RSC dedup patterns. Scope: bump `react` +
       `react-dom` to 19 and `@types/react(-dom)`; `@testing-library/react` 16 already
@@ -83,8 +86,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 250 tests cover managed-list
-delete guards, `authorize()`, notice active-window logic, and the public/admin flows.
+Done — Vitest runner + `run-tests` skill in place; 285 tests cover managed-list
+delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
+markdown rendering, sitemap, and the public/admin flows.
 
 ## Done
 
