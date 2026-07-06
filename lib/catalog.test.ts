@@ -172,6 +172,29 @@ describe("searchProductIds", () => {
     const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as { values: unknown[] };
     expect(arg.values).toContain("surgeon");
   });
+
+  it("combines full-text with trigram partial + similarity matching", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([] as never);
+    await searchProductIds("bio");
+    const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as unknown as {
+      text: string;
+      values: unknown[];
+    };
+    expect(arg.text).toContain("websearch_to_tsquery"); // full-word FTS
+    expect(arg.text.toUpperCase()).toContain("ILIKE"); // partial / substring
+    expect(arg.text).toMatch(/artist % \$/); // trigram similarity operator
+    expect(arg.values).toContain("bio"); // FTS + similarity term
+    expect(arg.values).toContain("%bio%"); // ILIKE partial pattern
+  });
+
+  it("escapes LIKE wildcards in the partial pattern", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([] as never);
+    await searchProductIds("50%_off");
+    const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as unknown as {
+      values: unknown[];
+    };
+    expect(arg.values).toContain("%50\\%\\_off%");
+  });
 });
 
 describe("getCatalogPage", () => {

@@ -94,13 +94,25 @@ export function isJustIn(
   return now - new Date(createdAt).getTime() < JUST_IN_DAYS * 86_400_000;
 }
 
-// Full-text search against the generated `search_vector` (GIN-indexed).
-// Returns matching product ids to inject into the Prisma where clause.
+// Catalog search: the generated `search_vector` (full-word FTS) OR'd with pg_trgm
+// trigram matching on artist/title — ILIKE for substrings/partials ("bio" and
+// "sphere" both match "Biosphere") and the `%` similarity operator for fuzzy/typo
+// matches. Returns matching product ids to inject into the Prisma where clause.
+// Trigram GIN indexes (migration `catalog_fuzzy_search`) keep it fast.
 export async function searchProductIds(q: string): Promise<string[]> {
   const term = q.trim();
   if (!term) return [];
+  // Escape LIKE wildcards so a user-typed % or _ is matched literally.
+  const like = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const rows = await db.$queryRaw<{ id: string }[]>(
-    Prisma.sql`SELECT id FROM "Product" WHERE search_vector @@ websearch_to_tsquery('english', ${term})`,
+    Prisma.sql`
+      SELECT id FROM "Product"
+      WHERE search_vector @@ websearch_to_tsquery('english', ${term})
+         OR artist ILIKE ${like}
+         OR title ILIKE ${like}
+         OR artist % ${term}
+         OR title % ${term}
+    `,
   );
   return rows.map((r) => r.id);
 }
