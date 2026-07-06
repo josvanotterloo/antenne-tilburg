@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+
+import { imageMarkdown, insertAt } from "@/lib/markdown";
 
 export interface PostFormValues {
   id: string;
@@ -29,6 +31,40 @@ export function PostForm({ post }: { post?: PostFormValues }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  async function handleImageUpload(
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    const form = new FormData();
+    form.set("file", file);
+    const res = await fetch("/api/admin/uploads", { method: "POST", body: form });
+    setUploading(false);
+    if (!res.ok) {
+      const b = (await res.json().catch(() => null)) as { error?: string } | null;
+      setError(b?.error ?? "Could not upload image");
+      return;
+    }
+    const { url } = (await res.json()) as { url: string };
+    const textarea = bodyRef.current;
+    const start = textarea?.selectionStart ?? body.length;
+    const end = textarea?.selectionEnd ?? body.length;
+    const snippet = imageMarkdown(url);
+    setBody((current) => insertAt(current, start, end, snippet));
+    // Restore focus and place the cursor after the inserted image.
+    requestAnimationFrame(() => {
+      if (!textarea) return;
+      const pos = start + snippet.length;
+      textarea.focus();
+      textarea.setSelectionRange(pos, pos);
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -80,14 +116,30 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Body">
+      <Field label="Body (markdown)">
         <textarea
+          ref={bodyRef}
           required
           rows={10}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-neutral-300 px-2 py-1 font-mono text-sm"
         />
+        <label className="mt-1 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+          <span className="cursor-pointer rounded border border-neutral-300 px-2 py-1 hover:bg-neutral-50">
+            {uploading ? "Uploading…" : "Insert image"}
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleImageUpload}
+            disabled={uploading}
+            className="sr-only"
+          />
+          <span className="text-xs text-neutral-400">
+            JPG/PNG/WebP/GIF · max 5 MB · inserted at the cursor
+          </span>
+        </label>
       </Field>
       <Field label="Cover image URL">
         <input
