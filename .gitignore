@@ -18,3 +18,7 @@ next-env.d.ts
 
 # Claude Code local files (lesson: keep local permission files out of git)
 .claude/settings.local.json
+
+# Uploaded media (served from public/uploads; use object storage in prod)
+/public/uploads/*
+!/public/uploads/.gitkeep
