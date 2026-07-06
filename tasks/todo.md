@@ -65,9 +65,13 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       admin pages; unit-tested (`lib/api-auth.test.ts`)
 
 ### SEO
-- [ ] Extend sitemap.ts with dynamic product/post URLs
-- [ ] generateMetadata per entity with PageSeo fallbacks
-- [ ] Admin editor for per-page/product/post SEO metadata (PageSeo + entity seo fields)
+- [x] Dynamic sitemap.xml (static + published posts + in-stock products); robots.txt
+      verified — `docs/features/seo-sitemap.md`
+- [x] Per-entity generateMetadata on all public pages (posts use seoTitle/seoDescription;
+      products use description; home + static pages have metadata) —
+      `docs/features/seo-sitemap.md`. PageSeo-table overrides still pending (below).
+- [ ] Admin editor for per-page/product/post SEO metadata (PageSeo + entity seo fields),
+      and wire PageSeo fallbacks into the static pages' metadata
 
 ### Social cross-posting (later phase — see plan §Social cross-posting)
 - [ ] Meta Graph API publish hook on post publish (Facebook Page + Instagram)
