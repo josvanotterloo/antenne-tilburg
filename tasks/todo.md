@@ -41,8 +41,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [x] ~~Want-list / request form~~ — dropped: removed the orphaned admin want-list page;
       no public form. `WantListRequest` model kept in the schema (harmless).
       `docs/features/remove-want-list.md`
-- [x] Reuse `SocialLinks` in the home page (footer + home done) —
-      `docs/features/home-social.md`
+- [x] `SocialLinks` lives in the site footer (every page). Added to the home page then
+      removed as redundant with the footer — `docs/features/footer-redesign.md`
 
 ### Platform / tech debt
 - [ ] **Pre-scale task** — Move blog/post uploads from `public/uploads` to Hetzner Object

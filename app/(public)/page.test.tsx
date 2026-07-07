@@ -95,12 +95,4 @@ describe("home page", () => {
     render(await HomePage());
     expect(hrefs()).toContain("/stock");
   });
-
-  it("links out to the socials", async () => {
-    render(await HomePage());
-    expect(screen.getByRole("link", { name: /facebook/i })).toHaveAttribute(
-      "href",
-      "https://www.facebook.com/antennerecordshop/",
-    );
-  });
 });
