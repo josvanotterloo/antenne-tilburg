@@ -25,6 +25,13 @@ describe("renderNewsletterEmail", () => {
     expect(html.toLowerCase()).toContain("#6b7dc9");
   });
 
+  it("emits a well-formed font-family (fonts single-quoted, not breaking the style attr)", () => {
+    // Double-quoted font names inside a double-quoted style="" attribute would
+    // terminate the attribute early and drop the font-family (→ serif fallback).
+    expect(html).toContain("'Segoe UI'");
+    expect(html).not.toContain('"Segoe UI"');
+  });
+
   it("includes the personalised unsubscribe link", () => {
     expect(html).toContain(
       "https://antenne.test/api/newsletter/unsubscribe?token=abc",

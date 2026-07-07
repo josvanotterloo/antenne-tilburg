@@ -7,8 +7,10 @@ export const EMAIL = {
   text: "#ffffff",
   muted: "#9BA1AC",
   accent: "#6B7DC9",
-  mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
-  sans: 'ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  // Font names are single-quoted so the stacks stay valid when interpolated raw
+  // into a double-quoted style="" attribute (double quotes would break the attr).
+  mono: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
+  sans: "ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 } as const;
 
 // Escape a plain string for safe interpolation into HTML markup.
