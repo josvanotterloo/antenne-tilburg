@@ -3,11 +3,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Prisma } from "@prisma/client";
 
 vi.mock("@/lib/db", () => ({
-  db: { newsletterSubscriber: { create: vi.fn() } },
+  db: {
+    newsletterSubscriber: { create: vi.fn(), delete: vi.fn() },
+  },
 }));
+vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
 
 import { POST } from "@/app/api/newsletter/route";
 import { db } from "@/lib/db";
+import { sendEmail } from "@/lib/email/send";
 
 const post = (body: unknown) =>
   POST(
@@ -17,43 +21,61 @@ const post = (body: unknown) =>
     }),
   );
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(db.newsletterSubscriber.create).mockResolvedValue({
+    id: "sub_1",
+  } as never);
+  vi.mocked(db.newsletterSubscriber.delete).mockResolvedValue({} as never);
+  vi.mocked(sendEmail).mockResolvedValue(undefined);
+});
 
-describe("POST /api/newsletter", () => {
-  it("400s on invalid input and does not touch the DB", async () => {
+describe("POST /api/newsletter (double opt-in)", () => {
+  it("400s on invalid input and neither writes nor emails", async () => {
     const res = await post({ name: "", email: "nope" });
     expect(res.status).toBe(400);
     expect(db.newsletterSubscriber.create).not.toHaveBeenCalled();
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("creates a subscriber (normalised) and returns 201", async () => {
-    vi.mocked(db.newsletterSubscriber.create).mockResolvedValue({} as never);
+  it("creates a PENDING subscriber with a token and emails a confirm link", async () => {
     const res = await post({ name: "  Jos ", email: "JOS@X.com" });
     expect(res.status).toBe(201);
+
     expect(db.newsletterSubscriber.create).toHaveBeenCalledWith({
-      data: { name: "Jos", email: "jos@x.com" },
+      data: {
+        name: "Jos",
+        email: "jos@x.com",
+        status: "PENDING",
+        confirmToken: expect.stringMatching(/^[0-9a-f]{64}$/),
+      },
     });
+
+    expect(sendEmail).toHaveBeenCalledTimes(1);
+    const arg = vi.mocked(sendEmail).mock.calls[0][0];
+    expect(arg.to).toBe("jos@x.com");
+    expect(arg.html).toContain("/api/newsletter/confirm?token=");
   });
 
-  it("treats a duplicate email as already subscribed, not an error", async () => {
-    const dup = new Prisma.PrismaClientKnownRequestError("dup", {
-      code: "P2002",
-      clientVersion: "x",
-    });
-    vi.mocked(db.newsletterSubscriber.create).mockRejectedValue(dup as never);
-    const res = await post({ name: "Jos", email: "jos@x.com" });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({
-      ok: true,
-      alreadySubscribed: true,
-    });
-  });
-
-  it("500s on an unexpected DB error", async () => {
+  it("treats a duplicate email as already subscribed, without emailing", async () => {
     vi.mocked(db.newsletterSubscriber.create).mockRejectedValue(
-      new Error("boom") as never,
+      new Prisma.PrismaClientKnownRequestError("dup", {
+        code: "P2002",
+        clientVersion: "x",
+      }) as never,
     );
     const res = await post({ name: "Jos", email: "jos@x.com" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, alreadySubscribed: true });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("rolls back the row and 500s if the confirmation email fails", async () => {
+    vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));
+    const res = await post({ name: "Jos", email: "jos@x.com" });
     expect(res.status).toBe(500);
+    expect(db.newsletterSubscriber.delete).toHaveBeenCalledWith({
+      where: { id: "sub_1" },
+    });
   });
 });

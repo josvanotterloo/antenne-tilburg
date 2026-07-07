@@ -47,8 +47,8 @@ export default function NewsletterForm() {
         role="status"
         className="border border-hairline bg-surface px-4 py-6 font-mono text-sm text-ink"
       >
-        Thanks — you&rsquo;re on the list. We&rsquo;ll be in touch when something
-        good lands.
+        Almost there — check your email to confirm your subscription. The link is
+        valid for 48 hours.
       </p>
     );
   }

@@ -36,7 +36,7 @@ describe("NewsletterForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /sign up|subscribe/i }));
 
     expect(
-      await screen.findByText(/thanks|on the list|subscribed/i),
+      await screen.findByText(/check your email to confirm/i),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/newsletter",

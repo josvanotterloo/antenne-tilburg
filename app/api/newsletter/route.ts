@@ -3,18 +3,28 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { parseNewsletterInput } from "@/lib/newsletter-input";
+import { newToken } from "@/lib/token";
+import { sendEmail } from "@/lib/email/send";
+import { renderConfirmEmail } from "@/lib/email/confirm";
 
-// Public newsletter signup. No auth: anyone may subscribe with a name + email.
+const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+
+// Public newsletter signup (double opt-in). No auth: anyone may subscribe with a
+// name + email, but they are created PENDING and must confirm via emailed link.
 export async function POST(req: Request) {
   const parsed = parseNewsletterInput(await req.json().catch(() => null));
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
+  const confirmToken = newToken();
+  let subscriber: { id: string };
   try {
-    await db.newsletterSubscriber.create({ data: parsed.data });
+    subscriber = await db.newsletterSubscriber.create({
+      data: { ...parsed.data, status: "PENDING", confirmToken },
+    });
   } catch (error) {
-    // Duplicate email (unique constraint) → treat as success. This keeps signup
+    // Duplicate email (unique constraint) → treat as success. Keeps signup
     // idempotent and avoids leaking whether an address is already subscribed.
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -25,6 +35,26 @@ export async function POST(req: Request) {
     console.error("newsletter subscribe failed", error);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
+      { status: 500 },
+    );
+  }
+
+  // Send the confirmation email. If it fails, roll back the row so a retry starts
+  // clean (an orphaned PENDING row would collide on retry and never resend).
+  try {
+    const confirmUrl = `${baseUrl}/api/newsletter/confirm?token=${confirmToken}`;
+    await sendEmail({
+      to: parsed.data.email,
+      subject: "Confirm your Antenne Tilburg subscription",
+      html: renderConfirmEmail({ confirmUrl }),
+    });
+  } catch (error) {
+    console.error("newsletter confirm email failed", error);
+    await db.newsletterSubscriber
+      .delete({ where: { id: subscriber.id } })
+      .catch(() => {});
+    return NextResponse.json(
+      { error: "Could not send the confirmation email. Please try again." },
       { status: 500 },
     );
   }
