@@ -154,11 +154,20 @@ model PageSeo {
   seoDescription String?
 }
 
+enum SubscriberStatus {
+  PENDING
+  CONFIRMED
+}
+
 model NewsletterSubscriber {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id           String           @id @default(cuid())
+  name         String
+  email        String           @unique
+  status       SubscriberStatus @default(PENDING)
+  // Generated at signup for the confirm link; retained after confirmation so it
+  // doubles as the one-click unsubscribe token.
+  confirmToken String           @unique
+  createdAt    DateTime         @default(now())
 }
 
 // Public "looking for" requests — feeds sourcing decisions.
