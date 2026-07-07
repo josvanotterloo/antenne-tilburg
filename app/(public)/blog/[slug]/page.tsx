@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -11,11 +12,9 @@ import { PostBody } from "@/components/PostBody";
 
 export const dynamic = "force-dynamic";
 
-// NOTE: generateMetadata and the page each query the post, so a /blog/[slug] render
-// issues two identical slug lookups. The clean dedup is React.cache(), but that's a
-// React 19 API and this project is on React 18.3.1 — so it's left as-is (a cheap,
-// indexed unique lookup), matching the same decision in /stock/[id].
-const getPost = getPublishedPostBySlug;
+// generateMetadata and the page both need the post; React.cache collapses their two
+// identical slug lookups into a single query per request.
+const getPost = cache(getPublishedPostBySlug);
 
 export async function generateMetadata({
   params,

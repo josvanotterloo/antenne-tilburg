@@ -1,3 +1,4 @@
+import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -7,12 +8,14 @@ import { isJustIn, stockArtistHref, stockLabelHref } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
-function getProduct(id: string) {
-  return db.product.findUnique({
+// generateMetadata and the page both fetch the product; React.cache dedupes the two
+// identical lookups into one query per request.
+const getProduct = cache((id: string) =>
+  db.product.findUnique({
     where: { id },
     include: { label: true, genre: true, productType: true },
-  });
-}
+  }),
+);
 
 export async function generateMetadata({
   params,
