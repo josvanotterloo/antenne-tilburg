@@ -38,6 +38,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [x] Visit/Contact — live opening hours + map — `docs/features/public-visit.md`
 - [x] About + FAQ real content — `docs/features/public-about.md`, `docs/features/public-faq.md`
 - [x] Newsletter signup form (name + email) → NewsletterSubscriber — `docs/features/public-newsletter.md`
+- [x] Newsletter sending — double opt-in, admin composer, Resend send to confirmed
+      subscribers, one-click unsubscribe — `docs/features/newsletter-sending.md`
 - [x] ~~Want-list / request form~~ — dropped: removed the orphaned admin want-list page;
       no public form. `WantListRequest` model kept in the schema (harmless).
       `docs/features/remove-want-list.md`
