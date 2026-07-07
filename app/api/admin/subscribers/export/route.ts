@@ -9,7 +9,9 @@ export async function GET() {
   const denied = await requireAdmin();
   if (denied) return denied;
 
+  // Export the real mailing list: confirmed (opted-in) subscribers only.
   const subscribers = await db.newsletterSubscriber.findMany({
+    where: { status: "CONFIRMED" },
     orderBy: { createdAt: "desc" },
   });
 

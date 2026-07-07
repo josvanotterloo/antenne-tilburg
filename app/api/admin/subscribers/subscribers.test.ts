@@ -33,6 +33,9 @@ describe("GET /api/admin/subscribers/export", () => {
     const res = await GET();
     const body = await res.text();
     expect(res.status).toBe(200);
+    expect(sub.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: "CONFIRMED" } }),
+    );
     expect(res.headers.get("content-type")).toMatch(/text\/csv/);
     expect(res.headers.get("content-disposition")).toMatch(/attachment/);
     expect(body).toContain("Name,Email,Signed up");

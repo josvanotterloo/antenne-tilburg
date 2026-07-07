@@ -25,6 +25,34 @@ describe("/admin/settings/subscribers", () => {
     expect(link).toHaveAttribute("href", "/api/admin/subscribers/export");
   });
 
+  it("shows a status badge per row and counts only confirmed", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        name: "Ada",
+        email: "ada@x.com",
+        status: "CONFIRMED",
+        createdAt: new Date(),
+      },
+      {
+        id: "s2",
+        name: "Bo",
+        email: "bo@x.com",
+        status: "PENDING",
+        createdAt: new Date(),
+      },
+    ] as never);
+    render(await AdminSubscribersPage());
+    // Both rows render...
+    expect(screen.getByText("Ada")).toBeInTheDocument();
+    expect(screen.getByText("Bo")).toBeInTheDocument();
+    // ...each with a status badge...
+    expect(screen.getByText(/^confirmed$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^pending$/i)).toBeInTheDocument();
+    // ...but the count reflects confirmed only.
+    expect(screen.getByText(/1 confirmed subscriber/i)).toBeInTheDocument();
+  });
+
   it("hides the export link and shows an empty state with no subscribers", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([] as never);
     render(await AdminSubscribersPage());
