@@ -52,9 +52,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       See `docs/features/blog-photos.md`.
 - [x] **Upgraded React 18.3.1 → 19.** No client-component changes were needed;
       `tsc` + full test suite + `next build` all green. Deduped the `/blog/[slug]` and
-      `/stock/[id]` double queries with `React.cache()`. `next-auth` v4 runs on 19 (its
-      `react ^18` peer is a warning only — a future `next-auth` v5 bump would clear it).
-      `docs/features/react-19-upgrade.md`
+      `/stock/[id]` double queries with `React.cache()`. `docs/features/react-19-upgrade.md`
+- [x] **Migrated next-auth v4 → v5 (Auth.js)** — clears the `react ^18` peer warning;
+      split Edge-safe config for the middleware. `docs/features/next-auth-v5.md`
 
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
