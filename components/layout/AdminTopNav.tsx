@@ -48,7 +48,7 @@ export function AdminTopNav() {
 
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          onClick={() => signOut({ redirectTo: "/admin/login" })}
           className="ml-auto rounded px-3 py-1.5 text-sm text-neutral-400 hover:text-white"
         >
           Sign out

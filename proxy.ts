@@ -1,11 +1,14 @@
-import { withAuth } from "next-auth/middleware";
+import NextAuth from "next-auth";
 
-// Protect every /admin route except the login page itself. `withAuth` does not
-// read authOptions, so the sign-in page must be set here too — otherwise it
-// falls back to the default /api/auth/signin page.
-export default withAuth({
-  pages: { signIn: "/admin/login" },
-});
+import { authConfig } from "@/lib/auth.config";
+
+// Next 16 middleware. Uses the Edge-safe auth config (no DB) so Prisma isn't pulled
+// into the Edge runtime; the `authorized` callback redirects unauthenticated users
+// to the login page (pages.signIn). The matcher protects every /admin route except
+// the login page itself.
+const { auth } = NextAuth(authConfig);
+
+export default auth;
 
 export const config = {
   matcher: ["/admin", "/admin/((?!login).*)"],

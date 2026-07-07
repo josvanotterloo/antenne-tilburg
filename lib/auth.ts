@@ -1,38 +1,24 @@
-import type { NextAuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 
+import { authConfig } from "@/lib/auth.config";
 import { authorizeCredentials } from "@/lib/authorize";
 
-// Session-based auth for the two equal admin accounts. Credentials provider
-// verifies email + bcrypt password against the User table. JWT session strategy
-// keeps the setup adapter-free.
-export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/admin/login",
-  },
+// Full auth config (Node runtime): the Edge-safe base plus the Credentials provider,
+// which verifies email + bcrypt password against the User table via
+// authorizeCredentials. JWT session strategy keeps the setup adapter-free.
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
-    CredentialsProvider({
-      name: "Credentials",
+    Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      authorize: authorizeCredentials,
+      authorize: (credentials) =>
+        authorizeCredentials(
+          credentials as { email?: string; password?: string },
+        ),
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
-  },
-};
+});
