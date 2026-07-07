@@ -11,8 +11,9 @@ Replace the text wordmark in `SiteHeader` with the Antenne logo image
   graphic + address line on a white background; 413×296).
 - **`components/layout/SiteHeader.tsx`:** the home `Link` now wraps a plain
   `<img src="/logo.png" alt="Antenne Tilburg">` (alt carries the brand name the
-  old text wordmark provided). Constrained to `h-10` (40px) with `w-auto` to
-  preserve aspect ratio — a compact header logo, not a hero image.
+  old text wordmark provided). Constrained to `h-14` (56px) with `w-auto` to
+  preserve aspect ratio — a compact header logo, not a hero image. (Started at
+  40px; bumped to 56px for legibility of the wordmark.)
 
 ## Blend mode — why `invert mix-blend-screen`, not `mix-blend-multiply`
 The task asked for `mix-blend-multiply` to drop the white background. That works

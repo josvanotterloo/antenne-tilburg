@@ -25,7 +25,7 @@ export function SiteHeader() {
           <img
             src="/logo.png"
             alt="Antenne Tilburg"
-            className="h-10 w-auto invert mix-blend-screen"
+            className="h-14 w-auto invert mix-blend-screen"
           />
         </Link>
         <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.04em]">
