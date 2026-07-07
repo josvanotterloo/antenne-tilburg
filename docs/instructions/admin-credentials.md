@@ -18,6 +18,27 @@ can't ship by accident.
 > in your local `.env`. (They aren't added automatically — env files are outside the
 > assistant's write permissions.)
 
+## Newsletter email (Resend)
+
+Sending the newsletter and the double opt-in confirmation emails uses
+[Resend](https://resend.com).
+
+| Variable | Required | Notes |
+|---|---|---|
+| `RESEND_API_KEY` | to send | Resend API key. Without it, sends throw and no email goes out. |
+| `NEWSLETTER_FROM` | to send | Sender identity, e.g. `Antenne Tilburg <newsletter@antenne-tilburg.nl>`. The domain must be **verified in Resend** for delivery. |
+| `NEXTAUTH_URL` | in prod | Already used elsewhere; also the base for confirm/unsubscribe links in emails. Falls back to `http://localhost:3000` in dev. |
+
+Add these two lines to `.env.example` (names only) and set real values in `.env` /
+the deployment environment:
+
+```
+RESEND_API_KEY=
+NEWSLETTER_FROM=
+```
+
+Tests mock the sender, so the suite runs without either variable set.
+
 ## Seeding
 
 1. Generate strong, unique passwords, e.g. `openssl rand -base64 18`.
