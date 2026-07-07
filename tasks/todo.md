@@ -50,14 +50,11 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       contract). Fine on a single instance for now; needed before scaling out / a real
       deploy. Add image deletion/GC (orphaned uploads currently accumulate).
       See `docs/features/blog-photos.md`.
-- [ ] **Upgrade React 18.3.1 → 19** (own branch, don't rush). Next 16 targets React 19;
-      the current 18.3.1 pairing blocks RSC dedup patterns. Scope: bump `react` +
-      `react-dom` to 19 and `@types/react(-dom)`; `@testing-library/react` 16 already
-      supports 19; run full tests + `tsc` + `next build` and fix breakages (client
-      components, hydration, test env). **Then** swap the double queries in
-      `/blog/[slug]` and `/stock/[id]` to `React.cache()` (see the notes at those call
-      sites). Risk: touches every client component + the whole test suite — treat as a
-      deliberate migration, not a drive-by.
+- [x] **Upgraded React 18.3.1 → 19.** No client-component changes were needed;
+      `tsc` + full test suite + `next build` all green. Deduped the `/blog/[slug]` and
+      `/stock/[id]` double queries with `React.cache()`. `next-auth` v4 runs on 19 (its
+      `react ^18` peer is a warning only — a future `next-auth` v5 bump would clear it).
+      `docs/features/react-19-upgrade.md`
 
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
