@@ -20,11 +20,13 @@ export function SiteHeader() {
   return (
     <header className="border-b border-hairline bg-canvas">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-4">
-        <Link
-          href="/"
-          className="font-mono text-lg font-bold lowercase tracking-tight text-ink"
-        >
-          antenne <span className="text-ink-muted">tilburg</span>
+        <Link href="/" className="inline-flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="Antenne Tilburg"
+            className="h-10 w-auto invert mix-blend-screen"
+          />
         </Link>
         <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.04em]">
           {NAV.map((item) => {
