@@ -16,7 +16,7 @@ export interface ProductFormValues {
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
-  inStock: boolean;
+  quantity: number;
 }
 
 interface ProductFormProps {
@@ -58,7 +58,10 @@ export function ProductForm({
   );
   const [price, setPrice] = useState(product?.price ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
-  const [inStock, setInStock] = useState(product?.inStock ?? true);
+  // New products default to 1 (in stock); existing keep their quantity.
+  const [quantity, setQuantity] = useState(
+    product?.quantity != null ? String(product.quantity) : "1",
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -83,7 +86,7 @@ export function ProductForm({
           condition,
           price,
           description,
-          inStock,
+          quantity,
         }),
       },
     );
@@ -205,14 +208,20 @@ export function ProductForm({
         />
       </Field>
 
-      <label className="flex items-center gap-2 text-sm">
+      <Field label="Quantity in stock">
         <input
-          type="checkbox"
-          checked={inStock}
-          onChange={(e) => setInStock(e.target.checked)}
+          type="number"
+          min="0"
+          step="1"
+          required
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+          className="w-32 rounded border border-neutral-300 px-2 py-1 text-sm"
         />
-        In stock
-      </label>
+        <p className="text-xs text-neutral-500">
+          Sets availability automatically — 0 hides the product from the shop.
+        </p>
+      </Field>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 

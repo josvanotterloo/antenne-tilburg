@@ -41,7 +41,7 @@ export default async function EditProductPage({
           condition: product.condition,
           price: String(product.price),
           description: product.description,
-          inStock: product.inStock,
+          quantity: product.quantity,
         }}
       />
     </div>
