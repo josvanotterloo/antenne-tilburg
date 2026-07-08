@@ -57,8 +57,8 @@ unsubscribe links use `NEXTAUTH_URL`. Tests mock the sender.
 
 ## Known gaps (deliberate, MVP)
 - **No campaign history** — sends are fire-and-forget; no sent-log table.
-- **No rate limiting** on the public signup/confirm/unsubscribe endpoints
-  (consistent with the rest of the public API).
+- **Signup is IP rate-limited** (5/hour → 429; see `docs/features/security-hardening.md`).
+  Confirm/unsubscribe are token-gated and unthrottled.
 - **GET confirm/unsubscribe links** can be triggered by email link-scanners/
   prefetchers (inherent to one-click links). Acceptable for this shop; revisit with
   RFC 8058 `List-Unsubscribe-Post` if abuse appears.

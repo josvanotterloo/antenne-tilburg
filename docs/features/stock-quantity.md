@@ -44,6 +44,6 @@ every write, so public queries (which filter `inStock`) are unchanged.
   verified live; a manual glance after login is worth a moment.
 - **No stock history / audit** of sell-one events (YAGNI). If needed later, log
   decrements to a separate table.
-- **Concurrent sell-one** reads then writes without a transaction; two simultaneous
-  clicks could both read N and both write N−1. Fine for a single-admin shop; use a
-  transactional decrement if that changes.
+- **Sell-one is atomic** — a single `UPDATE ... GREATEST(0, quantity-1) ... RETURNING`
+  (see `docs/features/security-hardening.md`), so concurrent clicks can't lose a
+  decrement.
