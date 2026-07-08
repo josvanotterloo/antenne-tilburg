@@ -53,8 +53,9 @@ describe("authorizeCredentials", () => {
     expect(result).toBeNull();
   });
 
-  it("returns null when the user is not found", async () => {
+  it("still runs bcrypt compare when the user is not found (constant-time)", async () => {
     findUnique.mockResolvedValue(null);
+    mockCompare.mockResolvedValue(false as never);
 
     const result = await authorizeCredentials({
       email: "nobody@antenne-tilburg.nl",
@@ -62,7 +63,10 @@ describe("authorizeCredentials", () => {
     });
 
     expect(result).toBeNull();
-    expect(mockCompare).not.toHaveBeenCalled();
+    // Compare must still run (against a dummy hash) so response timing can't be
+    // used to distinguish known from unknown emails.
+    expect(mockCompare).toHaveBeenCalledTimes(1);
+    expect(mockCompare.mock.calls[0][1]).toMatch(/^\$2[aby]\$/);
   });
 
   it("returns null and logs the error when the DB fails", async () => {
