@@ -4,6 +4,7 @@ import Link from "next/link";
 import { catalogPageNumbers, getCatalogPage } from "@/lib/catalog";
 
 import { DeleteProductButton } from "./DeleteProductButton";
+import { SellOneButton } from "./SellOneButton";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +96,7 @@ export default async function CatalogPage({
                 <th className="px-3 py-2 font-medium">Type</th>
                 <th className="px-3 py-2 font-medium">Condition</th>
                 <th className="px-3 py-2 text-right font-medium">Price</th>
-                <th className="px-3 py-2 text-center font-medium">In stock</th>
+                <th className="px-3 py-2 text-center font-medium">Qty</th>
                 <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
@@ -124,11 +125,23 @@ export default async function CatalogPage({
                   <td className="px-3 py-2 text-right tabular-nums">
                     €{Number(product.price).toFixed(2)}
                   </td>
-                  <td className="px-3 py-2 text-center">
-                    {product.inStock ? "✓" : "✗"}
+                  <td className="px-3 py-2 text-center tabular-nums">
+                    <span
+                      className={`text-base font-semibold ${
+                        product.quantity === 0
+                          ? "text-red-600"
+                          : "text-neutral-900"
+                      }`}
+                    >
+                      {product.quantity}
+                    </span>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex justify-end gap-3">
+                    <div className="flex items-center justify-end gap-3">
+                      <SellOneButton
+                        id={product.id}
+                        quantity={product.quantity}
+                      />
                       <Link
                         href={`/admin/catalog/${product.id}/edit`}
                         className="text-neutral-700 hover:underline"

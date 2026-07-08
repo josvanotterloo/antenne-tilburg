@@ -24,6 +24,7 @@ const PRODUCT = {
   catalogNumber: "ZR-001",
   price: "24.99",
   condition: "NEW",
+  quantity: 4,
   inStock: true,
   createdAt: new Date(),
   label: { id: "l1", name: "Zulema Records" },
@@ -49,6 +50,11 @@ describe("/admin/catalog", () => {
     render(ui);
     expect(screen.getByText("Vril")).toBeInTheDocument();
     expect(screen.getByText(/120/)).toBeInTheDocument();
+    // Quantity is shown, with a single-click "Sell one" action per row.
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /sell one/i }),
+    ).toBeInTheDocument();
   });
 
   it("passes ?q= through and shows all products (not in-stock only)", async () => {

@@ -65,6 +65,25 @@ export function ProductForm({
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selling, setSelling] = useState(false);
+
+  // Quick "sold one" on the edit page. Syncs the quantity input from the route's
+  // authoritative result so a later Save can't overwrite the decrement.
+  async function handleSellOne() {
+    if (!product) return;
+    setSelling(true);
+    setError(null);
+    const res = await fetch(`/api/admin/products/${product.id}/sell-one`, {
+      method: "POST",
+    });
+    setSelling(false);
+    if (!res.ok) {
+      setError("Could not update stock");
+      return;
+    }
+    const updated = (await res.json()) as { quantity: number };
+    setQuantity(String(updated.quantity));
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -221,6 +240,16 @@ export function ProductForm({
         <p className="text-xs text-neutral-500">
           Sets availability automatically — 0 hides the product from the shop.
         </p>
+        {product && (
+          <button
+            type="button"
+            onClick={handleSellOne}
+            disabled={selling || Number(quantity) <= 0}
+            className="mt-1 rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-40"
+          >
+            {selling ? "…" : "Sell one"}
+          </button>
+        )}
       </Field>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
