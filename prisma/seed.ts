@@ -49,7 +49,7 @@ const SAMPLE_PRODUCTS = [
     genre: "Techno",
     condition: Condition.NEW,
     price: "24.99",
-    inStock: true,
+    quantity: 3,
     description: "Hypnotic dub-techno LP — brand new, still sealed.",
   },
   {
@@ -60,7 +60,7 @@ const SAMPLE_PRODUCTS = [
     genre: "House",
     condition: Condition.SECONDHAND,
     price: "8.99",
-    inStock: true,
+    quantity: 2,
     description: "Classic Chicago house 12\" — second-hand, plays clean (VG+).",
   },
   {
@@ -71,7 +71,7 @@ const SAMPLE_PRODUCTS = [
     genre: "Ambient",
     condition: Condition.NEW,
     price: "12.99",
-    inStock: true,
+    quantity: 1,
     description: "Arctic ambient on cassette — new stock.",
   },
 ];
@@ -165,7 +165,8 @@ async function main() {
         artist: product.artist,
         condition: product.condition,
         price: product.price,
-        inStock: product.inStock,
+        quantity: product.quantity,
+        inStock: product.quantity > 0, // derived, kept in sync
         description: product.description,
         label: { connect: { name: product.label } },
         productType: { connect: { name: product.productType } },
