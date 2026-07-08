@@ -52,12 +52,19 @@ export function parseProductInput(body: unknown): ParseResult {
     return { ok: false, error: "Price must be a non-negative number" };
   }
 
-  // Quantity drives stock. Absent/blank → 0; otherwise a non-negative integer.
-  const rawQty = b.quantity;
-  const quantity =
-    rawQty === undefined || rawQty === null || rawQty === ""
-      ? 0
-      : Number(typeof rawQty === "string" ? rawQty.trim() : rawQty);
+  // Quantity drives stock. Absent/blank → 0; a plain number, or a string of only
+  // digits (no signs, decimals, hex, or exponents). Rejects loose coercions.
+  const rawQty = typeof b.quantity === "string" ? b.quantity.trim() : b.quantity;
+  let quantity: number;
+  if (rawQty === undefined || rawQty === null || rawQty === "") {
+    quantity = 0;
+  } else if (typeof rawQty === "number") {
+    quantity = rawQty;
+  } else if (typeof rawQty === "string" && /^\d+$/.test(rawQty)) {
+    quantity = Number(rawQty);
+  } else {
+    return { ok: false, error: "Quantity must be a non-negative whole number" };
+  }
   if (!Number.isInteger(quantity) || quantity < 0) {
     return { ok: false, error: "Quantity must be a non-negative whole number" };
   }

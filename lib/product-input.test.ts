@@ -60,9 +60,13 @@ describe("parseProductInput", () => {
   });
 
   it.each([
-    ["negative", -1],
-    ["non-integer", 1.5],
-    ["non-numeric", "abc"],
+    ["negative number", -1],
+    ["non-integer number", 1.5],
+    ["non-numeric string", "abc"],
+    ["float string", "1.5"],
+    ["hex string", "0x10"],
+    ["exponent string", "1e3"],
+    ["boolean", true],
   ])("rejects %s quantity", (_label, quantity) => {
     expect(parseProductInput({ ...VALID, quantity }).ok).toBe(false);
   });
