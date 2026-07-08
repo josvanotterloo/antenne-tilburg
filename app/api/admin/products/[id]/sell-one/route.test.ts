@@ -4,15 +4,13 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@/lib/db", () => ({
-  db: { product: { findUnique: vi.fn(), update: vi.fn() } },
-}));
+vi.mock("@/lib/db", () => ({ db: { $queryRaw: vi.fn() } }));
 
 import { POST } from "@/app/api/admin/products/[id]/sell-one/route";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-auth";
 
-const product = db.product as unknown as { findUnique: Mock; update: Mock };
+const queryRaw = db.$queryRaw as unknown as Mock;
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const req = () => new Request("http://test", { method: "POST" });
@@ -20,49 +18,30 @@ const req = () => new Request("http://test", { method: "POST" });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
-  product.update.mockResolvedValue({});
 });
 
 describe("POST /api/admin/products/[id]/sell-one", () => {
-  it("decrements quantity and keeps inStock in sync", async () => {
-    product.findUnique.mockResolvedValue({ quantity: 3 });
+  it("atomically decrements and returns the updated product", async () => {
+    queryRaw.mockResolvedValue([{ id: "p1", quantity: 2, inStock: true }]);
     const res = await POST(req(), ctx("p1"));
     expect(res.status).toBe(200);
-    expect(product.update).toHaveBeenCalledWith({
-      where: { id: "p1" },
-      data: { quantity: 2, inStock: true },
-    });
+    expect(await res.json()).toMatchObject({ quantity: 2, inStock: true });
+    // Single atomic statement — no separate read then write.
+    expect(queryRaw).toHaveBeenCalledTimes(1);
   });
 
-  it("sets inStock false when the last unit is sold", async () => {
-    product.findUnique.mockResolvedValue({ quantity: 1 });
-    await POST(req(), ctx("p1"));
-    expect(product.update).toHaveBeenCalledWith({
-      where: { id: "p1" },
-      data: { quantity: 0, inStock: false },
-    });
-  });
-
-  it("is a no-op at 0 (stays 0, out of stock)", async () => {
-    product.findUnique.mockResolvedValue({ quantity: 0 });
-    await POST(req(), ctx("p1"));
-    expect(product.update).toHaveBeenCalledWith({
-      where: { id: "p1" },
-      data: { quantity: 0, inStock: false },
-    });
-  });
-
-  it("404s an unknown product and does not update", async () => {
-    product.findUnique.mockResolvedValue(null);
+  it("404s an unknown product (no row updated)", async () => {
+    queryRaw.mockResolvedValue([]);
     const res = await POST(req(), ctx("nope"));
     expect(res.status).toBe(404);
-    expect(product.update).not.toHaveBeenCalled();
   });
 
-  it("returns the 401 from requireAdmin without touching the DB", async () => {
-    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+  it("returns the 401 from requireAdmin without querying", async () => {
+    mockRequireAdmin.mockResolvedValue(
+      new Response(null, { status: 401 }) as never,
+    );
     const res = await POST(req(), ctx("p1"));
     expect(res.status).toBe(401);
-    expect(product.findUnique).not.toHaveBeenCalled();
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 });
