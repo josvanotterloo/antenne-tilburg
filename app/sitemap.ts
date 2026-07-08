@@ -5,8 +5,7 @@ import { getPublishedPosts } from "@/lib/blog";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
-// Generated per request so it reflects current posts/stock. (Events are
-// admin-internal, not public.)
+// Generated per request so it reflects current posts/stock.
 export const dynamic = "force-dynamic";
 
 const STATIC_ROUTES = [

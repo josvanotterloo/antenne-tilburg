@@ -20,11 +20,6 @@ enum PostStatus {
   PUBLISHED
 }
 
-enum EventStatus {
-  UPCOMING
-  PAST
-}
-
 // Two equal admin accounts (shop owner + builder). No role tiers.
 model User {
   id           String   @id @default(cuid())
@@ -111,21 +106,6 @@ model Post {
   seoDescription String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
-}
-
-model Event {
-  id             String      @id @default(cuid())
-  title          String
-  slug           String      @unique
-  date           DateTime
-  description    String?
-  image          String?
-  location       String      @default("Antenne / Sam-Sam, Tilburg")
-  status         EventStatus @default(UPCOMING)
-  seoTitle       String?
-  seoDescription String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
 }
 
 // Site-wide banners. Multiple can be active at once. If startsAt/endsAt are set

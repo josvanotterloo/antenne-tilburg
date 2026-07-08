@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
-import { toDateTimeLocal } from "@/lib/event-input";
+import { toDateTimeLocal } from "@/lib/datetime";
 import { NoticeForm } from "@/components/admin/NoticeForm";
 
 export const dynamic = "force-dynamic";
