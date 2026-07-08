@@ -41,6 +41,7 @@ const ROW = {
   catalogNumber: "ZR-001",
   condition: "NEW",
   price: "24.99",
+  quantity: 2,
   inStock: true,
   label: { id: "l1", name: "Zulema Records" },
   genre: { id: "g1", name: "Techno" },
@@ -57,7 +58,7 @@ const validBody = {
   condition: "NEW",
   price: "24.99",
   description: null,
-  inStock: true,
+  quantity: 2,
 };
 
 function jsonReq(method: string, body: unknown) {
@@ -101,6 +102,8 @@ describe("POST /api/admin/products", () => {
         title: "Torus",
         condition: "NEW",
         price: "24.99",
+        quantity: 2,
+        inStock: true, // derived from quantity > 0
         label: { connect: { id: "l1" } },
         genre: { connect: { id: "g1" } },
         productType: { connect: { id: "t1" } },

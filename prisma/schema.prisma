@@ -78,6 +78,9 @@ model Product {
   price         Decimal     @db.Decimal(10, 2)
   description   String?
   coverImage    String?
+  quantity      Int         @default(0)
+  // Derived from quantity (> 0) and kept in sync on every write; public queries
+  // filter on it. See lib/product-input.ts (toProductData) and the sell-one route.
   inStock       Boolean     @default(true)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 
-import { parseProductInput } from "@/lib/product-input";
+import { parseProductInput, toProductData } from "@/lib/product-input";
 
 const VALID = {
   artist: "  Vril  ",
@@ -13,7 +13,7 @@ const VALID = {
   condition: "NEW",
   price: "24.99",
   description: "  hypnotic  ",
-  inStock: true,
+  quantity: 1,
 };
 
 describe("parseProductInput", () => {
@@ -31,27 +31,40 @@ describe("parseProductInput", () => {
       condition: "NEW",
       price: "24.99",
       description: "hypnotic", // trimmed
-      inStock: true,
+      quantity: 1,
     });
   });
 
-  it("defaults inStock to true and nullifies blank optionals", () => {
+  it("defaults quantity to 0 and nullifies blank optionals", () => {
     const result = parseProductInput({
       ...VALID,
       catalogNumber: "",
       description: "  ",
-      inStock: undefined,
+      quantity: undefined,
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data.catalogNumber).toBeNull();
     expect(result.data.description).toBeNull();
-    expect(result.data.inStock).toBe(true);
+    expect(result.data.quantity).toBe(0);
   });
 
-  it("respects inStock=false", () => {
-    const result = parseProductInput({ ...VALID, inStock: false });
-    expect(result.ok && result.data.inStock).toBe(false);
+  it("accepts quantity as a number or a numeric string", () => {
+    expect(
+      parseProductInput({ ...VALID, quantity: 5 }).ok &&
+        (parseProductInput({ ...VALID, quantity: 5 }) as { data: { quantity: number } }).data
+          .quantity,
+    ).toBe(5);
+    const asString = parseProductInput({ ...VALID, quantity: "3" });
+    expect(asString.ok && asString.data.quantity).toBe(3);
+  });
+
+  it.each([
+    ["negative", -1],
+    ["non-integer", 1.5],
+    ["non-numeric", "abc"],
+  ])("rejects %s quantity", (_label, quantity) => {
+    expect(parseProductInput({ ...VALID, quantity }).ok).toBe(false);
   });
 
   it.each([
@@ -79,5 +92,31 @@ describe("parseProductInput", () => {
   it("accepts a numeric price and stringifies it", () => {
     const result = parseProductInput({ ...VALID, price: 8.5 });
     expect(result.ok && result.data.price).toBe("8.5");
+  });
+});
+
+describe("toProductData — derives inStock from quantity", () => {
+  const base = {
+    artist: "Vril",
+    title: "Torus",
+    catalogNumber: null,
+    labelId: "l1",
+    genreId: "g1",
+    productTypeId: "t1",
+    condition: "NEW" as const,
+    price: "10",
+    description: null,
+  };
+
+  it("in stock when quantity > 0", () => {
+    const data = toProductData({ ...base, quantity: 3 });
+    expect(data.quantity).toBe(3);
+    expect(data.inStock).toBe(true);
+  });
+
+  it("out of stock when quantity is 0", () => {
+    const data = toProductData({ ...base, quantity: 0 });
+    expect(data.quantity).toBe(0);
+    expect(data.inStock).toBe(false);
   });
 });

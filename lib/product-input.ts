@@ -11,7 +11,7 @@ export interface ProductInput {
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
-  inStock: boolean;
+  quantity: number;
 }
 
 export type ParseResult =
@@ -52,6 +52,16 @@ export function parseProductInput(body: unknown): ParseResult {
     return { ok: false, error: "Price must be a non-negative number" };
   }
 
+  // Quantity drives stock. Absent/blank → 0; otherwise a non-negative integer.
+  const rawQty = b.quantity;
+  const quantity =
+    rawQty === undefined || rawQty === null || rawQty === ""
+      ? 0
+      : Number(typeof rawQty === "string" ? rawQty.trim() : rawQty);
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    return { ok: false, error: "Quantity must be a non-negative whole number" };
+  }
+
   return {
     ok: true,
     data: {
@@ -64,7 +74,7 @@ export function parseProductInput(body: unknown): ParseResult {
       condition: b.condition,
       price: String(price),
       description: str(b.description) || null,
-      inStock: typeof b.inStock === "boolean" ? b.inStock : true,
+      quantity,
     },
   };
 }
@@ -79,7 +89,9 @@ export function toProductData(data: ProductInput) {
     condition: data.condition,
     price: data.price,
     description: data.description,
-    inStock: data.inStock,
+    quantity: data.quantity,
+    // inStock is derived — kept in sync so public queries (which filter on it) work.
+    inStock: data.quantity > 0,
     label: { connect: { id: data.labelId } },
     genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },
