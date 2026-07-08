@@ -19,7 +19,8 @@ Apply karpathy-guidelines before writing any code:
 - Before merging:
   - All tests pass (run the `run-tests` skill)
   - Lint / architecture checks clean (if the project configures them)
-  - `/code-review` run
+  - `/code-review` has been run (mandatory — see the close-out checklist) and all
+    Medium+ findings are fixed
 - Merge strategy: fast-forward (`git merge feature/<name>`)
 - Delete the branch after merging.
 - Push the branch to the remote before merging if work spans multiple sessions.
@@ -34,7 +35,10 @@ boundaries — the file does.
 
 Every feature branch must complete these steps before the session ends:
 
-1. Run `/code-review` and fix all MEDIUM+ issues
+1. **Run `/code-review` — mandatory, every time, no exceptions.** Run it after the
+   tests pass and before merging (step 3). **All Medium+ findings must be fixed
+   before merging** — never merge with an open Medium or higher finding. (Lower-
+   severity findings are fixed at your discretion.)
 2. For frontend changes, do a visual consistency check: open the app and compare any
    states that must stay in sync (e.g. before/after an action, empty/filled, mobile/
    desktop) side by side before merging.
