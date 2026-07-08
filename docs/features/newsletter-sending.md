@@ -45,6 +45,11 @@ unsubscribe links use `NEXTAUTH_URL`. Tests mock the sender.
 - **26 new tests (310 total green):** token; email render (incl. a font-family
   regression); signup double opt-in; confirm; unsubscribe; send-input validator;
   send route; composer; subscriber badges/count; export filter. `tsc` + lint clean.
+- **Integration test** (`app/api/newsletter/newsletter-flow.integration.test.ts`):
+  runs the real signup → confirm → send → unsubscribe handlers against an in-memory
+  DB stand-in, stubbing only `sendEmail`; asserts token threading, status
+  transitions, the unsubscribe token in the sent email, and expired/invalid/
+  duplicate paths.
 - **Live visual check:** rendered the newsletter + confirm emails and drove the
   admin composer/subscriber list in-browser. This caught a real bug — double-quoted
   font names broke the `style` attribute and the email fell back to serif; fixed by
@@ -59,8 +64,8 @@ unsubscribe links use `NEXTAUTH_URL`. Tests mock the sender.
   RFC 8058 `List-Unsubscribe-Post` if abuse appears.
 - **Per-recipient markdown re-render** in the send loop — fine at shop scale; render
   the body once if the list grows large.
-- **Duplicate pending signup** does not resend the confirmation (returns
-  `alreadySubscribed`).
+- **Duplicate signup** returns the same `{ok:true}` 201 as a fresh signup (no
+  enumeration) and does not resend the confirmation email.
 
 ## Email rendering (string-based)
 `lib/email/render.ts` renders markdown to HTML as **plain strings** — no
