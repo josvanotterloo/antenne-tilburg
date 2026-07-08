@@ -24,13 +24,14 @@ export async function POST(req: Request) {
       data: { ...parsed.data, status: "PENDING", confirmToken },
     });
   } catch (error) {
-    // Duplicate email (unique constraint) → treat as success. Keeps signup
-    // idempotent and avoids leaking whether an address is already subscribed.
+    // Duplicate email (unique constraint) → return the *same* 201 as a fresh
+    // signup. Idempotent and non-enumerating: the response must not reveal whether
+    // the address was already subscribed.
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return NextResponse.json({ ok: true, alreadySubscribed: true });
+      return NextResponse.json({ ok: true }, { status: 201 });
     }
     console.error("newsletter subscribe failed", error);
     return NextResponse.json(

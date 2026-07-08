@@ -57,7 +57,7 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(arg.html).toContain("/api/newsletter/confirm?token=");
   });
 
-  it("treats a duplicate email as already subscribed, without emailing", async () => {
+  it("treats a duplicate email as a silent success (201, no enumeration), without emailing", async () => {
     vi.mocked(db.newsletterSubscriber.create).mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError("dup", {
         code: "P2002",
@@ -65,8 +65,9 @@ describe("POST /api/newsletter (double opt-in)", () => {
       }) as never,
     );
     const res = await post({ name: "Jos", email: "jos@x.com" });
-    expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ ok: true, alreadySubscribed: true });
+    // Same response as a fresh signup — must not reveal the address is known.
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true });
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
