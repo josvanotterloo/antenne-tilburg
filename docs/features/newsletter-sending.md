@@ -16,8 +16,9 @@ unsubscribe.
   reused as the unsubscribe token.
 - **`lib/token.ts`:** `newToken()` — 32 random bytes as hex.
 - **`lib/email/`:** `theme` (dark palette + inline-styled HTML shell), `render`
-  (markdown → email-safe HTML via react-markdown + `renderToStaticMarkup`, inline
-  styles), `confirm` (opt-in email), `send` (Resend wrapper). New dep: `resend`.
+  (`render.ts` — a small hand-rolled markdown → inline-styled-HTML **string**
+  renderer; see note below), `confirm` (opt-in email), `send` (Resend wrapper).
+  New dep: `resend`.
 - **Signup (`POST /api/newsletter`):** creates `PENDING` + token, emails a confirm
   link. If the email send fails, the row is rolled back so a retry starts clean.
   Duplicate email → `alreadySubscribed` (no enumeration). Form shows a
@@ -60,3 +61,17 @@ unsubscribe links use `NEXTAUTH_URL`. Tests mock the sender.
   the body once if the list grows large.
 - **Duplicate pending signup** does not resend the confirmation (returns
   `alreadySubscribed`).
+
+## Email rendering (string-based)
+`lib/email/render.ts` renders markdown to HTML as **plain strings** — no
+`react-dom/server` / `renderToStaticMarkup`, which isn't allowed in an App Router
+route handler (the send route imports the renderer, so it must build server-side).
+It covers the same markdown subset `PostBody` renders (headings `##`/`###`, `**bold**`,
+`*italic*`/`_italic_`, `` `code` ``, fenced ```` ``` ````, links, images, `-`/`1.`
+lists, `>` blockquotes, `---` rules) with inline styles, and escapes raw HTML so
+admin-authored markdown has no injection surface.
+
+- **Preview vs email:** the composer preview uses `PostBody` (react-markdown) while
+  the sent email uses this string renderer. They match for the common subset above;
+  edge cases react-markdown supports but this renderer doesn't (`__bold__`, `####+`,
+  nested lists) render literally in the email. Keep newsletter markdown to the subset.
