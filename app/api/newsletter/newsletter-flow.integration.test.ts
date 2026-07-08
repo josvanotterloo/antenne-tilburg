@@ -79,6 +79,7 @@ import { GET as confirm } from "@/app/api/newsletter/confirm/route";
 import { POST as sendNewsletter } from "@/app/api/admin/newsletter/send/route";
 import { GET as unsubscribe } from "@/app/api/newsletter/unsubscribe/route";
 import { sendEmail } from "@/lib/email/send";
+import { newsletterSignupLimiter } from "@/lib/rate-limit";
 
 const signupReq = (body: unknown) =>
   signup(
@@ -106,6 +107,7 @@ const only = () => [...store.values()][0];
 beforeEach(() => {
   store.clear();
   vi.clearAllMocks();
+  newsletterSignupLimiter.reset();
   vi.mocked(sendEmail).mockResolvedValue(undefined);
 });
 

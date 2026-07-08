@@ -6,6 +6,7 @@ import { parseNewsletterInput } from "@/lib/newsletter-input";
 import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
 import { renderConfirmEmail } from "@/lib/email/confirm";
+import { newsletterSignupLimiter } from "@/lib/rate-limit";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
@@ -15,6 +16,17 @@ export async function POST(req: Request) {
   const parsed = parseNewsletterInput(await req.json().catch(() => null));
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+
+  // Rate-limit by client IP: each signup sends a confirmation email, so an
+  // unthrottled flood is a spam / Resend-cost vector.
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!newsletterSignupLimiter.check(ip)) {
+    return NextResponse.json(
+      { error: "Too many signups from your network. Please try again later." },
+      { status: 429 },
+    );
   }
 
   const confirmToken = newToken();

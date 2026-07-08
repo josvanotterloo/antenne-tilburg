@@ -12,6 +12,7 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
 import { POST } from "@/app/api/newsletter/route";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email/send";
+import { newsletterSignupLimiter } from "@/lib/rate-limit";
 
 const post = (body: unknown) =>
   POST(
@@ -23,6 +24,7 @@ const post = (body: unknown) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  newsletterSignupLimiter.reset();
   vi.mocked(db.newsletterSubscriber.create).mockResolvedValue({
     id: "sub_1",
   } as never);
@@ -78,5 +80,23 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(db.newsletterSubscriber.delete).toHaveBeenCalledWith({
       where: { id: "sub_1" },
     });
+  });
+
+  it("rate-limits repeated signups from the same IP (429)", async () => {
+    const fromIp = (email: string) =>
+      POST(
+        new Request("http://localhost/api/newsletter", {
+          method: "POST",
+          headers: { "x-forwarded-for": "9.9.9.9" },
+          body: JSON.stringify({ name: "X", email }),
+        }),
+      );
+    // Five allowed within the window...
+    for (let i = 0; i < 5; i++) {
+      expect((await fromIp(`u${i}@x.com`)).status).toBe(201);
+    }
+    // ...the sixth is throttled and never touches the DB or the mailer.
+    const blocked = await fromIp("u5@x.com");
+    expect(blocked.status).toBe(429);
   });
 });
