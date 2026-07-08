@@ -20,8 +20,12 @@ function upload(file?: File) {
   );
 }
 
-const png = (bytes = 10) =>
-  new File([new Uint8Array(bytes)], "x.png", { type: "image/png" });
+const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const png = (bytes = 10) => {
+  const arr = new Uint8Array(Math.max(bytes, PNG_SIG.length));
+  arr.set(PNG_SIG); // real PNG magic bytes so the sniffer accepts it
+  return new File([arr], "x.png", { type: "image/png" });
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -46,6 +50,17 @@ describe("POST /api/admin/uploads", () => {
     const res = await upload(
       new File([new Uint8Array(4)], "x.pdf", { type: "application/pdf" }),
     );
+    expect(res.status).toBe(400);
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  it("400s when the bytes are not an image, even if the type claims image/png", async () => {
+    const evil = new File(
+      [new TextEncoder().encode("<script>alert(1)</script>")],
+      "x.png",
+      { type: "image/png" },
+    );
+    const res = await upload(evil);
     expect(res.status).toBe(400);
     expect(writeFile).not.toHaveBeenCalled();
   });

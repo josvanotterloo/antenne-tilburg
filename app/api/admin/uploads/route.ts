@@ -4,7 +4,7 @@ import { join } from "path";
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
-import { validateUpload } from "@/lib/upload-input";
+import { validateUpload, MAX_UPLOAD_BYTES } from "@/lib/upload-input";
 
 // Local storage under public/uploads for now. Swap for Hetzner Object Storage later
 // (only this handler changes; the returned URL stays the contract).
@@ -20,13 +20,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const check = validateUpload({ type: file.type, size: file.size });
+  // Guard size from metadata before reading the whole file into memory.
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json(
+      { error: "Image must be 5 MB or smaller" },
+      { status: 400 },
+    );
+  }
+
+  // Determine the type from the actual bytes, not the client-supplied MIME.
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const check = validateUpload({ size: file.size, bytes });
   if (!check.ok) {
     return NextResponse.json({ error: check.error }, { status: 400 });
   }
 
   const filename = `${randomUUID()}.${check.ext}`;
-  const bytes = Buffer.from(await file.arrayBuffer());
   await mkdir(UPLOAD_DIR, { recursive: true });
   await writeFile(join(UPLOAD_DIR, filename), bytes);
 
