@@ -5,9 +5,10 @@ Current work queue. Keep Active short — move items to Backlog if not in-flight
 ## Active
 
 ### Admin CRUD slices (each: TDD, own branch, full close-out)
-IA: Content = {posts, events}; Settings = {hours, notices, subscribers, users}.
+IA: Content = {posts, newsletter}; Settings = {hours, notices, subscribers, users}.
 - [x] Blog posts — `docs/features/admin-blog-posts.md`
-- [x] Events — `docs/features/admin-events.md`
+- [x] ~~Events~~ — **removed entirely** (2026-07-08); notices cover one-off
+      announcements. `docs/features/remove-events.md`
 - [x] Notices — `docs/features/admin-notices.md`
 - [x] Opening hours — base weekly grid; `docs/features/admin-opening-hours.md`
       (holiday/adjusted overrides deferred)
@@ -15,14 +16,14 @@ IA: Content = {posts, events}; Settings = {hours, notices, subscribers, users}.
 - [x] Users — `docs/features/admin-users.md`
 - ~~Want-list requests~~ — **dropped** (removed from plan)
 
-**Admin CRUD sequence complete** (blog posts, events, notices, opening hours,
+**Admin CRUD sequence complete** (blog posts, notices, opening hours,
 subscribers, users). Remaining admin sections: none — all managed entities have
 real admin UIs.
 
 ## Backlog
 
 ### Admin CRUD
-Complete — see the Active section above (managed lists, products, blog posts, events,
+Complete — see the Active section above (managed lists, products, blog posts,
 notices, opening hours, subscribers, users all have real admin UIs). Remaining nuance:
 adjusted/holiday opening-hours overrides are deferred (noted in Active).
 
@@ -33,8 +34,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       — `docs/features/public-catalog-search.md`
 - [x] Home "Just In" (100 latest) + blog teaser + visit teaser — `docs/features/public-home.md`
 - [x] Blog index + `[slug]` post pages — `docs/features/public-blog.md`
-- [x] ~~Events index + `[slug]`~~ — events removed from the public site (admin-internal);
-      `docs/features/public-surface-trim.md`
+- [x] ~~Events~~ — dropped from public (2026-07-04, `docs/features/public-surface-trim.md`),
+      then removed entirely (2026-07-08, `docs/features/remove-events.md`).
 - [x] Visit/Contact — live opening hours + map — `docs/features/public-visit.md`
 - [x] About + FAQ real content — `docs/features/public-about.md`, `docs/features/public-faq.md`
 - [x] Newsletter signup form (name + email) → NewsletterSubscriber — `docs/features/public-newsletter.md`
@@ -93,7 +94,7 @@ markdown rendering, sitemap, and the public/admin flows.
 
 - [x] Scaffolded Next.js 14 (App Router, TS) + Tailwind + Prisma + NextAuth
 - [x] Prisma schema for all entities (User, Label, Genre, ProductType, Product,
-      Post, Event, Notice, OpeningHours, PageSeo, NewsletterSubscriber,
+      Post, Notice, OpeningHours, PageSeo, NewsletterSubscriber,
       WantListRequest) + generated client
 - [x] NextAuth credentials auth (bcrypt, JWT sessions); `/admin/*` gated by
       middleware; seed with 2 admin users + reference data + opening hours
