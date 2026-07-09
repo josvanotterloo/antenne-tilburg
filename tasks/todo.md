@@ -66,8 +66,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       `docs/features/email-encryption-at-rest.md`. **Deploy note:** set
       `EMAIL_ENCRYPTION_KEY`, then run
       `npx tsx --env-file=.env scripts/encrypt-subscriber-emails.ts` once.
-- [ ] Remaining Medium findings: security headers, login rate limiting,
-      XFF-spoofable signup limiter → `feature/owasp-medium-fixes`
+- [x] Medium findings fixed: security headers, login rate limiting,
+      XFF-spoofable signup limiter — `docs/features/owasp-medium-fixes.md`
 - [ ] Contract migration after prod backfill: verify zero `emailHash IS NULL`
       rows, then `ALTER COLUMN "emailHash" SET NOT NULL` (closes the
       transitional nullable state for good)
@@ -99,7 +99,7 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 364 tests cover managed-list
+Done — Vitest runner + `run-tests` skill in place; 375 tests cover managed-list
 delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
 markdown rendering, sitemap, and the public/admin flows.
 

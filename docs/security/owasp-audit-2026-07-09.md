@@ -11,10 +11,10 @@ check, none unguarded). Admin pages gated by the `proxy.ts` matcher.
 
 | # | Finding | OWASP | Severity | Status |
 |---|---------|-------|----------|--------|
-| 1 | No security headers (CSP, frame-ancestors, nosniff, HSTS, Referrer-Policy) | A05 | **Medium** | Open → `feature/owasp-medium-fixes` |
-| 2 | No rate limiting / lockout on admin login (`/api/auth/callback/credentials`) | A07 | **Medium** | Open → `feature/owasp-medium-fixes` |
+| 1 | No security headers (CSP, frame-ancestors, nosniff, HSTS, Referrer-Policy) | A05 | **Medium** | **Fixed** — `docs/features/owasp-medium-fixes.md` |
+| 2 | No rate limiting / lockout on admin login (`/api/auth/callback/credentials`) | A07 | **Medium** | **Fixed** — `docs/features/owasp-medium-fixes.md` |
 | 3 | Subscriber PII (email) stored in plaintext | A02 | **Medium** | **Fixed** — `docs/features/email-encryption-at-rest.md` |
-| 4 | Newsletter signup rate limiter keys on the *leftmost* `x-forwarded-for` entry (client-spoofable → bypass → unbounded confirmation-email sends) | A04 | **Medium** | Open → `feature/owasp-medium-fixes` |
+| 4 | Newsletter signup rate limiter keys on the *leftmost* `x-forwarded-for` entry (client-spoofable → bypass → unbounded confirmation-email sends) | A04 | **Medium** | **Fixed** — `docs/features/owasp-medium-fixes.md` |
 | 5 | 30-day admin JWT sessions; no invalidation on password change | A05/A07 | Low | Open |
 | 6 | One-click unsubscribe deletes on GET — mail-scanner prefetch can unsubscribe users; no `List-Unsubscribe` header | A04 | Low | Open |
 | 7 | `NEXTAUTH_URL ?? "http://localhost:3000"` fallback in 5 prod paths (emails/sitemap/RSS emit localhost links if env unset) | A05 | Low | Open |
