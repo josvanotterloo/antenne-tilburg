@@ -23,7 +23,7 @@ const components: Components = {
       src={typeof src === "string" ? src : ""}
       alt={alt ?? ""}
       loading="lazy"
-      className="w-full border border-hairline"
+      className="mx-auto mb-8 block w-full max-w-[600px] border border-hairline"
     />
   ),
   h2: ({ children }) => (
