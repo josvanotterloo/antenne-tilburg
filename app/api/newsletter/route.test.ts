@@ -11,8 +11,12 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
 
 import { POST } from "@/app/api/newsletter/route";
 import { db } from "@/lib/db";
+import { decryptEmail, emailHash } from "@/lib/email-crypto";
 import { sendEmail } from "@/lib/email/send";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
+
+// Any valid 32-byte key — the route encrypts before storing.
+const TEST_KEY = "c".repeat(64);
 
 const post = (body: unknown) =>
   POST(
@@ -24,6 +28,7 @@ const post = (body: unknown) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("EMAIL_ENCRYPTION_KEY", TEST_KEY);
   newsletterSignupLimiter.reset();
   vi.mocked(db.newsletterSubscriber.create).mockResolvedValue({
     id: "sub_1",
@@ -40,19 +45,27 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("creates a PENDING subscriber with a token and emails a confirm link", async () => {
+  it("creates a PENDING subscriber with encrypted email + hash and emails a confirm link", async () => {
     const res = await post({ name: "  Jos ", email: "JOS@X.com" });
     expect(res.status).toBe(201);
 
     expect(db.newsletterSubscriber.create).toHaveBeenCalledWith({
       data: {
         name: "Jos",
-        email: "jos@x.com",
+        // Stored value is AES-256-GCM ciphertext, never the plaintext address.
+        email: expect.stringMatching(/^v1:/),
+        // Deterministic keyed hash backs the unique duplicate check.
+        emailHash: emailHash("jos@x.com"),
         status: "PENDING",
         confirmToken: expect.stringMatching(/^[0-9a-f]{64}$/),
       },
     });
+    const stored = vi.mocked(db.newsletterSubscriber.create).mock.calls[0][0]
+      .data as { email: string };
+    expect(stored.email).not.toContain("jos@x.com");
+    expect(decryptEmail(stored.email)).toBe("jos@x.com");
 
+    // The confirmation email still goes to the real (plaintext) address.
     expect(sendEmail).toHaveBeenCalledTimes(1);
     const arg = vi.mocked(sendEmail).mock.calls[0][0];
     expect(arg.to).toBe("jos@x.com");

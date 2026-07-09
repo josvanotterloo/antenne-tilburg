@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { decryptEmail } from "@/lib/email-crypto";
 import { parseNewsletterSendInput } from "@/lib/newsletter-send-input";
 import { sendEmail } from "@/lib/email/send";
 import { renderNewsletterEmail } from "@/lib/email/render";
@@ -30,7 +31,9 @@ export async function POST(req: Request) {
     const unsubscribeUrl = `${baseUrl}/api/newsletter/unsubscribe?token=${subscriber.confirmToken}`;
     try {
       await sendEmail({
-        to: subscriber.email,
+        // Addresses are stored encrypted (lib/email-crypto.ts); decrypt per
+        // recipient for delivery only.
+        to: decryptEmail(subscriber.email),
         subject: parsed.data.subject,
         html: renderNewsletterEmail({
           subject: parsed.data.subject,
@@ -40,7 +43,8 @@ export async function POST(req: Request) {
       });
       sent += 1;
     } catch (error) {
-      console.error("newsletter send failed for", subscriber.email, error);
+      // Log the id, not the address — emails are PII and must stay out of logs.
+      console.error("newsletter send failed for subscriber", subscriber.id, error);
       failed += 1;
     }
   }

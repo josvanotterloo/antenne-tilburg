@@ -10,7 +10,8 @@ import { Prisma } from "@prisma/client";
 type Row = {
   id: string;
   name: string;
-  email: string;
+  email: string; // AES-256-GCM ciphertext ("v1:...")
+  emailHash: string; // keyed hash — carries the unique constraint
   status: string;
   confirmToken: string;
   createdAt: Date;
@@ -25,7 +26,8 @@ vi.mock("@/lib/db", () => {
       newsletterSubscriber: {
         create: vi.fn(async ({ data }: { data: Omit<Row, "id" | "createdAt"> }) => {
           for (const s of store.values()) {
-            if (s.email === data.email) {
+            // Mirrors the real schema: the unique constraint lives on emailHash.
+            if (s.emailHash === data.emailHash) {
               throw new Prisma.PrismaClientKnownRequestError("dup", {
                 code: "P2002",
                 clientVersion: "test",
@@ -107,6 +109,7 @@ const only = () => [...store.values()][0];
 beforeEach(() => {
   store.clear();
   vi.clearAllMocks();
+  vi.stubEnv("EMAIL_ENCRYPTION_KEY", "d".repeat(64));
   newsletterSignupLimiter.reset();
   vi.mocked(sendEmail).mockResolvedValue(undefined);
 });
@@ -119,6 +122,9 @@ describe("newsletter flow (integration)", () => {
     const sub = only();
     expect(sub.status).toBe("PENDING");
     expect(sub.confirmToken).toMatch(/^[0-9a-f]{64}$/);
+    // At rest: ciphertext only, never the plaintext address.
+    expect(sub.email).toMatch(/^v1:/);
+    expect(sub.email).not.toContain("ada@x.com");
     expect(sendEmail).toHaveBeenCalledTimes(1); // confirmation email
     expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain(
       `/api/newsletter/confirm?token=${sub.confirmToken}`,

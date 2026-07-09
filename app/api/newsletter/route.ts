@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { emailHash, encryptEmail } from "@/lib/email-crypto";
 import { parseNewsletterInput } from "@/lib/newsletter-input";
 import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
@@ -32,13 +33,21 @@ export async function POST(req: Request) {
   const confirmToken = newToken();
   let subscriber: { id: string };
   try {
+    // Email is stored encrypted (AES-256-GCM); the keyed hash column carries
+    // the unique constraint for duplicate detection (see lib/email-crypto.ts).
     subscriber = await db.newsletterSubscriber.create({
-      data: { ...parsed.data, status: "PENDING", confirmToken },
+      data: {
+        name: parsed.data.name,
+        email: encryptEmail(parsed.data.email),
+        emailHash: emailHash(parsed.data.email),
+        status: "PENDING",
+        confirmToken,
+      },
     });
   } catch (error) {
-    // Duplicate email (unique constraint) → return the *same* 201 as a fresh
-    // signup. Idempotent and non-enumerating: the response must not reveal whether
-    // the address was already subscribed.
+    // Duplicate email (unique emailHash constraint) → return the *same* 201 as a
+    // fresh signup. Idempotent and non-enumerating: the response must not reveal
+    // whether the address was already subscribed.
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"

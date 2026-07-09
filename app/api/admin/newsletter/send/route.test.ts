@@ -11,6 +11,7 @@ vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
 
 import { POST } from "@/app/api/admin/newsletter/send/route";
 import { db } from "@/lib/db";
+import { encryptEmail } from "@/lib/email-crypto";
 import { sendEmail } from "@/lib/email/send";
 import { requireAdmin } from "@/lib/api-auth";
 
@@ -22,13 +23,17 @@ const post = (body: unknown) =>
     }),
   );
 
-const confirmed = [
-  { id: "a", email: "a@x.com", confirmToken: "tok-a" },
-  { id: "b", email: "b@x.com", confirmToken: "tok-b" },
-];
+// Rows as stored: encrypted addresses (computed in beforeEach, after the env
+// key is stubbed).
+let confirmed: { id: string; email: string; confirmToken: string }[];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("EMAIL_ENCRYPTION_KEY", "e".repeat(64));
+  confirmed = [
+    { id: "a", email: encryptEmail("a@x.com"), confirmToken: "tok-a" },
+    { id: "b", email: encryptEmail("b@x.com"), confirmToken: "tok-b" },
+  ];
   vi.mocked(requireAdmin).mockResolvedValue(null);
   vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue(confirmed as never);
   vi.mocked(sendEmail).mockResolvedValue(undefined);
@@ -61,6 +66,9 @@ describe("POST /api/admin/newsletter/send", () => {
       where: { status: "CONFIRMED" },
     });
     expect(sendEmail).toHaveBeenCalledTimes(2);
+    // Stored ciphertext is decrypted to the real address for delivery.
+    expect(vi.mocked(sendEmail).mock.calls[0][0].to).toBe("a@x.com");
+    expect(vi.mocked(sendEmail).mock.calls[1][0].to).toBe("b@x.com");
     // Each recipient gets their own unsubscribe token in the email.
     const htmlA = vi.mocked(sendEmail).mock.calls[0][0].html;
     expect(htmlA).toContain("token=tok-a");
@@ -73,5 +81,16 @@ describe("POST /api/admin/newsletter/send", () => {
     const res = await post(valid);
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ ok: true, sent: 1, failed: 1 });
+  });
+
+  it("logs failures by subscriber id, never the email address (PII)", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));
+    await post(valid);
+    const logged = errorSpy.mock.calls.flat().map(String).join(" ");
+    expect(logged).toContain("a");
+    expect(logged).not.toContain("a@x.com");
+    expect(logged).not.toContain("b@x.com");
+    errorSpy.mockRestore();
   });
 });
