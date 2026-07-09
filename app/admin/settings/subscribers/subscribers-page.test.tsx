@@ -10,19 +10,32 @@ vi.mock("@/lib/db", () => ({
 
 import AdminSubscribersPage from "@/app/admin/settings/subscribers/page";
 import { db } from "@/lib/db";
+import { encryptEmail } from "@/lib/email-crypto";
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubEnv("EMAIL_ENCRYPTION_KEY", "f".repeat(64));
+});
 
 describe("/admin/settings/subscribers", () => {
-  it("lists subscribers with an export link", async () => {
+  it("lists subscribers, decrypting stored emails for display", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
-      { id: "s1", name: "Ada", email: "ada@x.com", createdAt: new Date() },
+      // As stored: ciphertext, not plaintext.
+      { id: "s1", name: "Ada", email: encryptEmail("ada@x.com"), createdAt: new Date() },
     ] as never);
     render(await AdminSubscribersPage());
     expect(screen.getByText("Ada")).toBeInTheDocument();
     expect(screen.getByText("ada@x.com")).toBeInTheDocument();
     const link = screen.getByText("Export CSV");
     expect(link).toHaveAttribute("href", "/api/admin/subscribers/export");
+  });
+
+  it("shows a legacy (unmigrated) plaintext row as-is", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      { id: "s1", name: "Old", email: "old@x.com", createdAt: new Date() },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByText("old@x.com")).toBeInTheDocument();
   });
 
   it("shows a status badge per row and counts only confirmed", async () => {

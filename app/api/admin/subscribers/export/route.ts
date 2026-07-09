@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { decryptEmail } from "@/lib/email-crypto";
 import { toCsv } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,8 @@ export async function GET() {
 
   const rows = subscribers.map((s) => ({
     name: s.name,
-    email: s.email,
+    // Stored encrypted; the export is the shop's working mailing list.
+    email: decryptEmail(s.email),
     createdAt: s.createdAt.toISOString(),
   }));
   const csv = toCsv(rows, [

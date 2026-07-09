@@ -11,6 +11,7 @@ vi.mock("@/lib/db", () => ({
 import { db } from "@/lib/db";
 import { GET } from "@/app/api/admin/subscribers/export/route";
 import { DELETE } from "@/app/api/admin/subscribers/[id]/route";
+import { encryptEmail } from "@/lib/email-crypto";
 import { requireAdmin } from "@/lib/api-auth";
 
 const sub = db.newsletterSubscriber as unknown as {
@@ -22,13 +23,19 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubEnv("EMAIL_ENCRYPTION_KEY", "9".repeat(64));
   mockRequireAdmin.mockResolvedValue(null);
 });
 
 describe("GET /api/admin/subscribers/export", () => {
-  it("returns a CSV attachment of subscribers", async () => {
+  it("returns a CSV attachment with decrypted subscriber emails", async () => {
     sub.findMany.mockResolvedValue([
-      { name: "Ada", email: "ada@x.com", createdAt: new Date("2026-07-01T00:00:00Z") },
+      // As stored: ciphertext; the export must decrypt for the shop owner.
+      {
+        name: "Ada",
+        email: encryptEmail("ada@x.com"),
+        createdAt: new Date("2026-07-01T00:00:00Z"),
+      },
     ]);
     const res = await GET();
     const body = await res.text();
