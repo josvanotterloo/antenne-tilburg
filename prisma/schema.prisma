@@ -145,7 +145,14 @@ enum SubscriberStatus {
 model NewsletterSubscriber {
   id           String           @id @default(cuid())
   name         String
-  email        String           @unique
+  // AES-256-GCM ciphertext ("v1:iv:ct:tag" — see lib/email-crypto.ts). Rows
+  // created before encryption hold legacy plaintext until the one-time
+  // migration script runs; decryptEmail passes those through unchanged.
+  email        String
+  // Keyed HMAC-SHA-256 of the normalized address. Unique so signup detects
+  // duplicates without a plaintext column. Nullable only for unmigrated
+  // legacy rows (backfilled by scripts/encrypt-subscriber-emails.ts).
+  emailHash    String?          @unique
   status       SubscriberStatus @default(PENDING)
   // Generated at signup for the confirm link; retained after confirmation so it
   // doubles as the one-click unsubscribe token.
