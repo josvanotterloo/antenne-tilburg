@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 
 vi.mock("@/lib/db", () => ({
   db: {
-    newsletterSubscriber: { create: vi.fn(), delete: vi.fn() },
+    newsletterSubscriber: { create: vi.fn(), delete: vi.fn(), findFirst: vi.fn() },
   },
 }));
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
@@ -33,6 +33,7 @@ beforeEach(() => {
   vi.mocked(db.newsletterSubscriber.create).mockResolvedValue({
     id: "sub_1",
   } as never);
+  vi.mocked(db.newsletterSubscriber.findFirst).mockResolvedValue(null as never);
   vi.mocked(db.newsletterSubscriber.delete).mockResolvedValue({} as never);
   vi.mocked(sendEmail).mockResolvedValue(undefined);
 });
@@ -83,6 +84,19 @@ describe("POST /api/newsletter (double opt-in)", () => {
     // Same response as a fresh signup — must not reveal the address is known.
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ ok: true });
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("treats an unmigrated legacy plaintext row as a duplicate (silent 201, no create, no email)", async () => {
+    // Legacy rows have emailHash = NULL, which a unique index never matches —
+    // the route must check for them explicitly or re-signups create duplicates.
+    vi.mocked(db.newsletterSubscriber.findFirst).mockResolvedValue({
+      id: "legacy_1",
+    } as never);
+    const res = await post({ name: "Jos", email: "jos@x.com" });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(db.newsletterSubscriber.create).not.toHaveBeenCalled();
     expect(sendEmail).not.toHaveBeenCalled();
   });
 

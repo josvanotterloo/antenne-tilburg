@@ -29,11 +29,30 @@ signup. Closes OWASP audit finding #3 (`docs/security/owasp-audit-2026-07-09.md`
   case-variant duplicate rows are reported by id and left for manual resolution.
   Run once at deploy, after setting the key.
 
+## Code-review fixes (pre-merge, all Medium+ closed)
+- **Legacy-row duplicate window:** unmigrated rows have `emailHash = NULL`,
+  which unique indexes ignore — signup now also checks
+  `OR: [{ emailHash }, { email: plaintext }]` before insert (P2002 stays as the
+  race backstop), so re-signups against legacy rows return the same silent 201.
+- **Strict ciphertext detection:** `isEncrypted()` requires the full
+  `v1:` + 3×base64 shape (base64 has no `@`; every address does — no legal
+  email can collide). Fixes the `v1:tricky@x.com` sentinel collision, the
+  truncated-value TypeError, and the backfill's hardcoded prefix.
+- **Graceful degradation:** admin list + CSV export use `decryptEmailSafe`
+  (one bad row shows "(cannot decrypt)" instead of a whole-page 500); the send
+  route preflights the key (`assertEmailCryptoConfigured`) and returns an
+  explicit 500 instead of `200 {ok, sent: 0}` when the key is missing.
+- Accepted as-is (Low/Info): nullable `emailHash` until a post-backfill
+  contract migration (`SET NOT NULL`) — queued in tasks/todo.md; single key for
+  AES + HMAC; per-call key validation; delegate-interface test seam.
+
 ## Tests & verification
-- 349 tests green (18 new: crypto round-trip/tamper/wrong-key/legacy-fallback,
-  keyed-hash properties, signup ciphertext+hash, send decryption + id-only
-  logging, admin list/export decryption incl. legacy rows, backfill
-  idempotency + conflict handling). `tsc`, lint clean.
+- 364 tests green (33 new across the feature + review fixes: crypto
+  round-trip/tamper/wrong-key/legacy-fallback, strict-format + safe-decrypt
+  helpers, keyed-hash properties, signup ciphertext+hash + legacy-dup guard,
+  send decryption + id-only logging + key preflight, admin list/export
+  decryption incl. undecryptable-row fallback, backfill idempotency +
+  conflict handling + prefix-collision case). `tsc`, lint clean.
 - **Live against Postgres:** migration applied; the 2 real legacy dev rows
   migrated (`2 migrated, 0 already encrypted`), re-run reported
   `0 migrated, 2 already encrypted`, and stored ciphertext decrypted back to

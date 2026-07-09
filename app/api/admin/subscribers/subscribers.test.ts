@@ -49,6 +49,25 @@ describe("GET /api/admin/subscribers/export", () => {
     expect(body).toContain("Ada,ada@x.com");
   });
 
+  it("marks an undecryptable row instead of failing the whole export", async () => {
+    const stored = encryptEmail("ada@x.com");
+    // Key rotated after this row was written.
+    vi.stubEnv("EMAIL_ENCRYPTION_KEY", "8".repeat(64));
+    sub.findMany.mockResolvedValue([
+      { name: "Ada", email: stored, createdAt: new Date("2026-07-01T00:00:00Z") },
+      {
+        name: "Bo",
+        email: encryptEmail("bo@x.com"),
+        createdAt: new Date("2026-07-02T00:00:00Z"),
+      },
+    ]);
+    const res = await GET();
+    const body = await res.text();
+    expect(res.status).toBe(200);
+    expect(body).toContain("Ada,(cannot decrypt)");
+    expect(body).toContain("Bo,bo@x.com");
+  });
+
   it("returns the 401 from requireAdmin", async () => {
     mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
     expect((await GET()).status).toBe(401);

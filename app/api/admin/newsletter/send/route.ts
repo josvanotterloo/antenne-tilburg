@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { decryptEmail } from "@/lib/email-crypto";
+import { assertEmailCryptoConfigured, decryptEmail } from "@/lib/email-crypto";
 import { parseNewsletterSendInput } from "@/lib/newsletter-send-input";
 import { sendEmail } from "@/lib/email/send";
 import { renderNewsletterEmail } from "@/lib/email/render";
@@ -19,6 +19,18 @@ export async function POST(req: Request) {
   const parsed = parseNewsletterSendInput(await req.json().catch(() => null));
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
+  }
+
+  // Preflight the key before the loop: a misconfigured key would otherwise be
+  // swallowed as N per-recipient failures and reported as 200 {ok, sent: 0}.
+  try {
+    assertEmailCryptoConfigured();
+  } catch (error) {
+    console.error("newsletter send blocked: encryption key misconfigured", error);
+    return NextResponse.json(
+      { error: "EMAIL_ENCRYPTION_KEY is missing or invalid on the server." },
+      { status: 500 },
+    );
   }
 
   const subscribers = await db.newsletterSubscriber.findMany({

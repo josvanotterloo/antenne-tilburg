@@ -1,6 +1,13 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 
-import { decryptEmail, emailHash, encryptEmail } from "@/lib/email-crypto";
+import {
+  assertEmailCryptoConfigured,
+  decryptEmail,
+  decryptEmailSafe,
+  emailHash,
+  encryptEmail,
+  isEncrypted,
+} from "@/lib/email-crypto";
 
 // A valid 32-byte key as 64 hex chars (test-only value).
 const KEY = "a".repeat(64);
@@ -72,6 +79,64 @@ describe("encryptEmail / decryptEmail", () => {
     expect(() => encryptEmail("fan@example.com")).toThrow(
       /EMAIL_ENCRYPTION_KEY/,
     );
+  });
+});
+
+describe("isEncrypted", () => {
+  it("recognizes a real encrypted value", () => {
+    withKey(KEY);
+    expect(isEncrypted(encryptEmail("fan@example.com"))).toBe(true);
+  });
+
+  it("rejects plain emails, even ones starting with v1: (colons are legal in the local part)", () => {
+    // base64 never contains "@" and every email must — the strict format
+    // check cannot be fooled by an address like this.
+    expect(isEncrypted("v1:tricky@example.com")).toBe(false);
+    expect(isEncrypted("fan@example.com")).toBe(false);
+  });
+
+  it("rejects truncated/malformed v1 values", () => {
+    expect(isEncrypted("v1:abc")).toBe(false);
+    expect(isEncrypted("v1:a:b")).toBe(false);
+  });
+});
+
+describe("decryptEmail (malformed input)", () => {
+  it("passes a v1:-prefixed plain address through instead of crashing", () => {
+    withKey(KEY);
+    expect(decryptEmail("v1:tricky@example.com")).toBe("v1:tricky@example.com");
+  });
+
+  it("passes a truncated v1 value through instead of throwing TypeError", () => {
+    withKey(KEY);
+    expect(decryptEmail("v1:abc")).toBe("v1:abc");
+  });
+});
+
+describe("decryptEmailSafe", () => {
+  it("returns the plaintext for a decryptable value", () => {
+    withKey(KEY);
+    const stored = encryptEmail("fan@example.com");
+    expect(decryptEmailSafe(stored)).toBe("fan@example.com");
+  });
+
+  it("returns null instead of throwing for a value encrypted under another key", () => {
+    withKey(KEY);
+    const stored = encryptEmail("fan@example.com");
+    withKey(OTHER_KEY);
+    expect(decryptEmailSafe(stored)).toBeNull();
+  });
+});
+
+describe("assertEmailCryptoConfigured", () => {
+  it("passes silently with a valid key", () => {
+    withKey(KEY);
+    expect(() => assertEmailCryptoConfigured()).not.toThrow();
+  });
+
+  it("throws the clear key error when the key is missing", () => {
+    withKey(undefined);
+    expect(() => assertEmailCryptoConfigured()).toThrow(/EMAIL_ENCRYPTION_KEY/);
   });
 });
 

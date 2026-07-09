@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { decryptEmail } from "@/lib/email-crypto";
+import { decryptEmailSafe } from "@/lib/email-crypto";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export const dynamic = "force-dynamic";
@@ -57,8 +57,13 @@ export default async function AdminSubscribersPage() {
               {subscribers.map((s) => (
                 <tr key={s.id}>
                   <td className="px-3 py-2">{s.name}</td>
-                  {/* Stored encrypted; decrypted here for the shop owner only. */}
-                  <td className="px-3 py-2">{decryptEmail(s.email)}</td>
+                  {/* Stored encrypted; decrypted here for the shop owner only.
+                      A row from a rotated/wrong key degrades, not the page. */}
+                  <td className="px-3 py-2">
+                    {decryptEmailSafe(s.email) ?? (
+                      <span className="text-red-600">(cannot decrypt)</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2">
                     <StatusBadge status={s.status} />
                   </td>

@@ -1,4 +1,4 @@
-import { emailHash, encryptEmail } from "@/lib/email-crypto";
+import { emailHash, encryptEmail, isEncrypted } from "@/lib/email-crypto";
 
 // One-time backfill core for the email-encryption-at-rest migration: encrypt
 // every legacy plaintext subscriber row and fill its hash column. Pure over an
@@ -29,7 +29,9 @@ export async function encryptLegacySubscribers(
   const result: MigrationResult = { migrated: 0, skipped: 0, conflicts: [] };
 
   for (const row of rows) {
-    if (row.email.startsWith("v1:")) {
+    // Strict format check (shared with decryptEmail) — a plaintext address
+    // that merely starts with "v1:" is still encrypted, not skipped.
+    if (isEncrypted(row.email)) {
       result.skipped += 1;
       continue;
     }

@@ -19,6 +19,24 @@ const VERSION = "v1";
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12; // GCM-recommended nonce size
 
+// Strict stored-format check: version prefix + exactly three base64 segments.
+// base64 never contains "@" and every email address must, so no legal address
+// can match this — a plaintext local part like "v1:tricky@x.com" (colons are
+// valid there) is still classified as legacy plaintext, never as ciphertext.
+const ENCRYPTED_RE = new RegExp(
+  `^${VERSION}:[A-Za-z0-9+/]+={0,2}:[A-Za-z0-9+/]+={0,2}:[A-Za-z0-9+/]+={0,2}$`,
+);
+
+export function isEncrypted(stored: string): boolean {
+  return ENCRYPTED_RE.test(stored);
+}
+
+// Fail fast on key misconfiguration (e.g. before a send loop) instead of
+// surfacing it as N per-recipient failures deep inside a handler.
+export function assertEmailCryptoConfigured(): void {
+  key();
+}
+
 function key(): Buffer {
   const hex = process.env.EMAIL_ENCRYPTION_KEY ?? "";
   if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
@@ -47,8 +65,10 @@ export function encryptEmail(plain: string): string {
 }
 
 export function decryptEmail(stored: string): string {
-  // Legacy plaintext row (not yet migrated): pass through unchanged.
-  if (!stored.startsWith(`${VERSION}:`)) return stored;
+  // Legacy plaintext row (not yet migrated) or a malformed value: pass through
+  // unchanged. The strict format check means truncated ciphertext degrades to
+  // a visible odd value instead of an unhandled TypeError.
+  if (!isEncrypted(stored)) return stored;
 
   const [, ivB64, ciphertextB64, tagB64] = stored.split(":");
   const decipher = createDecipheriv(
@@ -61,6 +81,16 @@ export function decryptEmail(stored: string): string {
     decipher.update(Buffer.from(ciphertextB64, "base64")),
     decipher.final(),
   ]).toString("utf8");
+}
+
+// Non-throwing decrypt for display paths (admin list, CSV export): one row
+// encrypted under a rotated/wrong key must degrade, not 500 the whole page.
+export function decryptEmailSafe(stored: string): string | null {
+  try {
+    return decryptEmail(stored);
+  } catch {
+    return null;
+  }
 }
 
 // Deterministic keyed hash (HMAC-SHA-256) of the normalized address. Unique

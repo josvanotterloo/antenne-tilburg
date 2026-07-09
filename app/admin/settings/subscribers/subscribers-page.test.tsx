@@ -30,6 +30,20 @@ describe("/admin/settings/subscribers", () => {
     expect(link).toHaveAttribute("href", "/api/admin/subscribers/export");
   });
 
+  it("renders a fallback for an undecryptable row instead of crashing the page", async () => {
+    const stored = encryptEmail("ada@x.com");
+    // Key rotated: the stored row can no longer be decrypted.
+    vi.stubEnv("EMAIL_ENCRYPTION_KEY", "0".repeat(64));
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      { id: "s1", name: "Ada", email: stored, createdAt: new Date() },
+      { id: "s2", name: "Bo", email: encryptEmail("bo@x.com"), createdAt: new Date() },
+    ] as never);
+    render(await AdminSubscribersPage());
+    // The bad row degrades, the good row still shows.
+    expect(screen.getByText(/cannot decrypt/i)).toBeInTheDocument();
+    expect(screen.getByText("bo@x.com")).toBeInTheDocument();
+  });
+
   it("shows a legacy (unmigrated) plaintext row as-is", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
       { id: "s1", name: "Old", email: "old@x.com", createdAt: new Date() },

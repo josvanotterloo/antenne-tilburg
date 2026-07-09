@@ -38,6 +38,21 @@ vi.mock("@/lib/db", () => {
           store.set(row.id, row);
           return row;
         }),
+        findFirst: vi.fn(
+          async ({
+            where,
+          }: {
+            where: { OR?: { emailHash?: string; email?: string }[] };
+          }) => {
+            for (const s of store.values()) {
+              for (const cond of where.OR ?? []) {
+                if (cond.emailHash && s.emailHash === cond.emailHash) return s;
+                if (cond.email && s.email === cond.email) return s;
+              }
+            }
+            return null;
+          },
+        ),
         findUnique: vi.fn(
           async ({ where }: { where: { id?: string; confirmToken?: string } }) => {
             if (where.id) return store.get(where.id) ?? null;
@@ -174,6 +189,23 @@ describe("newsletter flow (integration)", () => {
     const res = await confirmReq(sub.confirmToken);
     expect(res.status).toBe(400);
     expect(store.get(sub.id)!.status).toBe("PENDING");
+  });
+
+  it("re-signup against an unmigrated legacy plaintext row does not create a duplicate", async () => {
+    // A pre-encryption row: plaintext email, no hash (NULL in the real schema).
+    store.set("legacy_1", {
+      id: "legacy_1",
+      name: "Ada",
+      email: "ada@x.com",
+      emailHash: null as unknown as string,
+      status: "CONFIRMED",
+      confirmToken: "tok-legacy",
+      createdAt: new Date(),
+    });
+
+    const res = await signupReq({ name: "Ada", email: "ada@x.com" });
+    expect(res.status).toBe(201); // same non-enumerating success
+    expect(store.size).toBe(1); // no duplicate row
   });
 
   it("confirm with an invalid token returns 404", async () => {

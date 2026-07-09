@@ -68,6 +68,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       `npx tsx --env-file=.env scripts/encrypt-subscriber-emails.ts` once.
 - [ ] Remaining Medium findings: security headers, login rate limiting,
       XFF-spoofable signup limiter → `feature/owasp-medium-fixes`
+- [ ] Contract migration after prod backfill: verify zero `emailHash IS NULL`
+      rows, then `ALTER COLUMN "emailHash" SET NOT NULL` (closes the
+      transitional nullable state for good)
 
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);

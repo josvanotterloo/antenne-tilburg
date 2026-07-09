@@ -83,6 +83,15 @@ describe("POST /api/admin/newsletter/send", () => {
     expect(await res.json()).toMatchObject({ ok: true, sent: 1, failed: 1 });
   });
 
+  it("500s with a clear config error when the encryption key is missing, instead of N silent failures", async () => {
+    vi.stubEnv("EMAIL_ENCRYPTION_KEY", "");
+    const res = await post(valid);
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/EMAIL_ENCRYPTION_KEY/);
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
   it("logs failures by subscriber id, never the email address (PII)", async () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));

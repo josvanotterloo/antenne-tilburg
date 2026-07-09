@@ -30,16 +30,29 @@ export async function POST(req: Request) {
     );
   }
 
+  // Duplicate check must also cover unmigrated legacy rows: their emailHash is
+  // NULL, which the unique index never matches (NULL != NULL in Postgres), but
+  // their email column still holds the plaintext address. Same silent 201 as
+  // the P2002 path below — the response must not reveal the address is known.
+  const hash = emailHash(parsed.data.email);
+  const existing = await db.newsletterSubscriber.findFirst({
+    where: { OR: [{ emailHash: hash }, { email: parsed.data.email }] },
+  });
+  if (existing) {
+    return NextResponse.json({ ok: true }, { status: 201 });
+  }
+
   const confirmToken = newToken();
   let subscriber: { id: string };
   try {
     // Email is stored encrypted (AES-256-GCM); the keyed hash column carries
     // the unique constraint for duplicate detection (see lib/email-crypto.ts).
+    // P2002 below remains as the race backstop for concurrent signups.
     subscriber = await db.newsletterSubscriber.create({
       data: {
         name: parsed.data.name,
         email: encryptEmail(parsed.data.email),
-        emailHash: emailHash(parsed.data.email),
+        emailHash: hash,
         status: "PENDING",
         confirmToken,
       },

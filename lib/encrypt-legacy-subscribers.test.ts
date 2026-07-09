@@ -61,6 +61,16 @@ describe("encryptLegacySubscribers", () => {
     expect(second).toEqual({ migrated: 0, skipped: 2, conflicts: [] });
   });
 
+  it("encrypts a plaintext address that merely starts with v1: (not fooled by the prefix)", async () => {
+    const delegate = fakeDelegate([
+      { id: "s1", email: "v1:tricky@x.com", emailHash: null },
+    ]);
+    const result = await encryptLegacySubscribers(delegate);
+
+    expect(result.migrated).toBe(1);
+    expect(decryptEmail(delegate.rows[0].email)).toBe("v1:tricky@x.com");
+  });
+
   it("reports a hash conflict (case-variant duplicates) without failing the run", async () => {
     // Legacy uniqueness was case-sensitive; the keyed hash is normalized, so two
     // case-variant rows collide. The second becomes a conflict to resolve by hand.

@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { decryptEmail } from "@/lib/email-crypto";
+import { decryptEmailSafe } from "@/lib/email-crypto";
 import { toCsv } from "@/lib/csv";
 
 export const dynamic = "force-dynamic";
@@ -18,8 +18,9 @@ export async function GET() {
 
   const rows = subscribers.map((s) => ({
     name: s.name,
-    // Stored encrypted; the export is the shop's working mailing list.
-    email: decryptEmail(s.email),
+    // Stored encrypted; the export is the shop's working mailing list. An
+    // undecryptable row (rotated/wrong key) is marked, not fatal to the file.
+    email: decryptEmailSafe(s.email) ?? "(cannot decrypt)",
     createdAt: s.createdAt.toISOString(),
   }));
   const csv = toCsv(rows, [
