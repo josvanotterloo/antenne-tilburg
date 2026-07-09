@@ -126,4 +126,23 @@ describe("POST /api/newsletter (double opt-in)", () => {
     const blocked = await fromIp("u5@x.com");
     expect(blocked.status).toBe(429);
   });
+
+  it("cannot be bypassed by spoofing leftmost x-forwarded-for entries", async () => {
+    // The client controls the leftmost entries; only the rightmost was
+    // appended by our proxy. Varying the spoofed prefix must not reset the
+    // limiter for the real client IP.
+    const spoofed = (i: number) =>
+      POST(
+        new Request("http://localhost/api/newsletter", {
+          method: "POST",
+          headers: { "x-forwarded-for": `10.0.0.${i}, 203.0.113.7` },
+          body: JSON.stringify({ name: "X", email: `s${i}@x.com` }),
+        }),
+      );
+    for (let i = 0; i < 5; i++) {
+      expect((await spoofed(i)).status).toBe(201);
+    }
+    const blocked = await spoofed(5);
+    expect(blocked.status).toBe(429);
+  });
 });

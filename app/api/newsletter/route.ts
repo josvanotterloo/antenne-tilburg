@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
+import { clientIp } from "@/lib/client-ip";
 import { db } from "@/lib/db";
 import { emailHash, encryptEmail } from "@/lib/email-crypto";
 import { parseNewsletterInput } from "@/lib/newsletter-input";
@@ -20,9 +21,9 @@ export async function POST(req: Request) {
   }
 
   // Rate-limit by client IP: each signup sends a confirmation email, so an
-  // unthrottled flood is a spam / Resend-cost vector.
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // unthrottled flood is a spam / Resend-cost vector. clientIp uses the
+  // rightmost x-forwarded-for entry — the leftmost is client-spoofable.
+  const ip = clientIp(req.headers);
   if (!newsletterSignupLimiter.check(ip)) {
     return NextResponse.json(
       { error: "Too many signups from your network. Please try again later." },
