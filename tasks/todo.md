@@ -59,6 +59,16 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [x] **Migrated next-auth v4 → v5 (Auth.js)** — clears the `react ^18` peer warning;
       split Edge-safe config for the middleware. `docs/features/next-auth-v5.md`
 
+### Security
+- [x] OWASP Top 10 full-source audit (2026-07-09) —
+      `docs/security/owasp-audit-2026-07-09.md`
+- [x] Subscriber emails encrypted at rest (AES-256-GCM + keyed hash) —
+      `docs/features/email-encryption-at-rest.md`. **Deploy note:** set
+      `EMAIL_ENCRYPTION_KEY`, then run
+      `npx tsx --env-file=.env scripts/encrypt-subscriber-emails.ts` once.
+- [ ] Remaining Medium findings: security headers, login rate limiting,
+      XFF-spoofable signup limiter → `feature/owasp-medium-fixes`
+
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
       document real credential handoff — **required before any deploy**
@@ -86,7 +96,7 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 285 tests cover managed-list
+Done — Vitest runner + `run-tests` skill in place; 349 tests cover managed-list
 delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
 markdown rendering, sitemap, and the public/admin flows.
 
