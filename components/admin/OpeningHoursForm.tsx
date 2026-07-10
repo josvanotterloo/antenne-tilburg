@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
 import { DAY_NAMES, type HourRow } from "@/lib/opening-hours";
 
 export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
   const router = useRouter();
+  const { pending: saving, error, run } = useAsyncAction();
   const [rows, setRows] = useState(initial);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   function update(dayOfWeek: number, patch: Partial<HourRow>) {
@@ -19,26 +20,18 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
     setSaved(false);
   }
 
-  async function save(e: React.FormEvent) {
+  function save(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
     setSaved(false);
-    const res = await fetch("/api/admin/opening-hours", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ hours: rows }),
+    run(async () => {
+      await apiSend("/api/admin/opening-hours", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ hours: rows }),
+      });
+      setSaved(true);
+      router.refresh();
     });
-    setSaving(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(b?.error ?? "Could not save hours");
-      return;
-    }
-    setSaved(true);
-    router.refresh();
   }
 
   return (
@@ -76,7 +69,11 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
         ))}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
       {saved && <p className="text-sm text-green-700">Saved.</p>}
 
       <button

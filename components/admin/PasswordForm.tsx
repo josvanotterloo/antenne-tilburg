@@ -2,32 +2,28 @@
 
 import { useState } from "react";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
+
 export function PasswordForm({ userId }: { userId: string }) {
+  const { pending: saving, error, run } = useAsyncAction();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
     setDone(false);
-    const res = await fetch(`/api/admin/users/${userId}/password`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword }),
+    run(async () => {
+      await apiSend(`/api/admin/users/${userId}/password`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      setCurrentPassword("");
+      setNewPassword("");
+      setDone(true);
     });
-    setSaving(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(b?.error ?? "Could not change password");
-      return;
-    }
-    setCurrentPassword("");
-    setNewPassword("");
-    setDone(true);
   }
 
   return (
@@ -62,7 +58,11 @@ export function PasswordForm({ userId }: { userId: string }) {
           className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
       {done && <p className="text-sm text-green-700">Password changed.</p>}
       <button
         type="submit"

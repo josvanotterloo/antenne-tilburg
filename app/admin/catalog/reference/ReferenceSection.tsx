@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
+
 export interface ReferenceItem {
   id: string;
   name: string;
@@ -17,73 +20,54 @@ export function ReferenceSection({
   endpoint: string;
   initialItems: ReferenceItem[];
 }) {
+  const { error, run } = useAsyncAction();
   const [items, setItems] = useState(initialItems);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  async function readError(res: Response, fallback: string) {
-    const body = (await res.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    return body?.error ?? fallback;
-  }
-
-  async function handleAdd(event: React.FormEvent) {
+  function handleAdd(event: React.FormEvent) {
     event.preventDefault();
     const name = newName.trim();
     if (!name) return;
-    setError(null);
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
+    run(async () => {
+      const created = await apiSend<{ id: string; name: string }>(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      setItems((prev) =>
+        [...prev, { ...created, productCount: 0 }].sort((a, b) =>
+          a.name.localeCompare(b.name),
+        ),
+      );
+      setNewName("");
     });
-    if (!res.ok) {
-      setError(await readError(res, "Could not add item"));
-      return;
-    }
-    const created = (await res.json()) as { id: string; name: string };
-    setItems((prev) =>
-      [...prev, { ...created, productCount: 0 }].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      ),
-    );
-    setNewName("");
   }
 
-  async function handleSaveEdit(id: string) {
+  function handleSaveEdit(id: string) {
     const name = editName.trim();
     if (!name) return;
-    setError(null);
-
-    const res = await fetch(`${endpoint}/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
+    run(async () => {
+      await apiSend(`${endpoint}/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      setItems((prev) =>
+        prev
+          .map((item) => (item.id === id ? { ...item, name } : item))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setEditingId(null);
     });
-    if (!res.ok) {
-      setError(await readError(res, "Could not rename item"));
-      return;
-    }
-    setItems((prev) =>
-      prev
-        .map((item) => (item.id === id ? { ...item, name } : item))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    );
-    setEditingId(null);
   }
 
-  async function handleDelete(id: string) {
-    setError(null);
-    const res = await fetch(`${endpoint}/${id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setError(await readError(res, "Could not delete item"));
-      return;
-    }
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  function handleDelete(id: string) {
+    run(async () => {
+      await apiSend(`${endpoint}/${id}`, { method: "DELETE" });
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    });
   }
 
   return (
@@ -106,7 +90,11 @@ export function ReferenceSection({
         </button>
       </form>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-2 text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <ul className="mt-3 divide-y divide-neutral-100">
         {items.map((item) => (

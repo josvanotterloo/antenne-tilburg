@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 
 export interface ProductFormValues {
@@ -63,64 +65,52 @@ export function ProductForm({
     product?.quantity != null ? String(product.quantity) : "1",
   );
 
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [selling, setSelling] = useState(false);
+  // Independent actions: saving the product and the quick "sell one" each track
+  // their own pending/error so neither disables the other's button.
+  const submit = useAsyncAction();
+  const sell = useAsyncAction();
+  const submitting = submit.pending;
+  const selling = sell.pending;
+  const error = submit.error ?? sell.error;
 
   // Quick "sold one" on the edit page. Syncs the quantity input from the route's
   // authoritative result so a later Save can't overwrite the decrement.
-  async function handleSellOne() {
+  function handleSellOne() {
     if (!product) return;
-    setSelling(true);
-    setError(null);
-    const res = await fetch(`/api/admin/products/${product.id}/sell-one`, {
-      method: "POST",
+    sell.run(async () => {
+      const updated = await apiSend<{ quantity: number }>(
+        `/api/admin/products/${product.id}/sell-one`,
+        { method: "POST" },
+      );
+      setQuantity(String(updated.quantity));
     });
-    setSelling(false);
-    if (!res.ok) {
-      setError("Could not update stock");
-      return;
-    }
-    const updated = (await res.json()) as { quantity: number };
-    setQuantity(String(updated.quantity));
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSubmitting(true);
-
-    const res = await fetch(
-      product ? `/api/admin/products/${product.id}` : "/api/admin/products",
-      {
-        method: product ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          artist,
-          title,
-          catalogNumber,
-          labelId,
-          genreId,
-          productTypeId,
-          condition,
-          price,
-          description,
-          quantity,
-        }),
-      },
-    );
-    setSubmitting(false);
-
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(body?.error ?? "Could not save product");
-      return;
-    }
-
-    router.push("/admin/catalog");
-    router.refresh();
+    submit.run(async () => {
+      await apiSend(
+        product ? `/api/admin/products/${product.id}` : "/api/admin/products",
+        {
+          method: product ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            artist,
+            title,
+            catalogNumber,
+            labelId,
+            genreId,
+            productTypeId,
+            condition,
+            price,
+            description,
+            quantity,
+          }),
+        },
+      );
+      router.push("/admin/catalog");
+      router.refresh();
+    });
   }
 
   return (
@@ -252,7 +242,11 @@ export function ProductForm({
         )}
       </Field>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button

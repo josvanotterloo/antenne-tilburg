@@ -2,6 +2,9 @@
 
 import { useId, useMemo, useState } from "react";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
+
 export interface ComboboxOption {
   id: string;
   name: string;
@@ -32,7 +35,7 @@ export function Combobox({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(-1);
-  const [busy, setBusy] = useState(false);
+  const { pending: busy, error, run } = useAsyncAction();
 
   const selected = options.find((o) => o.id === value) ?? null;
   const filter = query.trim().toLowerCase();
@@ -56,20 +59,20 @@ export function Combobox({
     close();
   }
 
-  async function quickAdd() {
+  function quickAdd() {
     const name = query.trim();
     if (!name || busy) return;
-    setBusy(true);
-    const res = await fetch(createEndpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name }),
+    // A failed create (duplicate name, network) now shows a message instead of
+    // silently doing nothing and leaving the field un-added.
+    run(async () => {
+      const created = await apiSend<ComboboxOption>(createEndpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      onCreated?.(created);
+      pick(created);
     });
-    setBusy(false);
-    if (!res.ok) return;
-    const created = (await res.json()) as ComboboxOption;
-    onCreated?.(created);
-    pick(created);
   }
 
   function onKeyDown(event: React.KeyboardEvent) {
@@ -156,6 +159,12 @@ export function Combobox({
             </li>
           )}
         </ul>
+      )}
+
+      {error && (
+        <p role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </p>
       )}
     </div>
   );

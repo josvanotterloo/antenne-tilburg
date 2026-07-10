@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
+
 export function EmailForm({
   userId,
   email: initial,
@@ -11,29 +14,22 @@ export function EmailForm({
   email: string;
 }) {
   const router = useRouter();
+  const { pending: saving, error, run } = useAsyncAction();
   const [email, setEmail] = useState(initial);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
     setSaved(false);
-    const res = await fetch(`/api/admin/users/${userId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email }),
+    run(async () => {
+      await apiSend(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      setSaved(true);
+      router.refresh();
     });
-    setSaving(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(b?.error ?? "Could not change email");
-      return;
-    }
-    setSaved(true);
-    router.refresh();
   }
 
   return (
@@ -47,7 +43,11 @@ export function EmailForm({
         aria-label="Account email"
         className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
       {saved && <p className="text-sm text-green-700">Email updated.</p>}
       <button
         type="submit"

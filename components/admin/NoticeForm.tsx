@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
+
 export interface NoticeFormValues {
   id: string;
   message: string;
@@ -13,35 +16,26 @@ export interface NoticeFormValues {
 
 export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
   const router = useRouter();
+  const { pending: saving, error, run } = useAsyncAction();
   const [message, setMessage] = useState(notice?.message ?? "");
   const [active, setActive] = useState(notice?.active ?? true);
   const [startsAt, setStartsAt] = useState(notice?.startsAt ?? "");
   const [endsAt, setEndsAt] = useState(notice?.endsAt ?? "");
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setSaving(true);
-    const res = await fetch(
-      notice ? `/api/admin/notices/${notice.id}` : "/api/admin/notices",
-      {
-        method: notice ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ message, active, startsAt, endsAt }),
-      },
-    );
-    setSaving(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(b?.error ?? "Could not save notice");
-      return;
-    }
-    router.push("/admin/settings/notices");
-    router.refresh();
+    run(async () => {
+      await apiSend(
+        notice ? `/api/admin/notices/${notice.id}` : "/api/admin/notices",
+        {
+          method: notice ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ message, active, startsAt, endsAt }),
+        },
+      );
+      router.push("/admin/settings/notices");
+      router.refresh();
+    });
   }
 
   return (
@@ -91,7 +85,11 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
         (and only while Active).
       </p>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button

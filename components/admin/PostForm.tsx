@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { apiSend } from "@/lib/api-client";
+import { useAsyncAction } from "@/lib/use-async-action";
 import { imageMarkdown, insertAt } from "@/lib/markdown";
 
 export interface PostFormValues {
@@ -29,50 +31,45 @@ export function PostForm({ post }: { post?: PostFormValues }) {
   const [seoDescription, setSeoDescription] = useState(
     post?.seoDescription ?? "",
   );
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  // Two independent actions so uploading an image and saving the post track
+  // their own pending/error state (and neither disables the other's button).
+  const upload = useAsyncAction();
+  const save = useAsyncAction();
+  const uploading = upload.pending;
+  const saving = save.pending;
+  const error = save.error ?? upload.error;
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
-  async function handleImageUpload(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = ""; // allow re-picking the same file
     if (!file) return;
-    setUploading(true);
-    setError(null);
-    const form = new FormData();
-    form.set("file", file);
-    const res = await fetch("/api/admin/uploads", { method: "POST", body: form });
-    setUploading(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as { error?: string } | null;
-      setError(b?.error ?? "Could not upload image");
-      return;
-    }
-    const { url } = (await res.json()) as { url: string };
-    const textarea = bodyRef.current;
-    const start = textarea?.selectionStart ?? body.length;
-    const end = textarea?.selectionEnd ?? body.length;
-    const snippet = imageMarkdown(url);
-    setBody((current) => insertAt(current, start, end, snippet));
-    // Restore focus and place the cursor after the inserted image.
-    requestAnimationFrame(() => {
-      if (!textarea) return;
-      const pos = start + snippet.length;
-      textarea.focus();
-      textarea.setSelectionRange(pos, pos);
+    upload.run(async () => {
+      const form = new FormData();
+      form.set("file", file);
+      const { url } = await apiSend<{ url: string }>("/api/admin/uploads", {
+        method: "POST",
+        body: form,
+      });
+      const textarea = bodyRef.current;
+      const start = textarea?.selectionStart ?? body.length;
+      const end = textarea?.selectionEnd ?? body.length;
+      const snippet = imageMarkdown(url);
+      setBody((current) => insertAt(current, start, end, snippet));
+      // Restore focus and place the cursor after the inserted image.
+      requestAnimationFrame(() => {
+        if (!textarea) return;
+        const pos = start + snippet.length;
+        textarea.focus();
+        textarea.setSelectionRange(pos, pos);
+      });
     });
   }
 
-  async function handleSubmit(event: React.FormEvent) {
+  function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    setSaving(true);
-    const res = await fetch(
-      post ? `/api/admin/posts/${post.id}` : "/api/admin/posts",
-      {
+    save.run(async () => {
+      await apiSend(post ? `/api/admin/posts/${post.id}` : "/api/admin/posts", {
         method: post ? "PATCH" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -84,18 +81,10 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           seoTitle,
           seoDescription,
         }),
-      },
-    );
-    setSaving(false);
-    if (!res.ok) {
-      const b = (await res.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(b?.error ?? "Could not save post");
-      return;
-    }
-    router.push("/admin/content/posts");
-    router.refresh();
+      });
+      router.push("/admin/content/posts");
+      router.refresh();
+    });
   }
 
   return (
@@ -182,7 +171,11 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         />
       </Field>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-red-600">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-2">
         <button
