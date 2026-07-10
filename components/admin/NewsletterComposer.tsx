@@ -83,10 +83,17 @@ export function NewsletterComposer() {
         </button>
         <button
           type="submit"
-          disabled={status === "sending"}
+          // Disabled while sending AND after a successful send — the same
+          // subject/body stays on screen, so a stray click would re-blast the
+          // whole list. Composing a new one is a fresh page load.
+          disabled={status === "sending" || status === "sent"}
           className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
         >
-          {status === "sending" ? "Sending…" : "Send newsletter"}
+          {status === "sending"
+            ? "Sending…"
+            : status === "sent"
+              ? "Sent"
+              : "Send newsletter"}
         </button>
       </div>
 

@@ -94,7 +94,10 @@ vi.mock("@/lib/api-auth", () => ({
 import { POST as signup } from "@/app/api/newsletter/route";
 import { GET as confirm } from "@/app/api/newsletter/confirm/route";
 import { POST as sendNewsletter } from "@/app/api/admin/newsletter/send/route";
-import { GET as unsubscribe } from "@/app/api/newsletter/unsubscribe/route";
+import {
+  GET as unsubscribePage,
+  POST as unsubscribe,
+} from "@/app/api/newsletter/unsubscribe/route";
 import { sendEmail } from "@/lib/email/send";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
 
@@ -114,10 +117,12 @@ const sendReq = (body: unknown) =>
       body: JSON.stringify(body),
     }),
   );
+const unsubUrl = (token: string) =>
+  `http://localhost/api/newsletter/unsubscribe?token=${token}`;
+const unsubPageReq = (token: string) =>
+  unsubscribePage(new Request(unsubUrl(token)));
 const unsubReq = (token: string) =>
-  unsubscribe(
-    new Request(`http://localhost/api/newsletter/unsubscribe?token=${token}`),
-  );
+  unsubscribe(new Request(unsubUrl(token), { method: "POST" }));
 
 const only = () => [...store.values()][0];
 
@@ -166,9 +171,14 @@ describe("newsletter flow (integration)", () => {
       `/api/newsletter/unsubscribe?token=${sub.confirmToken}`,
     );
 
-    // 5. Unsubscribe → 200, subscriber deleted.
-    const res5 = await unsubReq(sub.confirmToken);
-    expect(res5.status).toBe(200);
+    // 5. Unsubscribe confirmation page (GET) is prefetch-safe — no deletion.
+    const page = await unsubPageReq(sub.confirmToken);
+    expect(page.status).toBe(200);
+    expect(store.get(sub.id)).toBeDefined();
+
+    // 6. Confirming via POST deletes the subscriber.
+    const res6 = await unsubReq(sub.confirmToken);
+    expect(res6.status).toBe(200);
     expect(store.get(sub.id)).toBeUndefined();
   });
 

@@ -52,4 +52,30 @@ describe("NewsletterComposer", () => {
       body: "Fresh wax",
     });
   });
+
+  it("locks out a second send after success to prevent a duplicate blast", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true, sent: 1200, failed: 0 }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NewsletterComposer />);
+    fireEvent.change(screen.getByLabelText(/subject/i), {
+      target: { value: "New arrivals" },
+    });
+    fireEvent.change(screen.getByLabelText(/body/i), {
+      target: { value: "Fresh wax" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^send/i }));
+    await screen.findByText(/sent to 1200 subscribers/i);
+
+    // After a successful send the button must be gone/disabled so a stray click
+    // can't re-blast the whole list with the same content.
+    const sendButton = screen.queryByRole("button", { name: /^send/i });
+    expect(sendButton === null || (sendButton as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

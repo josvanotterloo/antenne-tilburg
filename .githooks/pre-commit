@@ -7,6 +7,9 @@ set -e
 echo "pre-commit: lint…"
 npm run lint
 
+echo "pre-commit: typecheck…"
+npm run typecheck
+
 echo "pre-commit: tests…"
 sh .claude/skills/run-tests/scripts/run-tests.sh
 

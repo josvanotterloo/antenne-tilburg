@@ -102,16 +102,32 @@ export default async function StockPage({
     page: p.page,
   });
 
+  // Keyed by filter type, not display label: two different filters can share a
+  // label (e.g. genre "House" and label "House", or q equal to a filter value),
+  // which would otherwise collide as React keys.
   const activeChips = [
-    p.q && { label: `“${p.q}”`, href: stockHref(p, { q: undefined }) },
-    p.artist && { label: p.artist, href: stockHref(p, { artist: undefined }) },
-    p.genre && { label: p.genre, href: stockHref(p, { genre: undefined }) },
-    p.label && { label: p.label, href: stockHref(p, { label: undefined }) },
+    p.q && { key: "q", label: `“${p.q}”`, href: stockHref(p, { q: undefined }) },
+    p.artist && {
+      key: "artist",
+      label: p.artist,
+      href: stockHref(p, { artist: undefined }),
+    },
+    p.genre && {
+      key: "genre",
+      label: p.genre,
+      href: stockHref(p, { genre: undefined }),
+    },
+    p.label && {
+      key: "label",
+      label: p.label,
+      href: stockHref(p, { label: undefined }),
+    },
     p.condition && {
+      key: "condition",
       label: p.condition,
       href: stockHref(p, { condition: undefined }),
     },
-  ].filter(Boolean) as { label: string; href: string }[];
+  ].filter(Boolean) as { key: string; label: string; href: string }[];
 
   return (
     <div className="space-y-6">
@@ -144,7 +160,7 @@ export default async function StockPage({
         <div className="flex flex-wrap items-center gap-2">
           {activeChips.map((chip) => (
             <Link
-              key={chip.label}
+              key={chip.key}
               href={chip.href}
               className="inline-flex items-center gap-1 border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[0.03em] text-ink-muted transition-colors hover:border-signal hover:text-ink"
             >

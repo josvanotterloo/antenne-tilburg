@@ -11,5 +11,8 @@ const { auth } = NextAuth(authConfig);
 export default auth;
 
 export const config = {
-  matcher: ["/admin", "/admin/((?!login).*)"],
+  // Protect every /admin route except the login page itself. The lookahead
+  // excludes only exactly "/admin/login" (and its subpaths), not any route that
+  // merely starts with "login" — e.g. a future /admin/login-audit stays gated.
+  matcher: ["/admin", "/admin/((?!login(?:/|$)).*)"],
 };
