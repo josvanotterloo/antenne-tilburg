@@ -31,11 +31,20 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const updated = await db.product.update({
-    where: { id },
-    data: toProductData(parsed.data),
-  });
-  return NextResponse.json(updated);
+  try {
+    const updated = await db.product.update({
+      where: { id },
+      data: toProductData(parsed.data),
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    // Product deleted concurrently, or a connected relation no longer exists →
+    // P2025. Return 404 like GET/DELETE rather than an unhandled 500.
+    if ((error as { code?: string } | null)?.code === "P2025") {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    throw error;
+  }
 }
 
 export async function DELETE(_req: Request, ctx: RouteContext) {

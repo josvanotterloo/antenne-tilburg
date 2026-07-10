@@ -17,16 +17,17 @@ export async function GET(req: Request) {
     return newsletterPage(404, "Invalid link", "This confirmation link is not valid.");
   }
 
-  if (Date.now() - new Date(subscriber.createdAt).getTime() > EXPIRY_MS) {
-    return newsletterPage(
-      400,
-      "Link expired",
-      "This confirmation link has expired. Please sign up again to receive a fresh one.",
-    );
-  }
-
-  // Idempotent: confirming an already-confirmed subscriber is still a success.
+  // Idempotent: an already-confirmed subscriber is always a success, even past
+  // the expiry window (the link doubles as their record; they may revisit it
+  // from an archived email). Expiry only gates a still-PENDING confirmation.
   if (subscriber.status !== "CONFIRMED") {
+    if (Date.now() - new Date(subscriber.createdAt).getTime() > EXPIRY_MS) {
+      return newsletterPage(
+        400,
+        "Link expired",
+        "This confirmation link has expired. Please sign up again to receive a fresh one.",
+      );
+    }
     await db.newsletterSubscriber.update({
       where: { id: subscriber.id },
       data: { status: "CONFIRMED" },

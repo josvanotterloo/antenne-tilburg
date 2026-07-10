@@ -41,14 +41,19 @@ export function parseProductInput(body: unknown): ParseResult {
     return { ok: false, error: "Condition is invalid" };
   }
 
-  const rawPrice =
-    typeof b.price === "number"
-      ? b.price
-      : typeof b.price === "string"
-        ? b.price.trim()
-        : "";
-  const price = Number(rawPrice);
-  if (rawPrice === "" || Number.isNaN(price) || price < 0) {
+  // Price accepts a finite non-negative number, or a decimal string (digits with
+  // an optional single fractional part). Rejects loose Number() coercions —
+  // Infinity/1e309 (would store as Decimal "Infinity" → Prisma 500), hex, and
+  // exponent strings — mirroring the strict quantity rule below.
+  let price: number;
+  if (typeof b.price === "number") {
+    price = b.price;
+  } else if (typeof b.price === "string" && /^\d+(\.\d+)?$/.test(b.price.trim())) {
+    price = Number(b.price.trim());
+  } else {
+    return { ok: false, error: "Price must be a non-negative number" };
+  }
+  if (!Number.isFinite(price) || price < 0) {
     return { ok: false, error: "Price must be a non-negative number" };
   }
 

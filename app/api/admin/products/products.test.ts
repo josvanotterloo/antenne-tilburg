@@ -125,6 +125,14 @@ describe("POST /api/admin/products", () => {
     expect(res.status).toBe(401);
     expect(product.create).not.toHaveBeenCalled();
   });
+
+  it("returns 400 (not an unhandled 500) when a relation id does not exist (P2025)", async () => {
+    // parseProductInput only checks ids are non-empty; a bogus/just-deleted
+    // labelId makes the nested connect throw P2025.
+    product.create.mockRejectedValue({ code: "P2025" });
+    const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("GET /api/admin/products/[id]", () => {
@@ -160,6 +168,12 @@ describe("PATCH /api/admin/products/[id]", () => {
     );
     expect(res.status).toBe(400);
     expect(product.update).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the product was deleted concurrently (P2025)", async () => {
+    product.update.mockRejectedValue({ code: "P2025" });
+    const res = await PATCH(jsonReq("PATCH", validBody), ctx("gone"));
+    expect(res.status).toBe(404);
   });
 });
 

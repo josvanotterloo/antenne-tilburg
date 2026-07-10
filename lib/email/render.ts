@@ -20,26 +20,50 @@ const styles = {
   strong: `color:${EMAIL.text};font-weight:700;`,
 } as const;
 
-// Emphasis / links / images on a text run that contains no inline code.
-function formatEmphasis(escaped: string): string {
-  return escaped
-    .replace(
-      /!\[([^\]]*)\]\(([^)\s]+)\)/g,
-      (_, alt: string, url: string) =>
-        `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`,
-    )
-    .replace(
-      /\[([^\]]+)\]\(([^)\s]+)\)/g,
-      (_, label: string, url: string) =>
-        `<a href="${url}" style="${styles.a}">${label}</a>`,
-    )
-    // Bold before italic so `**` is not consumed by the single-`*` rule.
+// Placeholder sentinels (private-use codepoints) wrapping a stash index. They
+// never appear in escaped email text, so restoring built tags can't collide
+// with ordinary digits in the content (years, "TR-909", prices).
+const STASH_OPEN = "";
+const STASH_CLOSE = "";
+const STASH_RE = /(\d+)/g;
+
+// Bold/italic passes. Applied to plain text and to link labels, but never to
+// built URLs. Bold before italic so `**` isn't consumed by the single-`*` rule.
+function applyEmphasis(text: string): string {
+  return text
     .replace(
       /\*\*([^*]+)\*\*/g,
       (_, t: string) => `<strong style="${styles.strong}">${t}</strong>`,
     )
     .replace(/\*([^*\n]+)\*/g, (_, t: string) => `<em>${t}</em>`)
     .replace(/_([^_\n]+)_/g, (_, t: string) => `<em>${t}</em>`);
+}
+
+// Emphasis / links / images on a text run that contains no inline code. Built
+// links/images are stashed behind sentinels so the emphasis passes can't
+// rewrite `_`/`*` inside a URL (utm_source, file_names, a_b.png) — a very
+// common corruption. Link label text is still emphasised via applyEmphasis.
+function formatEmphasis(escaped: string): string {
+  const stash: string[] = [];
+  const keep = (html: string) =>
+    `${STASH_OPEN}${stash.push(html) - 1}${STASH_CLOSE}`;
+
+  const withTags = escaped
+    .replace(
+      /!\[([^\]]*)\]\(([^)\s]+)\)/g,
+      (_, alt: string, url: string) =>
+        keep(`<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`),
+    )
+    .replace(
+      /\[([^\]]+)\]\(([^)\s]+)\)/g,
+      (_, label: string, url: string) =>
+        keep(`<a href="${url}" style="${styles.a}">${applyEmphasis(label)}</a>`),
+    );
+
+  return applyEmphasis(withTags).replace(
+    STASH_RE,
+    (_, i: string) => stash[Number(i)],
+  );
 }
 
 // Inline formatting for one block of text. HTML is escaped first; inline code spans

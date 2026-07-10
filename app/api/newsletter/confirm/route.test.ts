@@ -57,4 +57,17 @@ describe("GET /api/newsletter/confirm", () => {
       data: { status: "CONFIRMED" },
     });
   });
+
+  it("treats an already-CONFIRMED subscriber as success even past the 48h window (idempotent)", async () => {
+    // The expiry gate must not fire for someone who already confirmed — the link
+    // doubles as their record and they may revisit it from an archived email.
+    vi.mocked(db.newsletterSubscriber.findUnique).mockResolvedValue({
+      id: "s1",
+      status: "CONFIRMED",
+      createdAt: hoursAgo(72),
+    } as never);
+    const res = await get("old-but-confirmed");
+    expect(res.status).toBe(200);
+    expect(db.newsletterSubscriber.update).not.toHaveBeenCalled();
+  });
 });

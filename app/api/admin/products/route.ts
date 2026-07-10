@@ -24,6 +24,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
-  const created = await db.product.create({ data: toProductData(parsed.data) });
-  return NextResponse.json(created, { status: 201 });
+  try {
+    const created = await db.product.create({ data: toProductData(parsed.data) });
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    // A labelId/genreId/productTypeId that doesn't exist (e.g. deleted by the
+    // other admin) makes the nested connect throw P2025 — a client error, not a
+    // 500 leaking Prisma internals.
+    if ((error as { code?: string } | null)?.code === "P2025") {
+      return NextResponse.json(
+        { error: "Selected label, genre or product type no longer exists" },
+        { status: 400 },
+      );
+    }
+    throw error;
+  }
 }

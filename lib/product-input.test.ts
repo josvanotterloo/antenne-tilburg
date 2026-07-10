@@ -89,8 +89,18 @@ describe("parseProductInput", () => {
     ["negative", "-1"],
     ["non-numeric", "abc"],
     ["empty", ""],
+    // Loose Number() coercions that must be rejected (mirrors quantity). "1e309"
+    // → Infinity would otherwise store as Decimal "Infinity" and 500 in Prisma.
+    ["infinity", "1e309"],
+    ["hex", "0x10"],
+    ["exponent", "1e3"],
+    ["whitespace-only", "   "],
   ])("rejects %s price", (_label, price) => {
     expect(parseProductInput({ ...VALID, price }).ok).toBe(false);
+  });
+
+  it("rejects a non-finite numeric price", () => {
+    expect(parseProductInput({ ...VALID, price: Infinity }).ok).toBe(false);
   });
 
   it("accepts a numeric price and stringifies it", () => {

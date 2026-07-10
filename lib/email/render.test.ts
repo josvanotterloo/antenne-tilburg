@@ -66,6 +66,23 @@ describe("renderNewsletterEmail — markdown coverage", () => {
     expect(link).toContain("the shop");
   });
 
+  it("does not corrupt link URLs that contain underscores", () => {
+    // The italic rule must not rewrite _..._ inside an already-built href.
+    const link = render("see [it](https://x.test/foo_bar_baz?utm_source=news)");
+    expect(link).toContain('href="https://x.test/foo_bar_baz?utm_source=news"');
+    expect(link).not.toContain("<em");
+  });
+
+  it("does not corrupt image URLs that contain underscores or asterisks", () => {
+    const img = render("![x](https://cdn.test/a_b_c.png)");
+    expect(img).toContain('src="https://cdn.test/a_b_c.png"');
+    expect(img).not.toContain("<em");
+  });
+
+  it("still italicizes underscores in ordinary prose", () => {
+    expect(render("a _dusty_ tape")).toContain("<em");
+  });
+
   it("renders blockquotes and horizontal rules", () => {
     expect(render("> come dig")).toContain("<blockquote");
     expect(render("---")).toContain("<hr");
