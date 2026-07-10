@@ -72,6 +72,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       rows, then `ALTER COLUMN "emailHash" SET NOT NULL` (closes the
       transitional nullable state for good)
 
+### Code quality
+- [x] Full-codebase code review (Phase 3, 2026-07-09/10) — 1 High + 5 Medium
+      fixed; report `docs/security/code-review-2026-07-09.md`
+- [ ] Shared `useAsyncAction` helper for admin fetch error handling (systemic
+      Low from the review — stuck busy flags / silent no-ops)
+
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
       document real credential handoff — **required before any deploy**
@@ -99,7 +105,7 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 375 tests cover managed-list
+Done — Vitest runner + `run-tests` skill in place; 390 tests cover managed-list
 delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
 markdown rendering, sitemap, and the public/admin flows.
 
