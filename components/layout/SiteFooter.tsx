@@ -14,7 +14,7 @@ const NAV = [
 const heading =
   "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
 const link =
-  "font-mono text-sm text-ink-muted transition-colors hover:text-signal";
+  "font-mono text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-signal";
 
 export function SiteFooter() {
   return (
@@ -54,7 +54,7 @@ export function SiteFooter() {
             <p>
               <a
                 href="tel:+31135421708"
-                className="transition-colors hover:text-signal"
+                className="transition-colors duration-150 ease-out hover:text-signal"
               >
                 +31 13 542 1708
               </a>
@@ -73,7 +73,7 @@ export function SiteFooter() {
             href="https://www.discogs.com/seller/antennetilburg"
             target="_blank"
             rel="noopener noreferrer"
-            className="uppercase tracking-[0.04em] transition-colors hover:text-signal"
+            className="uppercase tracking-[0.06em] transition-colors duration-150 ease-out hover:text-signal"
           >
             Also on Discogs ↗
           </a>

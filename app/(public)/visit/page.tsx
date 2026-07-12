@@ -47,7 +47,7 @@ async function getHours() {
 }
 
 const label =
-  "font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted";
+  "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
 
 export default async function VisitPage() {
   const hours = orderOpeningHours(await getHours());
@@ -82,7 +82,7 @@ export default async function VisitPage() {
               href={DIRECTIONS_HREF}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block border border-hairline px-4 py-2 font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink transition-colors hover:border-signal hover:text-signal"
+              className="inline-block border border-hairline px-4 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
             >
               Get directions ↗
             </a>
@@ -93,7 +93,7 @@ export default async function VisitPage() {
             <p className="font-mono text-sm text-ink">
               <a
                 href={SHOP.phoneHref}
-                className="transition-colors hover:text-signal"
+                className="transition-colors duration-150 ease-out hover:text-signal"
               >
                 {SHOP.phoneDisplay}
               </a>
@@ -101,7 +101,7 @@ export default async function VisitPage() {
             <p className="font-mono text-sm text-ink">
               <a
                 href={`mailto:${SHOP.email}`}
-                className="transition-colors hover:text-signal"
+                className="transition-colors duration-150 ease-out hover:text-signal"
               >
                 {SHOP.email}
               </a>

@@ -50,6 +50,24 @@ describe("postExcerpt", () => {
     const tokens = out.slice(0, -1).trim().split(" ");
     expect(tokens.every((t) => t === "word")).toBe(true);
   });
+
+  it("drops a leading image so the excerpt is real prose, not raw markdown", () => {
+    expect(
+      postExcerpt("![alt](/uploads/abc.jpg)A heavy box landed this week."),
+    ).toBe("A heavy box landed this week.");
+  });
+
+  it("keeps link text but strips the markdown link syntax", () => {
+    expect(postExcerpt("Catch us on [Discogs](https://discogs.com/x).")).toBe(
+      "Catch us on Discogs.",
+    );
+  });
+
+  it("strips emphasis and heading markers", () => {
+    expect(postExcerpt("## New in\n\nFresh **wax** and _tape_.")).toBe(
+      "New in Fresh wax and tape.",
+    );
+  });
 });
 
 describe("getPublishedPosts", () => {

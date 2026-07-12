@@ -22,4 +22,15 @@
       0 0 0 2px #0a0b0d,
       0 0 0 3px #6b7dc9;
   }
+
+  /* Reduced-motion alternative for the subtle hover/color transitions across the
+     public surface — collapse them to near-instant (DESIGN.md: every animation
+     needs a prefers-reduced-motion path). */
+  @media (prefers-reduced-motion: reduce) {
+    .site-dark *,
+    .site-dark *::before,
+    .site-dark *::after {
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

@@ -42,10 +42,10 @@ const SORTS = [
 ];
 
 const filterLabel =
-  "font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted";
+  "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
 const activeLink =
   "text-ink underline decoration-signal underline-offset-4";
-const idleLink = "text-ink-muted transition-colors hover:text-ink";
+const idleLink = "text-ink-muted transition-colors duration-150 ease-out hover:text-ink";
 
 function JustInBadge() {
   return (
@@ -130,8 +130,8 @@ export default async function StockPage({
   ].filter(Boolean) as { key: string; label: string; href: string }[];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+    <div className="space-y-8">
+      <h1 className="text-3xl font-bold leading-[0.95] tracking-tight text-ink sm:text-4xl">
         Stock
       </h1>
 
@@ -150,7 +150,7 @@ export default async function StockPage({
         )}
         <button
           type="submit"
-          className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.04em] text-canvas transition-colors hover:border-signal hover:bg-signal"
+          className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
         >
           Search
         </button>
@@ -162,14 +162,14 @@ export default async function StockPage({
             <Link
               key={chip.key}
               href={chip.href}
-              className="inline-flex items-center gap-1 border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[0.03em] text-ink-muted transition-colors hover:border-signal hover:text-ink"
+              className="inline-flex items-center gap-1 border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[0.05em] text-ink-muted transition-colors duration-150 ease-out hover:border-signal hover:text-ink"
             >
               {chip.label} <span aria-hidden>×</span>
             </Link>
           ))}
           <Link
             href="/stock"
-            className="px-2 py-1 font-mono text-xs uppercase tracking-[0.04em] text-ink-muted underline transition-colors hover:text-signal"
+            className="px-2 py-1 font-mono text-xs uppercase tracking-[0.06em] text-ink-muted underline transition-colors duration-150 ease-out hover:text-signal"
           >
             Clear all
           </Link>
@@ -203,11 +203,11 @@ export default async function StockPage({
 
         <section className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
-            <span className="uppercase tracking-[0.04em] text-ink-muted">
+            <span className="uppercase tracking-[0.06em] text-ink-muted">
               {result.total} result{result.total === 1 ? "" : "s"}
             </span>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="uppercase tracking-[0.04em] text-ink-muted">
+              <span className="uppercase tracking-[0.06em] text-ink-muted">
                 Sort:
               </span>
               {SORTS.map((s) => {
@@ -307,18 +307,18 @@ function FilterGroup({
 // filter) rather than one wrapping anchor, so no anchors are nested.
 function ProductRow({ product }: { product: CatalogProduct }) {
   return (
-    <div className="flex items-baseline justify-between gap-4 py-3">
+    <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
       <span className="min-w-0 flex-1">
         <Link
           href={stockArtistHref(product.artist)}
-          className="font-medium text-ink transition-colors hover:text-signal"
+          className="font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
         >
           {product.artist}
         </Link>
         <span className="text-ink-muted"> — </span>
         <Link
           href={`/stock/${product.id}`}
-          className="text-ink-muted transition-colors hover:text-ink"
+          className="text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
         >
           {product.title}
         </Link>
@@ -326,7 +326,7 @@ function ProductRow({ product }: { product: CatalogProduct }) {
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
           <Link
             href={stockLabelHref(product.label.name)}
-            className="transition-colors hover:text-signal"
+            className="transition-colors duration-150 ease-out hover:text-signal"
           >
             {product.label.name}
           </Link>
@@ -338,7 +338,7 @@ function ProductRow({ product }: { product: CatalogProduct }) {
       </span>
       <Link
         href={`/stock/${product.id}`}
-        className="shrink-0 font-mono text-sm tabular-nums text-ink transition-colors hover:text-signal"
+        className="shrink-0 font-mono text-sm tabular-nums text-ink transition-colors duration-150 ease-out hover:text-signal"
       >
         €{Number(product.price).toFixed(2)}
       </Link>
@@ -348,23 +348,23 @@ function ProductRow({ product }: { product: CatalogProduct }) {
 
 function ProductCard({ product }: { product: CatalogProduct }) {
   return (
-    <div className="border border-hairline p-3">
+    <div className="border border-hairline p-3 transition-colors duration-150 ease-out hover:border-signal">
       <Link
         href={stockArtistHref(product.artist)}
-        className="block font-medium text-ink transition-colors hover:text-signal"
+        className="block font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
       >
         {product.artist}
       </Link>
       <Link
         href={`/stock/${product.id}`}
-        className="block text-sm text-ink-muted transition-colors hover:text-ink"
+        className="block text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
       >
         {product.title}
       </Link>
       <div className="mt-1 font-mono text-xs text-ink-muted">
         <Link
           href={stockLabelHref(product.label.name)}
-          className="transition-colors hover:text-signal"
+          className="transition-colors duration-150 ease-out hover:text-signal"
         >
           {product.label.name}
         </Link>
@@ -374,7 +374,7 @@ function ProductCard({ product }: { product: CatalogProduct }) {
       <div className="mt-2 flex items-center justify-between">
         <Link
           href={`/stock/${product.id}`}
-          className="font-mono text-sm tabular-nums text-ink transition-colors hover:text-signal"
+          className="font-mono text-sm tabular-nums text-ink transition-colors duration-150 ease-out hover:text-signal"
         >
           €{Number(product.price).toFixed(2)}
         </Link>
@@ -400,7 +400,7 @@ function Pagination({
   if (pageCount <= 1) return null;
   const pages = catalogPageNumbers(page, pageCount);
   const cell =
-    "border border-hairline px-2 py-1 font-mono text-xs text-ink-muted transition-colors hover:border-signal hover:text-ink";
+    "border border-hairline px-2 py-1 font-mono text-xs text-ink-muted transition-colors duration-150 ease-out hover:border-signal hover:text-ink";
   return (
     <nav
       className="flex flex-wrap items-center gap-1"

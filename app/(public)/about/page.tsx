@@ -71,14 +71,14 @@ export default function AboutPage() {
           Come dig in person —{" "}
           <Link
             href="/visit"
-            className="text-ink underline decoration-hairline underline-offset-4 transition-colors hover:text-signal hover:decoration-signal"
+            className="text-ink underline decoration-hairline underline-offset-4 transition-colors duration-150 ease-out hover:text-signal hover:decoration-signal"
           >
             find us inside Sam-Sam
           </Link>{" "}
           for opening hours and a map, or{" "}
           <Link
             href="/stock"
-            className="text-ink underline decoration-hairline underline-offset-4 transition-colors hover:text-signal hover:decoration-signal"
+            className="text-ink underline decoration-hairline underline-offset-4 transition-colors duration-150 ease-out hover:text-signal hover:decoration-signal"
           >
             browse what&rsquo;s in
           </Link>

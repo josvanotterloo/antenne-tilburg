@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const label =
-  "font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted";
+  "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
 
 export default function NewsletterPage() {
   return (

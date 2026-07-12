@@ -15,10 +15,24 @@ export function postDateLabel(date: Date | string): string {
   return `${day} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-// Plain-text excerpt: collapse whitespace, then cut at the last word boundary
-// before `max` and append an ellipsis.
+// Strip the markdown the post body uses (the same subset PostBody renders) down
+// to plain text, so an excerpt reads as prose instead of leaking raw syntax like
+// `![](/uploads/x.jpg)` or `[label](url)` into the listing.
+function stripMarkdown(body: string): string {
+  return body
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // images → removed entirely
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links → keep the label text
+    .replace(/`([^`]+)`/g, "$1") // inline code → its contents
+    .replace(/^#{1,6}\s+/gm, "") // heading markers
+    .replace(/^>\s?/gm, "") // blockquote markers
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1") // bold / italic
+    .replace(/[*_]/g, ""); // any stray emphasis chars
+}
+
+// Plain-text excerpt: strip markdown, collapse whitespace, then cut at the last
+// word boundary before `max` and append an ellipsis.
 export function postExcerpt(body: string, max = 160): string {
-  const text = body.replace(/\s+/g, " ").trim();
+  const text = stripMarkdown(body).replace(/\s+/g, " ").trim();
   if (text.length <= max) return text;
   const slice = text.slice(0, max);
   const lastSpace = slice.lastIndexOf(" ");

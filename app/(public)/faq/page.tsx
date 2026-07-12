@@ -81,7 +81,7 @@ export default function FaqPage() {
         Opening hours and a map are on the{" "}
         <Link
           href="/visit"
-          className="text-ink underline decoration-hairline underline-offset-4 transition-colors hover:text-signal hover:decoration-signal"
+          className="text-ink underline decoration-hairline underline-offset-4 transition-colors duration-150 ease-out hover:text-signal hover:decoration-signal"
         >
           Visit page
         </Link>

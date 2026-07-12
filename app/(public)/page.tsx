@@ -29,9 +29,9 @@ export default async function HomePage() {
   const posts = allPosts.slice(0, 3);
 
   return (
-    <div className="space-y-16">
+    <div className="space-y-20 sm:space-y-24">
       {/* Hero */}
-      <section className="relative -mx-4 overflow-hidden border-b border-hairline px-4 pb-12 pt-6">
+      <section className="relative -mx-4 overflow-hidden border-b border-hairline px-4 pb-14 pt-6">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-40 select-none overflow-hidden opacity-[0.13] [mask-image:linear-gradient(to_bottom,#000_0%,transparent_100%)]"
@@ -41,10 +41,10 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="relative max-w-2xl space-y-4">
-          <h1 className="text-balance text-4xl font-bold tracking-tight text-ink sm:text-5xl">
+          <h1 className="text-balance text-4xl font-bold leading-[0.95] tracking-tight text-ink sm:text-5xl">
             Antenne Recordshop
           </h1>
-          <p className="font-mono text-xs uppercase tracking-[0.06em] text-signal">
+          <p className="font-mono text-xs uppercase tracking-[0.08em] text-signal">
             Electronic music · vinyl &amp; tape · Tilburg
           </p>
           <p className="max-w-prose text-pretty leading-relaxed text-ink-muted">
@@ -54,13 +54,13 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-3 pt-1">
             <Link
               href="/stock"
-              className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.04em] text-canvas transition-colors hover:border-signal hover:bg-signal"
+              className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
             >
               Browse stock
             </Link>
             <Link
               href="/visit"
-              className="border border-hairline px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink transition-colors hover:border-signal hover:text-signal"
+              className="border border-hairline px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
             >
               Plan your visit
             </Link>
@@ -69,12 +69,12 @@ export default async function HomePage() {
       </section>
 
       {/* Just In */}
-      <section className="space-y-5">
+      <section className="space-y-6">
         <div className="flex items-baseline justify-between gap-4">
-          <h2 className="text-2xl font-bold tracking-tight text-ink">Just In</h2>
+          <h2 className="text-2xl font-bold leading-[1.1] tracking-tight text-ink">Just In</h2>
           <Link
             href="/stock"
-            className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+            className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
           >
             All stock →
           </Link>
@@ -100,14 +100,14 @@ export default async function HomePage() {
 
       {/* From the blog */}
       {posts.length > 0 && (
-        <section className="space-y-5">
+        <section className="space-y-6">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className="text-2xl font-bold tracking-tight text-ink">
+            <h2 className="text-2xl font-bold leading-[1.1] tracking-tight text-ink">
               From the blog
             </h2>
             <Link
               href="/blog"
-              className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+              className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
             >
               All posts →
             </Link>
@@ -123,11 +123,11 @@ export default async function HomePage() {
                   >
                     <time
                       dateTime={new Date(date).toISOString()}
-                      className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted sm:w-28 sm:shrink-0"
+                      className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted sm:w-28 sm:shrink-0"
                     >
                       {postDateLabel(date)}
                     </time>
-                    <span className="font-semibold text-ink transition-colors group-hover:text-signal">
+                    <span className="font-semibold text-ink transition-colors duration-150 ease-out group-hover:text-signal">
                       {post.title}
                     </span>
                   </Link>
@@ -140,7 +140,7 @@ export default async function HomePage() {
 
       {/* Visit teaser */}
       <section className="border border-hairline p-6">
-        <h2 className="font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted">
+        <h2 className="font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted">
           Visit
         </h2>
         <p className="mt-2 text-ink">
@@ -148,7 +148,7 @@ export default async function HomePage() {
         </p>
         <Link
           href="/visit"
-          className="mt-3 inline-block font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+          className="mt-3 inline-block font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
         >
           Opening hours &amp; map →
         </Link>
@@ -164,7 +164,7 @@ function JustInRow({ product }: { product: CatalogProduct }) {
       className="group flex items-baseline justify-between gap-4 py-3"
     >
       <span className="min-w-0 flex-1">
-        <span className="font-medium text-ink transition-colors group-hover:text-signal">
+        <span className="font-medium text-ink transition-colors duration-150 ease-out group-hover:text-signal">
           {product.artist}
         </span>
         <span className="text-ink-muted"> — {product.title}</span>

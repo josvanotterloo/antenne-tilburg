@@ -25,10 +25,10 @@ export function SiteHeader() {
           <img
             src="/logo.png"
             alt="Antenne Tilburg"
-            className="h-14 w-auto invert mix-blend-screen"
+            className="h-14 w-auto opacity-90 invert transition-opacity duration-150 ease-out mix-blend-screen hover:opacity-100"
           />
         </Link>
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.04em]">
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.06em]">
           {NAV.map((item) => {
             const active = isActive(pathname, item.href);
             return (
@@ -39,7 +39,7 @@ export function SiteHeader() {
                 className={
                   active
                     ? "border-b border-signal pb-1 text-ink"
-                    : "pb-1 text-ink-muted transition-colors hover:text-ink"
+                    : "pb-1 text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
                 }
               >
                 {item.label}

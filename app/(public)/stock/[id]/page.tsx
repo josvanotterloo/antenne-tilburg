@@ -47,13 +47,13 @@ export default async function ProductDetailPage({
 
   const justIn = isJustIn(product.createdAt);
 
-  const dt = "font-mono text-xs uppercase tracking-[0.04em] text-ink-muted";
+  const dt = "font-mono text-xs uppercase tracking-[0.06em] text-ink-muted";
 
   return (
     <article className="space-y-8">
       <Link
         href="/stock"
-        className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+        className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
       >
         ← Back to stock
       </Link>
@@ -62,7 +62,7 @@ export default async function ProductDetailPage({
         <h1 className="text-balance text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           <Link
             href={stockArtistHref(product.artist)}
-            className="transition-colors hover:text-signal"
+            className="transition-colors duration-150 ease-out hover:text-signal"
           >
             {product.artist}
           </Link>{" "}
@@ -76,7 +76,7 @@ export default async function ProductDetailPage({
         <p className="font-mono text-sm text-ink-muted">
           <Link
             href={stockLabelHref(product.label.name)}
-            className="transition-colors hover:text-signal"
+            className="transition-colors duration-150 ease-out hover:text-signal"
           >
             {product.label.name}
           </Link>{" "}
@@ -89,7 +89,7 @@ export default async function ProductDetailPage({
         <dd className="border-b border-hairline py-2">
           <Link
             href={stockArtistHref(product.artist)}
-            className="text-ink transition-colors hover:text-signal"
+            className="text-ink transition-colors duration-150 ease-out hover:text-signal"
           >
             {product.artist}
           </Link>
@@ -108,7 +108,7 @@ export default async function ProductDetailPage({
         <dd className="border-b border-hairline py-2">
           <Link
             href={stockLabelHref(product.label.name)}
-            className="text-ink transition-colors hover:text-signal"
+            className="text-ink transition-colors duration-150 ease-out hover:text-signal"
           >
             {product.label.name}
           </Link>

@@ -83,7 +83,7 @@ export default function SocialLinks({ className = "" }: { className?: string }) 
             target="_blank"
             rel="noopener noreferrer"
             aria-label={label}
-            className="flex h-11 w-11 items-center justify-center border border-hairline text-ink-muted transition-colors hover:border-signal hover:text-signal"
+            className="flex h-11 w-11 items-center justify-center border border-hairline text-ink-muted transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
           >
             <Icon />
           </a>

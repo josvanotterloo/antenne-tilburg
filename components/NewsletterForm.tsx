@@ -7,7 +7,7 @@ type Status = "idle" | "submitting" | "success" | "error";
 const labelClass =
   "font-mono text-xs font-medium uppercase tracking-[0.04em] text-ink-muted";
 const inputClass =
-  "w-full border border-hairline bg-canvas px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-muted focus-visible:border-signal";
+  "w-full border border-hairline bg-canvas px-3 py-2 font-mono text-sm text-ink transition-colors duration-150 ease-out placeholder:text-ink-muted focus-visible:border-signal";
 
 export default function NewsletterForm() {
   const [name, setName] = useState("");
@@ -95,7 +95,7 @@ export default function NewsletterForm() {
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.04em] text-canvas transition-colors hover:border-signal hover:bg-signal disabled:opacity-60"
+        className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal disabled:opacity-60"
       >
         {status === "submitting" ? "Signing up…" : "Sign up"}
       </button>

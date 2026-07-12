@@ -10,9 +10,9 @@ export default async function BlogIndexPage() {
   const posts = await getPublishedPosts();
 
   return (
-    <div className="space-y-10">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <h1 className="text-3xl font-bold leading-[0.95] tracking-tight text-ink sm:text-4xl">
           Blog
         </h1>
         <p className="max-w-prose text-ink-muted">
@@ -32,19 +32,19 @@ export default async function BlogIndexPage() {
               <li key={post.id}>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="group flex flex-col gap-2 py-6 sm:flex-row sm:gap-8"
+                  className="group -mx-4 flex flex-col gap-2 px-4 py-8 transition-colors duration-150 ease-out hover:bg-surface sm:flex-row sm:gap-8"
                 >
                   <time
                     dateTime={new Date(date).toISOString()}
-                    className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted sm:w-32 sm:shrink-0 sm:pt-1"
+                    className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted sm:w-32 sm:shrink-0 sm:pt-1.5"
                   >
                     {postDateLabel(date)}
                   </time>
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-semibold tracking-tight text-ink transition-colors group-hover:text-signal">
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold leading-[1.2] tracking-tight text-ink transition-colors duration-150 ease-out group-hover:text-signal">
                       {post.title}
                     </h2>
-                    <p className="max-w-prose text-ink-muted">
+                    <p className="max-w-prose text-pretty leading-relaxed text-ink-muted">
                       {postExcerpt(post.body)}
                     </p>
                   </div>
