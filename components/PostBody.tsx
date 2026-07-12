@@ -3,14 +3,16 @@ import ReactMarkdown, { type Components } from "react-markdown";
 // Markdown → DESIGN.md-styled elements. react-markdown does not render raw HTML by
 // default, so post bodies (admin-authored markdown) have no HTML-injection surface.
 const components: Components = {
-  p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+  // Long-form reading line-height: DESIGN.md body is 1.6; +0.1 for light text on
+  // the dark canvas (brand guidance) → 1.7, comfortable for a full post.
+  p: ({ children }) => <p className="leading-[1.7]">{children}</p>,
   a: ({ href, children }) => {
     const external = /^https?:\/\//i.test(href ?? "");
     return (
       <a
         href={href ?? "#"}
         {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-        className="text-signal underline decoration-signal underline-offset-4 transition-colors hover:text-ink"
+        className="text-signal underline decoration-signal underline-offset-4 transition-colors duration-150 ease-out hover:text-ink"
       >
         {children}
       </a>
@@ -26,13 +28,15 @@ const components: Components = {
       className="mx-auto mb-8 block w-full max-w-[600px] border border-hairline"
     />
   ),
+  // Headings get more top padding than the block gap below them, so each heading
+  // reads as belonging to the content that follows (asymmetric rhythm).
   h2: ({ children }) => (
-    <h2 className="pt-4 text-2xl font-bold tracking-tight text-ink">
+    <h2 className="pt-6 text-2xl font-bold leading-[1.15] tracking-tight text-ink">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="pt-2 text-xl font-semibold tracking-tight text-ink">
+    <h3 className="pt-4 text-xl font-semibold leading-[1.2] tracking-tight text-ink">
       {children}
     </h3>
   ),
@@ -62,7 +66,7 @@ const components: Components = {
 
 export function PostBody({ body }: { body: string }) {
   return (
-    <div className="space-y-4 text-pretty text-ink">
+    <div className="space-y-6 text-pretty text-ink">
       <ReactMarkdown components={components}>{body}</ReactMarkdown>
     </div>
   );

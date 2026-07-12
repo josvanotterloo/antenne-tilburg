@@ -41,11 +41,13 @@ export default async function BlogPostPage({
 
   const date = post.publishedAt ?? post.createdAt;
 
+  // Extra horizontal inset on mobile (on top of the layout's px-4) so the
+  // reading column doesn't hug the screen edges. 72ch measure stays.
   return (
-    <article className="mx-auto max-w-prose space-y-8">
+    <article className="mx-auto max-w-prose space-y-10 px-2 sm:px-0">
       <Link
         href="/blog"
-        className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted transition-colors hover:text-signal"
+        className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
       >
         ← Back to blog
       </Link>
@@ -53,11 +55,11 @@ export default async function BlogPostPage({
       <header className="space-y-3">
         <time
           dateTime={new Date(date).toISOString()}
-          className="font-mono text-xs uppercase tracking-[0.04em] text-ink-muted"
+          className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted"
         >
           {postDateLabel(date)}
         </time>
-        <h1 className="text-balance text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+        <h1 className="text-balance text-3xl font-bold leading-[1.05] tracking-tight text-ink sm:text-4xl">
           {post.title}
         </h1>
       </header>
