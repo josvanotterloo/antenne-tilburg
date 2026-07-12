@@ -55,7 +55,7 @@ export function NewsletterComposer() {
           required
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </div>
 
@@ -69,7 +69,7 @@ export function NewsletterComposer() {
           rows={12}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 font-mono text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 font-mono text-sm"
         />
       </div>
 
@@ -77,7 +77,7 @@ export function NewsletterComposer() {
         <button
           type="button"
           onClick={() => setShowPreview((p) => !p)}
-          className="rounded border border-neutral-300 px-4 py-2 text-sm"
+          className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
           {showPreview ? "Hide preview" : "Preview"}
         </button>
@@ -87,7 +87,7 @@ export function NewsletterComposer() {
           // subject/body stays on screen, so a stray click would re-blast the
           // whole list. Composing a new one is a fresh page load.
           disabled={status === "sending" || status === "sent"}
-          className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
           {status === "sending"
             ? "Sending…"
@@ -98,19 +98,19 @@ export function NewsletterComposer() {
       </div>
 
       {status === "sent" && result && (
-        <p role="status" className="text-sm text-green-700">
+        <p role="status" className="text-sm text-green-400">
           Sent to {result.sent} subscriber{result.sent === 1 ? "" : "s"}.
           {result.failed > 0 ? ` ${result.failed} failed.` : ""}
         </p>
       )}
       {status === "error" && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
 
       {showPreview && (
-        <div className="rounded border border-neutral-200 bg-canvas p-4">
+        <div className="rounded border border-admin-hairline bg-canvas p-4">
           <p className="mb-3 text-xs uppercase tracking-wide text-ink-muted">
             Email preview
           </p>

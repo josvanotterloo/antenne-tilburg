@@ -9,6 +9,12 @@ colors:
   ink-muted: "#9BA1AC"
   hairline: "#2A2D34"
   signal: "#6B7DC9"
+  admin-bg: "#111318"
+  admin-surface: "#1C1F26"
+  admin-raised: "#242833"
+  admin-hairline: "#2A2D35"
+  admin-ink: "#F0F0F0"
+  admin-ink-muted: "#8A8F9C"
 typography:
   display:
     fontFamily: "Space Grotesk, ui-sans-serif, system-ui, sans-serif"
@@ -296,3 +302,49 @@ table. "Just In" items carry the Signal badge.
   drop-shadows to fake depth on black.
 - **Don't** convey state (selected filter, sold, error) with colour alone; always
   pair it with text, weight, or a glyph for colour-blind users.
+
+## 7. Admin Theme (the tool, not the storefront)
+
+The public site is the storefront — pure black, the pirate signal. The **admin**
+is a separate surface: a workspace where the shop runs the catalog, posts,
+notices, hours, subscribers and users. It is *not* the brand front; it is a
+professional tool, so it gets its own dark theme — related to the storefront but
+distinct, and tuned for dense, task-focused work rather than atmosphere. Scoped
+to the `.admin-dark` wrapper on the admin layout so it never touches the public
+`.site-dark` surface.
+
+### Tokens
+A slightly warmer, lighter-black than the storefront canvas — a screen you stare
+at while working, not the back-room dark.
+
+- **Admin BG** (`#111318`): the admin page background and the recessed fill for
+  form inputs (an input reads as one step *below* the panel it sits in).
+- **Admin Surface** (`#1C1F26`): cards, tables, panels, the top nav bar. One
+  step up from the background.
+- **Admin Raised** (`#242833`): hover rows, active nav item, secondary badges —
+  the top tonal layer (mirrors the storefront's Surface-Raised role).
+- **Admin Hairline** (`#2A2D35`): 1px dividers, table rules, input/button
+  borders. Structure by hairline, as on the storefront — no shadows.
+- **Admin Ink** (`#F0F0F0`): primary text; also the fill of a primary button
+  (light-on-dark inversion), with `admin-bg` as its text.
+- **Admin Ink Muted** (`#8A8F9C`): secondary text, metadata, inactive nav,
+  placeholders. Holds ≥4.5:1 on `admin-bg`.
+
+### Rules carried over from the storefront
+- **Signal is shared.** The same `#6B7DC9` marks the active nav section and is
+  the hover for primary buttons — one accent, both surfaces.
+- **Flat, hairline depth.** No shadows; separation by hairline or a one-step
+  tonal shift (BG → Surface → Raised), exactly as §4.
+- **`color-scheme: dark`** on the wrapper so native controls — date/time
+  pickers, checkboxes, scrollbars — render dark. This detail is what separates a
+  considered tool from a default Tailwind form.
+- **State is never colour alone.** Semantic badges (CONFIRMED green, PENDING
+  amber, danger red) are dark-adapted (translucent tint + a lighter text hue)
+  and always paired with their label text.
+- **Focus is the one non-flat cue:** the Signal focus ring, over `admin-bg`.
+
+### Not the storefront
+The admin keeps its subtle rounded corners (it is a form-dense tool, not the
+terminal-true storefront) and uses the proportional Space Grotesk / system stack
+for UI text rather than the mono catalog voice. The mono voice belongs to the
+public transmission; the admin is a workspace.

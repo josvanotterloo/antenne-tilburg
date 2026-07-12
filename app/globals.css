@@ -33,4 +33,39 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Admin dark theme (DESIGN.md §7). Scoped to `.admin-dark` (the admin layout
+     wrapper) so it never touches the public surface. color-scheme:dark makes
+     native controls — date/time pickers, checkboxes, scrollbars — render dark,
+     the detail that separates a considered tool from a default Tailwind form. */
+  .admin-dark {
+    color-scheme: dark;
+  }
+
+  .admin-dark ::selection {
+    background: #6b7dc9;
+    color: #111318;
+  }
+
+  /* Form controls get an explicit dark fill (one step below the surface they sit
+     on), muted placeholders, and a signal focus. Borders/spacing stay on the
+     utility classes each field already carries. */
+  .admin-dark input,
+  .admin-dark textarea,
+  .admin-dark select {
+    background-color: #111318;
+    color: #f0f0f0;
+  }
+
+  .admin-dark input::placeholder,
+  .admin-dark textarea::placeholder {
+    color: #8a8f9c;
+  }
+
+  .admin-dark :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px #111318,
+      0 0 0 3px #6b7dc9;
+  }
 }

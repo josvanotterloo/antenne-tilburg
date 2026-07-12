@@ -43,14 +43,14 @@ export function NoticeActions({ notice }: { notice: NoticeActionValues }) {
           type="button"
           onClick={toggleActive}
           disabled={pending}
-          className="text-neutral-700 hover:underline disabled:opacity-50"
+          className="text-admin-ink hover:underline disabled:opacity-50"
         >
           {notice.active ? "Deactivate" : "Activate"}
         </button>
         <DeleteButton endpoint={`/api/admin/notices/${notice.id}`} />
       </div>
       {error && (
-        <p role="alert" className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-red-400">
           {error}
         </p>
       )}

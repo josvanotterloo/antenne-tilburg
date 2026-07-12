@@ -14,6 +14,15 @@ const config: Config = {
         "ink-muted": "#9BA1AC",
         hairline: "#2A2D34",
         signal: "#6B7DC9",
+        // Admin dark theme — see DESIGN.md §7. A slightly warmer, lighter-black
+        // than the public canvas: the tool is a workspace, not the storefront.
+        // Signal (shared) carries active nav + primary-action hover.
+        "admin-bg": "#111318",
+        "admin-surface": "#1C1F26",
+        "admin-raised": "#242833",
+        "admin-hairline": "#2A2D35",
+        "admin-ink": "#F0F0F0",
+        "admin-ink-muted": "#8A8F9C",
       },
       fontFamily: {
         sans: ["var(--font-space-grotesk)", "ui-sans-serif", "system-ui", "sans-serif"],

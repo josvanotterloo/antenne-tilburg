@@ -40,7 +40,7 @@ export default async function CatalogPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Catalog</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-admin-ink-muted">
             {result.total} product{result.total === 1 ? "" : "s"} ·{" "}
             <Link href="/admin/catalog/reference" className="underline">
               Reference data
@@ -49,7 +49,7 @@ export default async function CatalogPage({
         </div>
         <Link
           href="/admin/catalog/new"
-          className="rounded bg-neutral-900 px-3 py-2 text-sm font-medium text-white"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
         >
           Add product
         </Link>
@@ -61,18 +61,18 @@ export default async function CatalogPage({
           name="q"
           defaultValue={q ?? ""}
           placeholder="Search artist, title, description…"
-          className="w-full max-w-sm rounded border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full max-w-sm rounded border border-admin-hairline px-3 py-2 text-sm"
         />
         <button
           type="submit"
-          className="rounded border border-neutral-300 px-3 py-2 text-sm"
+          className="rounded border border-admin-hairline px-3 py-2 text-sm"
         >
           Search
         </button>
         {q && (
           <Link
             href="/admin/catalog"
-            className="rounded px-3 py-2 text-sm text-neutral-500 underline"
+            className="rounded px-3 py-2 text-sm text-admin-ink-muted underline"
           >
             Clear
           </Link>
@@ -80,13 +80,13 @@ export default async function CatalogPage({
       </form>
 
       {result.products.length === 0 ? (
-        <p className="rounded border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
+        <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
           {q ? "No products match your search." : "No products yet."}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+            <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Artist</th>
                 <th className="px-3 py-2 font-medium">Title</th>
@@ -100,12 +100,12 @@ export default async function CatalogPage({
                 <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-admin-hairline">
               {result.products.map((product) => (
                 <tr key={product.id}>
                   <td className="px-3 py-2">{product.artist}</td>
                   <td className="px-3 py-2">{product.title}</td>
-                  <td className="px-3 py-2 text-neutral-500">
+                  <td className="px-3 py-2 text-admin-ink-muted">
                     {product.catalogNumber ?? "—"}
                   </td>
                   <td className="px-3 py-2">{product.label.name}</td>
@@ -115,8 +115,8 @@ export default async function CatalogPage({
                     <span
                       className={`rounded px-1.5 py-0.5 text-xs ${
                         product.condition === "NEW"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-neutral-200 text-neutral-700"
+                          ? "bg-green-500/15 text-green-400"
+                          : "bg-admin-raised text-admin-ink"
                       }`}
                     >
                       {product.condition}
@@ -129,8 +129,8 @@ export default async function CatalogPage({
                     <span
                       className={`text-base font-semibold ${
                         product.quantity === 0
-                          ? "text-red-600"
-                          : "text-neutral-900"
+                          ? "text-red-400"
+                          : "text-admin-ink"
                       }`}
                     >
                       {product.quantity}
@@ -144,7 +144,7 @@ export default async function CatalogPage({
                       />
                       <Link
                         href={`/admin/catalog/${product.id}/edit`}
-                        className="text-neutral-700 hover:underline"
+                        className="text-admin-ink hover:underline"
                       >
                         Edit
                       </Link>
@@ -166,7 +166,7 @@ export default async function CatalogPage({
           {result.page > 1 && (
             <Link
               href={adminHref(q, result.page - 1)}
-              className="rounded border border-neutral-300 px-2 py-1 hover:bg-neutral-100"
+              className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Prev
             </Link>
@@ -174,15 +174,15 @@ export default async function CatalogPage({
           {catalogPageNumbers(result.page, result.pageCount).map((n, i, arr) => (
             <Fragment key={n}>
               {i > 0 && n - arr[i - 1] > 1 && (
-                <span className="px-1 text-neutral-400">…</span>
+                <span className="px-1 text-admin-ink-muted">…</span>
               )}
               <Link
                 href={adminHref(q, n)}
                 aria-current={n === result.page ? "page" : undefined}
                 className={`rounded px-2 py-1 ${
                   n === result.page
-                    ? "bg-neutral-900 text-white"
-                    : "border border-neutral-300 hover:bg-neutral-100"
+                    ? "bg-admin-ink text-admin-bg"
+                    : "border border-admin-hairline hover:bg-admin-raised"
                 }`}
               >
                 {n}
@@ -192,7 +192,7 @@ export default async function CatalogPage({
           {result.page < result.pageCount && (
             <Link
               href={adminHref(q, result.page + 1)}
-              className="rounded border border-neutral-300 px-2 py-1 hover:bg-neutral-100"
+              className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Next
             </Link>

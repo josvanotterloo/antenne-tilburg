@@ -94,7 +94,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
       <Field label="Slug (optional — derived from title)">
@@ -102,7 +102,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
           placeholder="auto"
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
       <Field label="Body (markdown)">
@@ -112,10 +112,10 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           rows={10}
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 font-mono text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 font-mono text-sm"
         />
-        <label className="mt-1 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
-          <span className="cursor-pointer rounded border border-neutral-300 px-2 py-1 hover:bg-neutral-50">
+        <label className="mt-1 flex flex-wrap items-center gap-2 text-sm text-admin-ink-muted">
+          <span className="cursor-pointer rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised">
             {uploading ? "Uploading…" : "Insert image"}
           </span>
           <input
@@ -125,7 +125,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
             disabled={uploading}
             className="sr-only"
           />
-          <span className="text-xs text-neutral-400">
+          <span className="text-xs text-admin-ink-muted">
             JPG/PNG/WebP/GIF · max 5 MB · inserted at the cursor
           </span>
         </label>
@@ -134,7 +134,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         <input
           value={coverImage}
           onChange={(e) => setCoverImage(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
       <Field label="Status">
@@ -146,8 +146,8 @@ export function PostForm({ post }: { post?: PostFormValues }) {
               onClick={() => setStatus(s)}
               className={`rounded border px-3 py-1 text-sm ${
                 status === s
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300"
+                  ? "border-admin-ink bg-admin-ink text-admin-bg"
+                  : "border-admin-hairline"
               }`}
             >
               {s}
@@ -159,7 +159,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         <input
           value={seoTitle}
           onChange={(e) => setSeoTitle(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
       <Field label="SEO description (optional)">
@@ -167,12 +167,12 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           rows={2}
           value={seoDescription}
           onChange={(e) => setSeoDescription(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
@@ -181,14 +181,14 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
           {saving ? "Saving…" : post ? "Save changes" : "Create post"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/content/posts")}
-          className="rounded border border-neutral-300 px-4 py-2 text-sm"
+          className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
           Cancel
         </button>

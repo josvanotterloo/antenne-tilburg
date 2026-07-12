@@ -31,12 +31,12 @@ export function SellOneButton({
         type="button"
         onClick={handleSell}
         disabled={pending || quantity <= 0}
-        className="rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-40"
+        className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
       >
         {pending ? "…" : "Sell one"}
       </button>
       {error && (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="text-xs text-red-400">
           {error}
         </span>
       )}

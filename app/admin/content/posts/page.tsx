@@ -13,26 +13,26 @@ export default async function AdminPostsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Blog posts</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-admin-ink-muted">
             {posts.length} post{posts.length === 1 ? "" : "s"}
           </p>
         </div>
         <Link
           href="/admin/content/posts/new"
-          className="rounded bg-neutral-900 px-3 py-2 text-sm font-medium text-white"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
         >
           New post
         </Link>
       </div>
 
       {posts.length === 0 ? (
-        <p className="rounded border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
+        <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
           No posts yet.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+            <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Title</th>
                 <th className="px-3 py-2 font-medium">Slug</th>
@@ -41,7 +41,7 @@ export default async function AdminPostsPage() {
                 <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-admin-hairline">
               {posts.map((post) => (
                 <tr key={post.id}>
                   <td className="px-3 py-2">
@@ -52,19 +52,19 @@ export default async function AdminPostsPage() {
                       {post.title}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-neutral-500">{post.slug}</td>
+                  <td className="px-3 py-2 text-admin-ink-muted">{post.slug}</td>
                   <td className="px-3 py-2">
                     <span
                       className={`rounded px-1.5 py-0.5 text-xs ${
                         post.status === "PUBLISHED"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-neutral-200 text-neutral-700"
+                          ? "bg-green-500/15 text-green-400"
+                          : "bg-admin-raised text-admin-ink"
                       }`}
                     >
                       {post.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-neutral-500">
+                  <td className="px-3 py-2 text-admin-ink-muted">
                     {post.publishedAt
                       ? new Date(post.publishedAt).toLocaleDateString()
                       : "—"}

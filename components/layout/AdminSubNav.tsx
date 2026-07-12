@@ -12,7 +12,7 @@ export function AdminSubNav({
 }) {
   const pathname = usePathname();
   return (
-    <nav className="mb-6 flex gap-4 border-b border-neutral-200 text-sm">
+    <nav className="mb-6 flex gap-4 border-b border-admin-hairline text-sm">
       {items.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -23,8 +23,8 @@ export function AdminSubNav({
             aria-current={active ? "page" : undefined}
             className={`-mb-px border-b-2 pb-2 ${
               active
-                ? "border-neutral-900 font-medium"
-                : "border-transparent text-neutral-500 hover:text-neutral-900"
+                ? "border-admin-ink font-medium"
+                : "border-transparent text-admin-ink-muted hover:text-admin-ink"
             }`}
           >
             {item.label}

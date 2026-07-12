@@ -35,14 +35,14 @@ export function DeleteButton({
             type="button"
             onClick={remove}
             disabled={pending}
-            className="text-red-600 hover:underline disabled:opacity-50"
+            className="text-red-400 hover:underline disabled:opacity-50"
           >
             {pending ? "…" : "Confirm"}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="text-neutral-500 hover:underline"
+            className="text-admin-ink-muted hover:underline"
           >
             Cancel
           </button>
@@ -51,13 +51,13 @@ export function DeleteButton({
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-red-600 hover:underline"
+          className="text-red-400 hover:underline"
         >
           {label}
         </button>
       )}
       {error && (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="text-xs text-red-400">
           {error}
         </span>
       )}

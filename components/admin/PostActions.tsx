@@ -48,7 +48,7 @@ export function PostActions({ post }: { post: PostFormValues }) {
           type="button"
           onClick={togglePublish}
           disabled={pending}
-          className="text-neutral-700 hover:underline disabled:opacity-50"
+          className="text-admin-ink hover:underline disabled:opacity-50"
         >
           {post.status === "PUBLISHED" ? "Unpublish" : "Publish"}
         </button>
@@ -58,14 +58,14 @@ export function PostActions({ post }: { post: PostFormValues }) {
               type="button"
               onClick={remove}
               disabled={pending}
-              className="text-red-600 hover:underline disabled:opacity-50"
+              className="text-red-400 hover:underline disabled:opacity-50"
             >
               Confirm
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="text-neutral-500 hover:underline"
+              className="text-admin-ink-muted hover:underline"
             >
               Cancel
             </button>
@@ -74,14 +74,14 @@ export function PostActions({ post }: { post: PostFormValues }) {
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="text-red-600 hover:underline"
+            className="text-red-400 hover:underline"
           >
             Delete
           </button>
         )}
       </div>
       {error && (
-        <p role="alert" className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-red-400">
           {error}
         </p>
       )}

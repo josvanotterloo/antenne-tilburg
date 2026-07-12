@@ -47,7 +47,7 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
           rows={3}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </div>
 
@@ -67,7 +67,7 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
             type="datetime-local"
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
-            className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+            className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
           />
         </div>
         <div className="space-y-1">
@@ -76,17 +76,17 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
             type="datetime-local"
             value={endsAt}
             onChange={(e) => setEndsAt(e.target.value)}
-            className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+            className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
           />
         </div>
       </div>
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-admin-ink-muted">
         With a window set, the notice shows automatically between those times
         (and only while Active).
       </p>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
@@ -95,14 +95,14 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
         <button
           type="submit"
           disabled={saving}
-          className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
           {saving ? "Saving…" : notice ? "Save changes" : "Create notice"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/settings/notices")}
-          className="rounded border border-neutral-300 px-4 py-2 text-sm"
+          className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
           Cancel
         </button>

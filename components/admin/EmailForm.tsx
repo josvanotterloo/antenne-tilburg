@@ -41,18 +41,18 @@ export function EmailForm({
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         aria-label="Account email"
-        className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+        className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
       />
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
-      {saved && <p className="text-sm text-green-700">Email updated.</p>}
+      {saved && <p className="text-sm text-green-400">Email updated.</p>}
       <button
         type="submit"
         disabled={saving}
-        className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white disabled:opacity-60"
+        className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-1.5 text-sm text-admin-bg disabled:opacity-60"
       >
         {saving ? "Saving…" : "Change email"}
       </button>

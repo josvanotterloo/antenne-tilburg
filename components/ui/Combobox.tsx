@@ -117,7 +117,7 @@ export function Combobox({
           setHighlight(-1);
         }}
         onKeyDown={onKeyDown}
-        className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+        className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
       />
 
       {open && itemCount > 0 && (
@@ -125,7 +125,7 @@ export function Combobox({
           id={listboxId}
           role="listbox"
           aria-label={label}
-          className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded border border-neutral-200 bg-white shadow"
+          className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded border border-admin-hairline bg-admin-surface shadow"
         >
           {filtered.map((option, index) => (
             <li
@@ -137,7 +137,7 @@ export function Combobox({
                 pick(option);
               }}
               className={`cursor-pointer px-2 py-1 text-sm ${
-                index === highlight ? "bg-neutral-100" : ""
+                index === highlight ? "bg-admin-raised" : ""
               }`}
             >
               {option.name}
@@ -151,8 +151,8 @@ export function Combobox({
                 e.preventDefault();
                 void quickAdd();
               }}
-              className={`cursor-pointer px-2 py-1 text-sm text-neutral-600 ${
-                highlight === filtered.length ? "bg-neutral-100" : ""
+              className={`cursor-pointer px-2 py-1 text-sm text-admin-ink-muted ${
+                highlight === filtered.length ? "bg-admin-raised" : ""
               }`}
             >
               + Add &quot;{query.trim()}&quot;
@@ -162,7 +162,7 @@ export function Combobox({
       )}
 
       {error && (
-        <p role="alert" className="mt-1 text-xs text-red-600">
+        <p role="alert" className="mt-1 text-xs text-red-400">
           {error}
         </p>
       )}

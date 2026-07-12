@@ -54,7 +54,7 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
               value={row.opensAt}
               disabled={row.closed}
               onChange={(e) => update(row.dayOfWeek, { opensAt: e.target.value })}
-              className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-40"
+              className="rounded border border-admin-hairline px-2 py-1 disabled:opacity-40"
             />
             <span>–</span>
             <input
@@ -63,23 +63,23 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
               value={row.closesAt}
               disabled={row.closed}
               onChange={(e) => update(row.dayOfWeek, { closesAt: e.target.value })}
-              className="rounded border border-neutral-300 px-2 py-1 disabled:opacity-40"
+              className="rounded border border-admin-hairline px-2 py-1 disabled:opacity-40"
             />
           </div>
         ))}
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
-      {saved && <p className="text-sm text-green-700">Saved.</p>}
+      {saved && <p className="text-sm text-green-400">Saved.</p>}
 
       <button
         type="submit"
         disabled={saving}
-        className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+        className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
       >
         {saving ? "Saving…" : "Save hours"}
       </button>

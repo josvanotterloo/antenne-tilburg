@@ -19,7 +19,7 @@ export default async function AdminSubscribersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Subscribers</h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-admin-ink-muted">
             {confirmedCount} confirmed subscriber
             {confirmedCount === 1 ? "" : "s"}
           </p>
@@ -30,7 +30,7 @@ export default async function AdminSubscribersPage() {
           <a
             href="/api/admin/subscribers/export"
             download
-            className="rounded border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-100"
+            className="rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised"
           >
             Export CSV
           </a>
@@ -38,13 +38,13 @@ export default async function AdminSubscribersPage() {
       </div>
 
       {subscribers.length === 0 ? (
-        <p className="rounded border border-dashed border-neutral-300 p-8 text-center text-neutral-500">
+        <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
           No subscribers yet.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-neutral-200 bg-white">
+        <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-500">
+            <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
               <tr>
                 <th className="px-3 py-2 font-medium">Name</th>
                 <th className="px-3 py-2 font-medium">Email</th>
@@ -53,7 +53,7 @@ export default async function AdminSubscribersPage() {
                 <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-admin-hairline">
               {subscribers.map((s) => (
                 <tr key={s.id}>
                   <td className="px-3 py-2">{s.name}</td>
@@ -61,13 +61,13 @@ export default async function AdminSubscribersPage() {
                       A row from a rotated/wrong key degrades, not the page. */}
                   <td className="px-3 py-2">
                     {decryptEmailSafe(s.email) ?? (
-                      <span className="text-red-600">(cannot decrypt)</span>
+                      <span className="text-red-400">(cannot decrypt)</span>
                     )}
                   </td>
                   <td className="px-3 py-2">
                     <StatusBadge status={s.status} />
                   </td>
-                  <td className="px-3 py-2 text-neutral-500">
+                  <td className="px-3 py-2 text-admin-ink-muted">
                     {new Date(s.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -91,7 +91,7 @@ function StatusBadge({ status }: { status: "PENDING" | "CONFIRMED" }) {
   return (
     <span
       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-        confirmed ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+        confirmed ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"
       }`}
     >
       {confirmed ? "Confirmed" : "Pending"}

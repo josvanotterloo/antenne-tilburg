@@ -20,9 +20,12 @@ export function AdminTopNav() {
   if (pathname === "/admin/login") return null;
 
   return (
-    <header className="bg-[#1a1a1a] text-white">
+    <header className="border-b border-admin-hairline bg-admin-surface text-admin-ink">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
-        <Link href="/admin/catalog" className="font-bold tracking-tight">
+        <Link
+          href="/admin/catalog"
+          className="font-bold tracking-tight transition-colors duration-150 ease-out hover:text-signal"
+        >
           Antenne Tilburg
         </Link>
 
@@ -34,10 +37,10 @@ export function AdminTopNav() {
                 key={section.href}
                 href={section.href}
                 aria-current={active ? "page" : undefined}
-                className={`rounded px-3 py-1.5 text-sm ${
+                className={`rounded px-3 py-1.5 text-sm transition-colors duration-150 ease-out ${
                   active
-                    ? "bg-white/15 text-white"
-                    : "text-neutral-400 hover:text-white"
+                    ? "bg-admin-raised text-admin-ink"
+                    : "text-admin-ink-muted hover:bg-admin-raised hover:text-admin-ink"
                 }`}
               >
                 {section.label}
@@ -49,7 +52,7 @@ export function AdminTopNav() {
         <button
           type="button"
           onClick={() => signOut({ redirectTo: "/admin/login" })}
-          className="ml-auto rounded px-3 py-1.5 text-sm text-neutral-400 hover:text-white"
+          className="ml-auto rounded px-3 py-1.5 text-sm text-admin-ink-muted transition-colors duration-150 ease-out hover:bg-admin-raised hover:text-admin-ink"
         >
           Sign out
         </button>

@@ -120,7 +120,7 @@ export function ProductForm({
           required
           value={artist}
           onChange={(e) => setArtist(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
@@ -129,7 +129,7 @@ export function ProductForm({
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
@@ -137,7 +137,7 @@ export function ProductForm({
         <input
           value={catalogNumber}
           onChange={(e) => setCatalogNumber(e.target.value)}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
@@ -186,8 +186,8 @@ export function ProductForm({
               onClick={() => setCondition(c)}
               className={`rounded border px-3 py-1 text-sm ${
                 condition === c
-                  ? "border-neutral-900 bg-neutral-900 text-white"
-                  : "border-neutral-300"
+                  ? "border-admin-ink bg-admin-ink text-admin-bg"
+                  : "border-admin-hairline"
               }`}
             >
               {c}
@@ -204,7 +204,7 @@ export function ProductForm({
           required
           value={price}
           onChange={(e) => setPrice(e.target.value)}
-          className="w-32 rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-32 rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
@@ -213,7 +213,7 @@ export function ProductForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
@@ -225,9 +225,9 @@ export function ProductForm({
           required
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
-          className="w-32 rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="w-32 rounded border border-admin-hairline px-2 py-1 text-sm"
         />
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-admin-ink-muted">
           Sets availability automatically — 0 hides the product from the shop.
         </p>
         {product && (
@@ -235,7 +235,7 @@ export function ProductForm({
             type="button"
             onClick={handleSellOne}
             disabled={selling || Number(quantity) <= 0}
-            className="mt-1 rounded border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-40"
+            className="mt-1 rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
           >
             {selling ? "…" : "Sell one"}
           </button>
@@ -243,7 +243,7 @@ export function ProductForm({
       </Field>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           {error}
         </p>
       )}
@@ -252,14 +252,14 @@ export function ProductForm({
         <button
           type="submit"
           disabled={submitting}
-          className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
           {submitting ? "Saving…" : product ? "Save changes" : "Add product"}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/catalog")}
-          className="rounded border border-neutral-300 px-4 py-2 text-sm"
+          className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
           Cancel
         </button>

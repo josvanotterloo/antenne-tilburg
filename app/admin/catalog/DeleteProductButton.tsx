@@ -28,14 +28,14 @@ export function DeleteProductButton({ id }: { id: string }) {
             type="button"
             onClick={handleDelete}
             disabled={pending}
-            className="text-red-600 hover:underline disabled:opacity-50"
+            className="text-red-400 hover:underline disabled:opacity-50"
           >
             {pending ? "…" : "Confirm"}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="text-neutral-500 hover:underline"
+            className="text-admin-ink-muted hover:underline"
           >
             Cancel
           </button>
@@ -44,13 +44,13 @@ export function DeleteProductButton({ id }: { id: string }) {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-red-600 hover:underline"
+          className="text-red-400 hover:underline"
         >
           Delete
         </button>
       )}
       {error && (
-        <span role="alert" className="text-xs text-red-600">
+        <span role="alert" className="text-xs text-red-400">
           {error}
         </span>
       )}

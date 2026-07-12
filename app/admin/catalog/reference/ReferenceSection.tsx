@@ -71,7 +71,7 @@ export function ReferenceSection({
   }
 
   return (
-    <section className="rounded border border-neutral-200 bg-white p-4">
+    <section className="rounded border border-admin-hairline bg-admin-surface p-4">
       <h2 className="font-semibold">{title}</h2>
 
       <form onSubmit={handleAdd} className="mt-3 flex gap-2">
@@ -80,23 +80,23 @@ export function ReferenceSection({
           onChange={(e) => setNewName(e.target.value)}
           placeholder={`Add ${title.toLowerCase().replace(/s$/, "")}`}
           aria-label={`New ${title} name`}
-          className="flex-1 rounded border border-neutral-300 px-2 py-1 text-sm"
+          className="flex-1 rounded border border-admin-hairline px-2 py-1 text-sm"
         />
         <button
           type="submit"
-          className="rounded bg-neutral-900 px-3 py-1 text-sm text-white"
+          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-1 text-sm text-admin-bg"
         >
           Add
         </button>
       </form>
 
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="mt-2 text-sm text-red-400">
           {error}
         </p>
       )}
 
-      <ul className="mt-3 divide-y divide-neutral-100">
+      <ul className="mt-3 divide-y divide-admin-hairline">
         {items.map((item) => (
           <li
             key={item.id}
@@ -108,19 +108,19 @@ export function ReferenceSection({
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   aria-label={`Edit ${item.name}`}
-                  className="flex-1 rounded border border-neutral-300 px-2 py-1"
+                  className="flex-1 rounded border border-admin-hairline px-2 py-1"
                 />
                 <button
                   type="button"
                   onClick={() => handleSaveEdit(item.id)}
-                  className="text-neutral-700 hover:underline"
+                  className="text-admin-ink hover:underline"
                 >
                   Save
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingId(null)}
-                  className="text-neutral-500 hover:underline"
+                  className="text-admin-ink-muted hover:underline"
                 >
                   Cancel
                 </button>
@@ -134,19 +134,19 @@ export function ReferenceSection({
                     setEditingId(item.id);
                     setEditName(item.name);
                   }}
-                  className="text-neutral-700 hover:underline"
+                  className="text-admin-ink hover:underline"
                 >
                   Edit
                 </button>
                 {item.productCount > 0 ? (
-                  <span className="text-neutral-400">
+                  <span className="text-admin-ink-muted">
                     In use by {item.productCount} products
                   </span>
                 ) : (
                   <button
                     type="button"
                     onClick={() => handleDelete(item.id)}
-                    className="text-red-600 hover:underline"
+                    className="text-red-400 hover:underline"
                   >
                     Delete
                   </button>

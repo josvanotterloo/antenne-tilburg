@@ -24,7 +24,7 @@ export default async function ManageUserPage({
       <div>
         <Link
           href="/admin/settings/users"
-          className="text-sm text-neutral-500 hover:underline"
+          className="text-sm text-admin-ink-muted hover:underline"
         >
           ← Users
         </Link>
