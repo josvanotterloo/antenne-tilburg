@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 
 import { catalogPageNumbers, getCatalogPage } from "@/lib/catalog";
+import { fullDate, relativeDate } from "@/lib/relative-date";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 import { SellOneButton } from "./SellOneButton";
@@ -84,78 +85,73 @@ export default async function CatalogPage({
           {q ? "No products match your search." : "No products yet."}
         </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
-              <tr>
-                <th className="px-3 py-2 font-medium">Artist</th>
-                <th className="px-3 py-2 font-medium">Title</th>
-                <th className="px-3 py-2 font-medium">Cat. no.</th>
-                <th className="px-3 py-2 font-medium">Label</th>
-                <th className="px-3 py-2 font-medium">Genre</th>
-                <th className="px-3 py-2 font-medium">Type</th>
-                <th className="px-3 py-2 font-medium">Condition</th>
-                <th className="px-3 py-2 text-right font-medium">Price</th>
-                <th className="px-3 py-2 text-center font-medium">Qty</th>
-                <th className="px-3 py-2 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-admin-hairline">
-              {result.products.map((product) => (
-                <tr key={product.id}>
-                  <td className="px-3 py-2">{product.artist}</td>
-                  <td className="px-3 py-2">{product.title}</td>
-                  <td className="px-3 py-2 text-admin-ink-muted">
-                    {product.catalogNumber ?? "—"}
-                  </td>
-                  <td className="px-3 py-2">{product.label.name}</td>
-                  <td className="px-3 py-2">{product.genre.name}</td>
-                  <td className="px-3 py-2">{product.productType.name}</td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${
-                        product.condition === "NEW"
-                          ? "bg-green-500/15 text-green-400"
-                          : "bg-admin-raised text-admin-ink"
-                      }`}
-                    >
-                      {product.condition}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    €{Number(product.price).toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2 text-center tabular-nums">
-                    <span
-                      className={`text-base font-semibold ${
-                        product.quantity === 0
-                          ? "text-red-400"
-                          : "text-admin-ink"
-                      }`}
-                    >
-                      {product.quantity}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center justify-end gap-3">
-                      <SellOneButton
-                        id={product.id}
-                        quantity={product.quantity}
-                      />
-                      <Link
-                        href={`/admin/catalog/${product.id}/edit`}
-                        className="text-admin-ink hover:underline"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteProductButton id={product.id} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="divide-y divide-admin-hairline rounded border border-admin-hairline bg-admin-surface">
+          {result.products.map((product) => (
+            <li
+              key={product.id}
+              className="flex flex-col gap-2 p-3 md:flex-row md:items-center md:gap-4"
+            >
+              {/* Identity: artist — title, then label · genre · condition, then dates */}
+              <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+                <p className="truncate">
+                  <span className="font-semibold">{product.artist}</span>
+                  <span className="text-admin-ink-muted"> — </span>
+                  <span>{product.title}</span>
+                </p>
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-admin-ink-muted">
+                  <span>{product.label.name}</span>
+                  <span aria-hidden>·</span>
+                  <span>{product.genre.name}</span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 ${
+                      product.condition === "NEW"
+                        ? "bg-green-500/15 text-green-400"
+                        : "bg-admin-raised text-admin-ink"
+                    }`}
+                  >
+                    {product.condition}
+                  </span>
+                </p>
+                <p className="text-xs text-admin-ink-muted">
+                  <span title={fullDate(product.createdAt)}>
+                    Added {relativeDate(product.createdAt)}
+                  </span>
+                  <span aria-hidden> · </span>
+                  <span title={fullDate(product.updatedAt)}>
+                    Updated {relativeDate(product.updatedAt)}
+                  </span>
+                </p>
+              </div>
+
+              {/* Stock, price and actions; wraps below the identity block on mobile */}
+              <div className="flex items-center justify-between gap-4 text-sm md:justify-end">
+                <span className="whitespace-nowrap">
+                  <span
+                    className={`font-semibold tabular-nums ${
+                      product.quantity === 0 ? "text-red-400" : "text-admin-ink"
+                    }`}
+                  >
+                    {product.quantity}
+                  </span>
+                  <span className="text-xs text-admin-ink-muted"> in stock</span>
+                </span>
+                <span className="tabular-nums">
+                  €{Number(product.price).toFixed(2)}
+                </span>
+                <div className="flex items-center gap-3">
+                  <SellOneButton id={product.id} quantity={product.quantity} />
+                  <Link
+                    href={`/admin/catalog/${product.id}/edit`}
+                    className="text-admin-ink hover:underline"
+                  >
+                    Edit
+                  </Link>
+                  <DeleteProductButton id={product.id} />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
 
       {result.pageCount > 1 && (
