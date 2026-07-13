@@ -28,11 +28,28 @@ row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 - Branching rules: see `docs/instructions/branching.md`
 - Generate a new module/route: see `docs/instructions/generate-route.md`
 - Interrogate before generating: see `docs/instructions/interrogate.md`
+- Testing philosophy: see `docs/instructions/testing.md`
 - Session log template: see `docs/session-log-template.md`
 
 ## Testing
 Run tests: see `.claude/skills/run-tests/SKILL.md` — always use the run-tests skill,
 never construct custom test commands.
+
+## Testing Philosophy
+Binding for all work in this repo. Full version: `docs/instructions/testing.md`.
+
+- Test **behavior, not implementation**: "call X with Y → expect Z", never "this
+  element has class `mb-8`".
+- **Never** assert CSS classes, Tailwind utilities, or visual styling. A
+  styling-only change adds **no** tests.
+- Component tests assert what the user sees and does — text, links, form
+  submission, error messages, enabled/disabled state — not how it looks.
+- Domain logic (`lib/`) gets full behavioral coverage written **before** the
+  implementation (TDD).
+- API routes: test the **contract** — status codes and response shape — not
+  internals.
+- **Never** change an existing passing test to make new code pass. If an
+  existing test breaks, the new code is wrong.
 
 ## Autonomy
 

@@ -27,9 +27,4 @@ describe("SocialLinks", () => {
       expect(link).toHaveAttribute("rel", "noopener noreferrer");
     }
   });
-
-  it("passes through a className for layout reuse", () => {
-    const { container } = render(<SocialLinks className="mt-4" />);
-    expect(container.firstChild).toHaveClass("mt-4");
-  });
 });
