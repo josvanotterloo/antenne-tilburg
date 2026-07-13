@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
@@ -32,6 +32,7 @@ export function Combobox({
   required,
 }: ComboboxProps) {
   const listboxId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(-1);
@@ -53,6 +54,16 @@ export function Combobox({
     setQuery("");
     setHighlight(-1);
   }
+
+  // Clicking anywhere outside the combobox closes it without selecting.
+  useEffect(() => {
+    if (!open) return;
+    function onDocMouseDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) close();
+    }
+    document.addEventListener("mousedown", onDocMouseDown);
+    return () => document.removeEventListener("mousedown", onDocMouseDown);
+  }, [open]);
 
   function pick(option: ComboboxOption) {
     onChange(option.id);
@@ -100,7 +111,7 @@ export function Combobox({
   }
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <input
         role="combobox"
         aria-label={label}

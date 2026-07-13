@@ -68,6 +68,31 @@ describe("Combobox", () => {
     expect(onChange).toHaveBeenCalledWith("9");
   });
 
+  it("closes when the user clicks outside without selecting", async () => {
+    const user = userEvent.setup();
+    const { onChange } = setup();
+
+    const input = screen.getByRole("combobox", { name: /genre/i });
+    await user.click(input);
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+    await user.click(document.body);
+
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("stays open when the user clicks inside the combobox", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    const input = screen.getByRole("combobox", { name: /genre/i });
+    await user.click(input);
+    await user.click(input); // click again inside — must not close
+
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+  });
+
   it("supports keyboard selection and Escape to close", async () => {
     const user = userEvent.setup();
     const { onChange } = setup();
