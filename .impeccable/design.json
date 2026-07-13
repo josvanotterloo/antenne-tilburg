@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-04T00:00:00.000Z",
+  "generatedAt": "2026-07-13T00:00:00.000Z",
   "title": "Design System: Antenne Tilburg",
   "extensions": {
     "colorMeta": {
@@ -16,29 +16,88 @@
         "canonical": "oklch(0.23 0.006 260)",
         "tonalRamp": ["oklch(0.16 0.006 260)", "oklch(0.23 0.006 260)", "oklch(0.28 0.007 260)", "oklch(0.31 0.008 260)", "oklch(0.4 0.009 260)", "oklch(0.55 0.011 260)", "oklch(0.69 0.012 260)", "oklch(0.94 0.003 260)"]
       },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Surface Raised",
+        "canonical": "oklch(0.28 0.007 260)",
+        "tonalRamp": ["oklch(0.16 0.006 260)", "oklch(0.23 0.006 260)", "oklch(0.28 0.007 260)", "oklch(0.34 0.008 260)", "oklch(0.45 0.01 260)", "oklch(0.6 0.011 260)", "oklch(0.75 0.009 260)", "oklch(0.94 0.003 260)"]
+      },
       "ink": {
         "role": "neutral",
         "displayName": "Bone Ink",
         "canonical": "oklch(0.94 0.003 260)",
         "tonalRamp": ["oklch(0.31 0.008 260)", "oklch(0.45 0.01 260)", "oklch(0.55 0.011 260)", "oklch(0.69 0.012 260)", "oklch(0.78 0.008 260)", "oklch(0.85 0.005 260)", "oklch(0.94 0.003 260)", "oklch(0.98 0.002 260)"]
       },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Ink Muted",
+        "canonical": "oklch(0.69 0.012 260)",
+        "tonalRamp": ["oklch(0.31 0.008 260)", "oklch(0.4 0.009 260)", "oklch(0.5 0.011 260)", "oklch(0.6 0.012 260)", "oklch(0.69 0.012 260)", "oklch(0.78 0.009 260)", "oklch(0.86 0.006 260)", "oklch(0.94 0.003 260)"]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "oklch(0.31 0.008 260)",
+        "tonalRamp": ["oklch(0.16 0.006 260)", "oklch(0.23 0.007 260)", "oklch(0.31 0.008 260)", "oklch(0.4 0.009 260)", "oklch(0.5 0.011 260)", "oklch(0.62 0.012 260)", "oklch(0.78 0.008 260)", "oklch(0.94 0.003 260)"]
+      },
       "signal": {
         "role": "primary",
         "displayName": "Signal",
         "canonical": "oklch(0.61 0.12 272)",
         "tonalRamp": ["oklch(0.3 0.08 272)", "oklch(0.4 0.1 272)", "oklch(0.5 0.11 272)", "oklch(0.61 0.12 272)", "oklch(0.7 0.1 272)", "oklch(0.78 0.08 272)", "oklch(0.85 0.05 272)", "oklch(0.92 0.03 272)"]
+      },
+      "admin-bg": {
+        "role": "neutral",
+        "displayName": "Admin BG",
+        "canonical": "#111318",
+        "tonalRamp": ["oklch(0.19 0.008 265)", "oklch(0.25 0.009 265)", "oklch(0.29 0.011 265)", "oklch(0.36 0.011 265)", "oklch(0.48 0.012 265)", "oklch(0.64 0.015 265)", "oklch(0.8 0.009 265)", "oklch(0.95 0.003 265)"]
+      },
+      "admin-surface": {
+        "role": "neutral",
+        "displayName": "Admin Surface",
+        "canonical": "#1C1F26",
+        "tonalRamp": ["oklch(0.19 0.008 265)", "oklch(0.25 0.009 265)", "oklch(0.29 0.011 265)", "oklch(0.36 0.011 265)", "oklch(0.48 0.012 265)", "oklch(0.64 0.015 265)", "oklch(0.8 0.009 265)", "oklch(0.95 0.003 265)"]
+      },
+      "admin-raised": {
+        "role": "neutral",
+        "displayName": "Admin Raised",
+        "canonical": "#242833",
+        "tonalRamp": ["oklch(0.19 0.008 265)", "oklch(0.25 0.009 265)", "oklch(0.29 0.011 265)", "oklch(0.36 0.011 265)", "oklch(0.48 0.012 265)", "oklch(0.64 0.015 265)", "oklch(0.8 0.009 265)", "oklch(0.95 0.003 265)"]
+      },
+      "admin-hairline": {
+        "role": "neutral",
+        "displayName": "Admin Hairline",
+        "canonical": "#2A2D35",
+        "tonalRamp": ["oklch(0.19 0.008 265)", "oklch(0.25 0.009 265)", "oklch(0.31 0.009 265)", "oklch(0.4 0.011 265)", "oklch(0.52 0.012 265)", "oklch(0.66 0.013 265)", "oklch(0.81 0.008 265)", "oklch(0.95 0.003 265)"]
+      },
+      "admin-ink": {
+        "role": "neutral",
+        "displayName": "Admin Ink",
+        "canonical": "#F0F0F0",
+        "tonalRamp": ["oklch(0.31 0.006 265)", "oklch(0.45 0.008 265)", "oklch(0.56 0.009 265)", "oklch(0.66 0.01 265)", "oklch(0.76 0.008 265)", "oklch(0.85 0.005 265)", "oklch(0.93 0.003 265)", "oklch(0.97 0.001 265)"]
+      },
+      "admin-ink-muted": {
+        "role": "neutral",
+        "displayName": "Admin Ink Muted",
+        "canonical": "#8A8F9C",
+        "tonalRamp": ["oklch(0.31 0.01 265)", "oklch(0.4 0.012 265)", "oklch(0.5 0.014 265)", "oklch(0.6 0.015 265)", "oklch(0.64 0.015 265)", "oklch(0.76 0.011 265)", "oklch(0.86 0.006 265)", "oklch(0.95 0.003 265)"]
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Hero wordmark and page titles. Space Grotesk 700, clamp ceiling 5rem." },
-      "label": { "displayName": "Label / Mono", "purpose": "The catalog voice — data, nav, prices, badges. JetBrains Mono, often uppercase." }
+      "display": { "displayName": "Display", "purpose": "Hero wordmark and page titles. Space Grotesk 700, clamp ceiling 5rem, line-height 0.95." },
+      "headline": { "displayName": "Headline", "purpose": "Section headings (Just In, From the blog). Space Grotesk 700, line-height 1.1." },
+      "title": { "displayName": "Title", "purpose": "Card and list-item titles, blog post titles in listings. Space Grotesk 500." },
+      "body": { "displayName": "Body", "purpose": "Prose on about/FAQ/blog. Space Grotesk 400, line-height 1.6 (1.7 on the long-form post body). Measure 65–75ch." },
+      "label": { "displayName": "Label / Mono", "purpose": "The catalog voice — data, nav, prices, badges, metadata. JetBrains Mono, often uppercase, tracking 0.06em." }
     },
     "shadows": [
-      { "name": "signal-focus-ring", "value": "0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9", "purpose": "Keyboard-focus indicator; the only permitted non-flat material." }
+      { "name": "signal-focus-ring", "value": "0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9", "purpose": "Public keyboard-focus indicator; the only permitted non-flat material on the storefront." },
+      { "name": "admin-focus-ring", "value": "0 0 0 2px #111318, 0 0 0 3px #6B7DC9", "purpose": "Admin keyboard-focus indicator — the same Signal ring over the admin background." }
     ],
     "motion": [
-      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default easing for state changes and staggered reveals." },
-      { "name": "duration-fast", "value": "160ms", "purpose": "Hover/focus state transitions." }
+      { "name": "ease-out", "value": "cubic-bezier(0, 0, 0.2, 1)", "purpose": "Default easing for hover/focus/colour transitions across public and admin surfaces." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Subtle hover/focus state transitions (nav, links, buttons, chips, rows)." },
+      { "name": "reduced-motion", "value": "transition-duration: 0.01ms", "purpose": "prefers-reduced-motion collapses all transitions to near-instant (both surfaces)." }
     ],
     "breakpoints": [
       { "name": "sm", "value": "640px" },
@@ -53,7 +112,7 @@
       "refersTo": "button-primary",
       "description": "High-contrast inverse CTA — bone on black, Signal on hover.",
       "html": "<button class=\"ds-btn-primary\">BROWSE STOCK</button>",
-      "css": ".ds-btn-primary { background: #ECEDEF; color: #0A0B0D; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 24px; border: none; border-radius: 0; cursor: pointer; transition: background 160ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-primary:hover { background: #6B7DC9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
+      "css": ".ds-btn-primary { background: #ECEDEF; color: #0A0B0D; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 24px; border: none; border-radius: 0; cursor: pointer; transition: background 150ms cubic-bezier(0,0,0.2,1); } .ds-btn-primary:hover { background: #6B7DC9; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
     },
     {
       "name": "Ghost Button",
@@ -61,7 +120,7 @@
       "refersTo": "button-ghost",
       "description": "Hairline-bordered secondary action; the default public CTA.",
       "html": "<button class=\"ds-btn-ghost\">PLAN YOUR VISIT</button>",
-      "css": ".ds-btn-ghost { background: #0A0B0D; color: #ECEDEF; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; padding: 12px 24px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: background 160ms, color 160ms, border-color 160ms; } .ds-btn-ghost:hover { background: #15171B; color: #6B7DC9; border-color: #6B7DC9; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
+      "css": ".ds-btn-ghost { background: #0A0B0D; color: #ECEDEF; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 24px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: background 150ms, color 150ms, border-color 150ms; } .ds-btn-ghost:hover { background: #15171B; color: #6B7DC9; border-color: #6B7DC9; } .ds-btn-ghost:focus-visible { outline: none; box-shadow: 0 0 0 2px #0A0B0D, 0 0 0 3px #6B7DC9; }"
     },
     {
       "name": "Search Input",
@@ -85,41 +144,69 @@
       "refersTo": "input",
       "description": "Stock-page filter; selection shown by fill AND a leading glyph, never colour alone.",
       "html": "<button class=\"ds-chip\" aria-pressed=\"true\">× TECHNO</button>",
-      "css": ".ds-chip { background: transparent; color: #9BA1AC; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 6px 12px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: color 160ms, border-color 160ms, background 160ms; } .ds-chip:hover { color: #ECEDEF; border-color: #45505f; } .ds-chip[aria-pressed=\"true\"] { background: #6B7DC9; color: #0A0B0D; border-color: #6B7DC9; font-weight: 700; }"
+      "css": ".ds-chip { background: transparent; color: #9BA1AC; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 6px 12px; border: 1px solid #2A2D34; border-radius: 0; cursor: pointer; transition: color 150ms, border-color 150ms, background 150ms; } .ds-chip:hover { color: #ECEDEF; border-color: #45505f; } .ds-chip[aria-pressed=\"true\"] { background: #6B7DC9; color: #0A0B0D; border-color: #6B7DC9; font-weight: 700; }"
     },
     {
       "name": "Nav Link",
       "kind": "nav",
       "refersTo": "label",
-      "description": "Mono uppercase nav; active route carries a Signal underline.",
+      "description": "Public mono uppercase nav; active route carries a Signal underline.",
       "html": "<a class=\"ds-nav-link\" href=\"#\">STOCK</a><a class=\"ds-nav-link ds-nav-link--active\" href=\"#\">BLOG</a>",
-      "css": ".ds-nav-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: #9BA1AC; text-decoration: none; padding-bottom: 4px; margin-right: 20px; transition: color 160ms; } .ds-nav-link:hover { color: #ECEDEF; } .ds-nav-link--active { color: #ECEDEF; border-bottom: 1px solid #6B7DC9; }"
+      "css": ".ds-nav-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: #9BA1AC; text-decoration: none; padding-bottom: 4px; margin-right: 20px; transition: color 150ms cubic-bezier(0,0,0.2,1); } .ds-nav-link:hover { color: #ECEDEF; } .ds-nav-link--active { color: #ECEDEF; border-bottom: 1px solid #6B7DC9; }"
+    },
+    {
+      "name": "Admin Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Admin CTA — light-on-dark inversion (Admin Ink fill, Admin BG text), Signal on hover. The admin keeps subtle rounded corners; it is a tool, not the terminal-true storefront.",
+      "html": "<button class=\"ds-admin-btn\">Add product</button>",
+      "css": ".ds-admin-btn { background: #F0F0F0; color: #111318; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; transition: background 150ms cubic-bezier(0,0,0.2,1); } .ds-admin-btn:hover { background: #6B7DC9; } .ds-admin-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px #111318, 0 0 0 3px #6B7DC9; }"
+    },
+    {
+      "name": "Admin Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Admin field recessed one step below its panel (Admin BG fill on an Admin Surface card), hairline border, muted placeholder, Signal focus ring. color-scheme:dark also darkens native date/time pickers and checkboxes.",
+      "html": "<input class=\"ds-admin-input\" type=\"text\" placeholder=\"Search artist, title, description…\" />",
+      "css": ".ds-admin-input { background: #111318; color: #F0F0F0; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; padding: 8px 12px; border: 1px solid #2A2D35; border-radius: 4px; } .ds-admin-input::placeholder { color: #8A8F9C; } .ds-admin-input:focus-visible { outline: none; box-shadow: 0 0 0 2px #111318, 0 0 0 3px #6B7DC9; }"
+    },
+    {
+      "name": "Admin Nav Item",
+      "kind": "nav",
+      "refersTo": "label",
+      "description": "Top-bar section link in the admin chrome (Admin Surface bar). Active section sits on the Admin Raised tone; inactive items are muted and lift to raised on hover.",
+      "html": "<div class=\"ds-admin-nav\"><a class=\"ds-admin-nav__item ds-admin-nav__item--active\" href=\"#\">Catalog</a><a class=\"ds-admin-nav__item\" href=\"#\">Content</a><a class=\"ds-admin-nav__item\" href=\"#\">Settings</a></div>",
+      "css": ".ds-admin-nav { display: inline-flex; gap: 4px; background: #1C1F26; padding: 8px; } .ds-admin-nav__item { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; color: #8A8F9C; text-decoration: none; padding: 6px 12px; border-radius: 4px; transition: background 150ms, color 150ms; } .ds-admin-nav__item:hover { background: #242833; color: #F0F0F0; } .ds-admin-nav__item--active { background: #242833; color: #F0F0F0; }"
     }
   ],
   "narrative": {
     "northStar": "The Pirate Signal",
-    "overview": "A lone antenna broadcasting underground frequencies into the dark. The canvas is pure black; the monospace voice is the teletype readout of the transmission; a single muted-indigo accent is the signal cutting through the static; and the static itself — a drifting field of genre words — is the broadcast made visible. Monochrome by doctrine: colour is delivered by record covers placed into the black, not by the interface. Inherits antenne-tilburg.nl directly and modernizes its craft without sanitizing its character.",
+    "overview": "A lone antenna broadcasting underground frequencies into the dark. The canvas is pure black; the monospace voice is the teletype readout of the transmission; a single muted-indigo accent is the signal cutting through the static; and the static itself — a drifting field of genre words — is the broadcast made visible. Monochrome by doctrine: colour is delivered by record covers placed into the black, not by the interface. Inherits antenne-tilburg.nl directly and modernizes its craft without sanitizing its character. The admin is a separate surface — a darker, slightly warmer workspace (the tool, not the storefront), scoped to .admin-dark so it never touches the public site.",
     "keyCharacteristics": [
       "Pure-black canvas; monochrome interface, colour supplied only by imagery.",
       "JetBrains Mono as the identity/data voice; Space Grotesk for headings and reading.",
-      "Zero border-radius everywhere — sharp, terminal-true corners.",
+      "Zero border-radius on the storefront — sharp, terminal-true corners.",
       "Flat by default: depth from tonal layering and hairlines, never shadow.",
-      "One muted-indigo signal accent, used on ≤10% of any screen.",
-      "Two signature motifs from the old site: the genre-static field and the monospace stock table."
+      "One muted-indigo signal accent, used on ≤10% of any screen; shared by both surfaces.",
+      "Two signature motifs from the old site: the genre-static field and the monospace stock table.",
+      "A separate dark admin theme (.admin-dark) — a professional workspace with its own BG/Surface/Raised/Hairline/Ink tokens, distinct from the storefront."
     ],
     "rules": [
       { "name": "The One Signal Rule", "body": "Signal appears on ≤10% of any screen. It is the only hue in the interface. If a second colour is creeping in that isn't a record cover or event photo, delete it.", "section": "colors" },
       { "name": "The Records Bring the Colour Rule", "body": "The interface is monochrome on purpose. All vibrancy comes from imagery placed into the black. Never tint a surface, badge, or heading to add warmth.", "section": "colors" },
       { "name": "The Machine-Voice Rule", "body": "Anything that is data — a price, catalog number, label, date, opening-hours line, nav — is set in JetBrains Mono. Prose and headlines are Space Grotesk. The split is the system.", "section": "typography" },
-      { "name": "The Flat Transmission Rule", "body": "Surfaces are flat at rest. The only depth cue that appears in response to state is a tonal step or a Signal focus ring. If you reach for box-shadow to separate two black surfaces, add a hairline instead.", "section": "elevation" }
+      { "name": "The Flat Transmission Rule", "body": "Surfaces are flat at rest. The only depth cue that appears in response to state is a tonal step or a Signal focus ring. If you reach for box-shadow to separate two black surfaces, add a hairline instead.", "section": "elevation" },
+      { "name": "The Two Surfaces Rule", "body": "The public site is the storefront (the pirate signal); the admin is a separate dark workspace scoped to .admin-dark. Admin tokens (admin-bg/surface/raised/hairline/ink/ink-muted) never appear on the public surface, and the storefront canvas never appears in the admin.", "section": "admin" },
+      { "name": "The Native-Dark Rule", "body": "color-scheme:dark on the .admin-dark wrapper so native controls — date/time pickers, checkboxes, scrollbars — render dark. This detail is what separates a considered tool from a default Tailwind form.", "section": "admin" }
     ],
     "dos": [
       "Do keep the canvas pure black (#0A0B0D) on every public page; let record covers be the only source of colour.",
       "Do set all data in JetBrains Mono and all prose/headlines in Space Grotesk (the Machine-Voice Rule).",
-      "Do use zero border-radius everywhere; corners are sharp and terminal-true.",
+      "Do use zero border-radius on the storefront; corners are sharp and terminal-true.",
       "Do separate surfaces with a 1px Hairline or a one-step tonal shift, never a shadow.",
       "Do reserve Signal for ≤10% of a screen; at ≈5.1:1 on black it carries body links directly while staying scarce.",
-      "Do give every animation a prefers-reduced-motion alternative, including the genre-static drift."
+      "Do give every animation a prefers-reduced-motion alternative, including the genre-static drift.",
+      "Do scope the admin dark theme to .admin-dark and keep its tokens off the public surface."
     ],
     "donts": [
       "Don't introduce a cream/sand/paper/beige body background, or any warm-neutral surface.",
@@ -127,7 +214,8 @@
       "Don't make it a big-box retail marketplace grid with star ratings and badges on every product.",
       "Don't add a second interface hue, tint surfaces for warmth, or use gradient text.",
       "Don't use border-left/border-right colour stripes, glassmorphism, or drop-shadows to fake depth on black.",
-      "Don't convey state (selected filter, sold, error) with colour alone; pair it with text, weight, or a glyph."
+      "Don't convey state (selected filter, sold, error) with colour alone; pair it with text, weight, or a glyph.",
+      "Don't leak storefront tokens into the admin or admin tokens into the storefront; the two surfaces stay distinct."
     ]
   }
 }
