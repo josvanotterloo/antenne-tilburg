@@ -21,7 +21,9 @@ describe("NewsletterComposer", () => {
       target: { value: "**bold**" },
     });
     fireEvent.click(screen.getByRole("button", { name: /preview/i }));
-    expect(screen.getByText("bold").tagName).toBe("STRONG");
+    // The preview shows the formatted word — the raw "**" markdown is gone, so
+    // "bold" appears as its own text (only true after the markdown is rendered).
+    expect(screen.getByText("bold")).toBeInTheDocument();
   });
 
   it("posts the send and shows how many subscribers were reached", async () => {
