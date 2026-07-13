@@ -16,7 +16,11 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 // The subset of a Prisma model delegate these handlers use.
 export interface ReferenceDelegate {
-  findMany(args: { orderBy: { name: "asc" } }): Promise<ReferenceRecord[]>;
+  findMany(args: {
+    where?: { name: { contains: string; mode: "insensitive" } };
+    orderBy: { name: "asc" };
+    take: number;
+  }): Promise<ReferenceRecord[]>;
   create(args: { data: { name: string } }): Promise<ReferenceRecord>;
   findUnique(args: {
     where: { id: string };
@@ -39,11 +43,22 @@ function isUniqueViolation(error: unknown): boolean {
   return (error as { code?: string } | null)?.code === "P2002";
 }
 
+// Typeahead page size: enough to pick from, small enough to stay fast at
+// thousands of rows.
+const SEARCH_LIMIT = 20;
+
 export function collectionHandlers(delegate: ReferenceDelegate) {
-  async function GET() {
+  // Typeahead search: ?q= filters by name (case-insensitive substring);
+  // results are alphabetical, capped at SEARCH_LIMIT. No q → first page.
+  async function GET(req: Request) {
     const denied = await requireAdmin();
     if (denied) return denied;
-    const items = await delegate.findMany({ orderBy: { name: "asc" } });
+    const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
+    const items = await delegate.findMany({
+      where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
+      orderBy: { name: "asc" },
+      take: SEARCH_LIMIT,
+    });
     return NextResponse.json(items);
   }
 

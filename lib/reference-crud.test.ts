@@ -40,16 +40,36 @@ describe("collectionHandlers", () => {
     mockRequireAdmin.mockResolvedValue(null); // allowed by default
   });
 
-  it("GET returns items ordered by name", async () => {
+  // Contract changed deliberately (typeahead): GET reads ?q= and caps results.
+  it("GET returns the first page ordered by name", async () => {
     const { fns, delegate } = makeDelegate();
     fns.findMany.mockResolvedValue([{ id: "1", name: "Techno" }]);
     const { GET } = collectionHandlers(delegate);
 
-    const res = await GET();
+    const res = await GET(new Request("http://test/api"));
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([{ id: "1", name: "Techno" }]);
-    expect(fns.findMany).toHaveBeenCalledWith({ orderBy: { name: "asc" } });
+    expect(fns.findMany).toHaveBeenCalledWith({
+      where: undefined,
+      orderBy: { name: "asc" },
+      take: 20,
+    });
+  });
+
+  it("GET filters by ?q= case-insensitively", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findMany.mockResolvedValue([{ id: "2", name: "Tresor" }]);
+    const { GET } = collectionHandlers(delegate);
+
+    const res = await GET(new Request("http://test/api?q=tre"));
+
+    expect(await res.json()).toEqual([{ id: "2", name: "Tresor" }]);
+    expect(fns.findMany).toHaveBeenCalledWith({
+      where: { name: { contains: "tre", mode: "insensitive" } },
+      orderBy: { name: "asc" },
+      take: 20,
+    });
   });
 
   it("GET returns the 401 from requireAdmin without hitting the db", async () => {
@@ -59,7 +79,7 @@ describe("collectionHandlers", () => {
     );
     const { GET } = collectionHandlers(delegate);
 
-    const res = await GET();
+    const res = await GET(new Request("http://test/api"));
 
     expect(res.status).toBe(401);
     expect(fns.findMany).not.toHaveBeenCalled();
