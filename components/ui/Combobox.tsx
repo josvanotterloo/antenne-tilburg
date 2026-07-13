@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
@@ -12,42 +12,66 @@ export interface ComboboxOption {
 
 export interface ComboboxProps {
   label: string;
-  options: ComboboxOption[];
-  value: string | null;
-  onChange: (id: string) => void;
-  createEndpoint: string;
-  onCreated?: (option: ComboboxOption) => void;
+  // Reference API base (e.g. /api/admin/labels): GET ?q= searches, POST creates.
+  endpoint: string;
+  value: ComboboxOption | null;
+  onChange: (option: ComboboxOption) => void;
   required?: boolean;
 }
 
-// Single-select combobox: filter existing options, quick-add a new one via POST
-// to `createEndpoint`, keyboard navigable (Arrow keys / Enter / Escape).
+const SEARCH_DEBOUNCE_MS = 200;
+
+// Single-select combobox with server-side typeahead: matches are fetched from
+// `endpoint` as the user types (debounced), quick-add creates a new entry via
+// POST, keyboard navigable (Arrow keys / Enter / Escape).
 export function Combobox({
   label,
-  options,
+  endpoint,
   value,
   onChange,
-  createEndpoint,
-  onCreated,
   required,
 }: ComboboxProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [items, setItems] = useState<ComboboxOption[]>([]);
   const [highlight, setHighlight] = useState(-1);
-  const { pending: busy, error, run } = useAsyncAction();
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const { pending: busy, error: createError, run } = useAsyncAction();
 
-  const selected = options.find((o) => o.id === value) ?? null;
   const filter = query.trim().toLowerCase();
+  // Discards responses that arrive after a newer search started.
+  const searchSeq = useRef(0);
 
-  const filtered = useMemo(
-    () => options.filter((o) => o.name.toLowerCase().includes(filter)),
-    [options, filter],
-  );
-  const hasExact = options.some((o) => o.name.toLowerCase() === filter);
+  // Server-side typeahead: while open, any query change (including the initial
+  // empty query on focus) fetches matches after a debounce.
+  useEffect(() => {
+    if (!open) return;
+    const seq = ++searchSeq.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${endpoint}?q=${encodeURIComponent(query.trim())}`,
+        );
+        if (!res.ok) throw new Error();
+        const matches = (await res.json()) as ComboboxOption[];
+        if (seq === searchSeq.current) {
+          setItems(matches);
+          setSearchError(null);
+        }
+      } catch {
+        if (seq === searchSeq.current) {
+          setSearchError("Couldn't load suggestions. Keep typing to retry.");
+        }
+      }
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [open, query, endpoint]);
+
+  const hasExact = items.some((o) => o.name.toLowerCase() === filter);
   const showQuickAdd = filter.length > 0 && !hasExact;
-  const itemCount = filtered.length + (showQuickAdd ? 1 : 0);
+  const itemCount = items.length + (showQuickAdd ? 1 : 0);
 
   function close() {
     setOpen(false);
@@ -66,22 +90,21 @@ export function Combobox({
   }, [open]);
 
   function pick(option: ComboboxOption) {
-    onChange(option.id);
+    onChange(option);
     close();
   }
 
   function quickAdd() {
     const name = query.trim();
     if (!name || busy) return;
-    // A failed create (duplicate name, network) now shows a message instead of
+    // A failed create (duplicate name, network) shows a message instead of
     // silently doing nothing and leaving the field un-added.
     run(async () => {
-      const created = await apiSend<ComboboxOption>(createEndpoint, {
+      const created = await apiSend<ComboboxOption>(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name }),
       });
-      onCreated?.(created);
       pick(created);
     });
   }
@@ -100,7 +123,7 @@ export function Combobox({
       case "Enter":
         event.preventDefault();
         if (highlight < 0) return;
-        if (highlight < filtered.length) pick(filtered[highlight]);
+        if (highlight < items.length) pick(items[highlight]);
         else if (showQuickAdd) void quickAdd();
         break;
       case "Escape":
@@ -109,6 +132,8 @@ export function Combobox({
         break;
     }
   }
+
+  const error = createError ?? searchError;
 
   return (
     <div ref={rootRef} className="relative">
@@ -119,9 +144,10 @@ export function Combobox({
         aria-controls={listboxId}
         aria-required={required}
         autoComplete="off"
-        value={open ? query : (selected?.name ?? "")}
+        value={open ? query : (value?.name ?? "")}
         placeholder={`Select ${label.toLowerCase()}`}
         onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);
@@ -138,11 +164,11 @@ export function Combobox({
           aria-label={label}
           className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded border border-admin-hairline bg-admin-surface shadow"
         >
-          {filtered.map((option, index) => (
+          {items.map((option, index) => (
             <li
               key={option.id}
               role="option"
-              aria-selected={option.id === value}
+              aria-selected={option.id === value?.id}
               onMouseDown={(e) => {
                 e.preventDefault();
                 pick(option);
@@ -163,7 +189,7 @@ export function Combobox({
                 void quickAdd();
               }}
               className={`cursor-pointer px-2 py-1 text-sm text-admin-ink-muted ${
-                highlight === filtered.length ? "bg-admin-raised" : ""
+                highlight === items.length ? "bg-admin-raised" : ""
               }`}
             >
               + Add &quot;{query.trim()}&quot;

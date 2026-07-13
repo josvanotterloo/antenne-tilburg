@@ -12,9 +12,11 @@ export interface ProductFormValues {
   artist: string;
   title: string;
   catalogNumber: string | null;
-  labelId: string;
-  genreId: string;
-  productTypeId: string;
+  // Selected reference options carry the name so the combobox can display it —
+  // options are searched server-side, there is no preloaded list to look it up in.
+  label: ComboboxOption;
+  genre: ComboboxOption;
+  productType: ComboboxOption;
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
@@ -22,38 +24,25 @@ export interface ProductFormValues {
 }
 
 interface ProductFormProps {
-  labels: ComboboxOption[];
-  genres: ComboboxOption[];
-  productTypes: ComboboxOption[];
   product?: ProductFormValues;
 }
 
-export function ProductForm({
-  labels,
-  genres,
-  productTypes,
-  product,
-}: ProductFormProps) {
+export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
-
-  // Local option lists so combobox quick-add can append new entries.
-  const [labelOptions, setLabelOptions] = useState(labels);
-  const [genreOptions, setGenreOptions] = useState(genres);
-  const [typeOptions, setTypeOptions] = useState(productTypes);
 
   const [artist, setArtist] = useState(product?.artist ?? "");
   const [title, setTitle] = useState(product?.title ?? "");
   const [catalogNumber, setCatalogNumber] = useState(
     product?.catalogNumber ?? "",
   );
-  const [labelId, setLabelId] = useState<string | null>(
-    product?.labelId ?? null,
+  const [label, setLabel] = useState<ComboboxOption | null>(
+    product?.label ?? null,
   );
-  const [genreId, setGenreId] = useState<string | null>(
-    product?.genreId ?? null,
+  const [genre, setGenre] = useState<ComboboxOption | null>(
+    product?.genre ?? null,
   );
-  const [productTypeId, setProductTypeId] = useState<string | null>(
-    product?.productTypeId ?? null,
+  const [productType, setProductType] = useState<ComboboxOption | null>(
+    product?.productType ?? null,
   );
   const [condition, setCondition] = useState<"NEW" | "SECONDHAND">(
     product?.condition ?? "NEW",
@@ -98,9 +87,9 @@ export function ProductForm({
             artist,
             title,
             catalogNumber,
-            labelId,
-            genreId,
-            productTypeId,
+            labelId: label?.id ?? null,
+            genreId: genre?.id ?? null,
+            productTypeId: productType?.id ?? null,
             condition,
             price,
             description,
@@ -144,11 +133,9 @@ export function ProductForm({
       <Field label="Label">
         <Combobox
           label="Label"
-          options={labelOptions}
-          value={labelId}
-          onChange={setLabelId}
-          createEndpoint="/api/admin/labels"
-          onCreated={(o) => setLabelOptions((prev) => [...prev, o])}
+          endpoint="/api/admin/labels"
+          value={label}
+          onChange={setLabel}
           required
         />
       </Field>
@@ -156,11 +143,9 @@ export function ProductForm({
       <Field label="Genre">
         <Combobox
           label="Genre"
-          options={genreOptions}
-          value={genreId}
-          onChange={setGenreId}
-          createEndpoint="/api/admin/genres"
-          onCreated={(o) => setGenreOptions((prev) => [...prev, o])}
+          endpoint="/api/admin/genres"
+          value={genre}
+          onChange={setGenre}
           required
         />
       </Field>
@@ -168,11 +153,9 @@ export function ProductForm({
       <Field label="Product type">
         <Combobox
           label="Product type"
-          options={typeOptions}
-          value={productTypeId}
-          onChange={setProductTypeId}
-          createEndpoint="/api/admin/product-types"
-          onCreated={(o) => setTypeOptions((prev) => [...prev, o])}
+          endpoint="/api/admin/product-types"
+          value={productType}
+          onChange={setProductType}
           required
         />
       </Field>
