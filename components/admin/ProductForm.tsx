@@ -103,9 +103,13 @@ export function ProductForm({ product }: ProductFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
+    >
       <Field label="Artist">
         <input
+          aria-label="Artist"
           required
           value={artist}
           onChange={(e) => setArtist(e.target.value)}
@@ -115,17 +119,10 @@ export function ProductForm({ product }: ProductFormProps) {
 
       <Field label="Title">
         <input
+          aria-label="Title"
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
-        />
-      </Field>
-
-      <Field label="Catalog number">
-        <input
-          value={catalogNumber}
-          onChange={(e) => setCatalogNumber(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
@@ -181,6 +178,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
       <Field label="Price (€)">
         <input
+          aria-label="Price (€)"
           type="number"
           min="0"
           step="0.01"
@@ -191,17 +189,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Description">
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={3}
-          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
-        />
-      </Field>
-
       <Field label="Quantity in stock">
         <input
+          aria-label="Quantity in stock"
           type="number"
           min="0"
           step="1"
@@ -225,13 +215,32 @@ export function ProductForm({ product }: ProductFormProps) {
         )}
       </Field>
 
+      <Field label="Catalog number">
+        <input
+          aria-label="Catalog number"
+          value={catalogNumber}
+          onChange={(e) => setCatalogNumber(e.target.value)}
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
+        />
+      </Field>
+
+      <Field label="Description" className="md:col-span-2">
+        <textarea
+          aria-label="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
+        />
+      </Field>
+
       {error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm text-red-400 md:col-span-2">
           {error}
         </p>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 md:col-span-2">
         <button
           type="submit"
           disabled={submitting}
@@ -254,12 +263,14 @@ export function ProductForm({ product }: ProductFormProps) {
 function Field({
   label,
   children,
+  className,
 }: {
   label: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div className={className ? `space-y-1 ${className}` : "space-y-1"}>
       <span className="block text-sm font-medium">{label}</span>
       {children}
     </div>
