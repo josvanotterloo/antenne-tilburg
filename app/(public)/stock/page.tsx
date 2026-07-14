@@ -11,6 +11,7 @@ import {
   stockLabelHref,
   type CatalogProduct,
 } from "@/lib/catalog";
+import { ProductRow } from "@/components/stock/ProductRow";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Stock" };
@@ -46,14 +47,6 @@ const filterLabel =
 const activeLink =
   "text-ink underline decoration-signal underline-offset-4";
 const idleLink = "text-ink-muted transition-colors duration-150 ease-out hover:text-ink";
-
-function JustInBadge() {
-  return (
-    <span className="ml-2 align-middle font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
-      Just In
-    </span>
-  );
-}
 
 export default async function StockPage({
   searchParams,
@@ -134,6 +127,23 @@ export default async function StockPage({
       <h1 className="text-3xl font-bold leading-[0.95] tracking-tight text-ink sm:text-4xl">
         Stock
       </h1>
+
+      {/* Weekly sections — standalone pages, linked here rather than
+          cluttering the main nav. */}
+      <nav
+        aria-label="Stock sections"
+        className="flex flex-wrap gap-x-4 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.06em]"
+      >
+        {[
+          ["This Week", "/stock/this-week"],
+          ["Last Week", "/stock/last-week"],
+          ["Back In Stock", "/stock/back-in-stock"],
+        ].map(([label, href]) => (
+          <Link key={href} href={href} className={idleLink}>
+            {label}
+          </Link>
+        ))}
+      </nav>
 
       <form method="get" action="/stock" className="flex gap-2">
         <input
@@ -299,49 +309,6 @@ function FilterGroup({
           );
         })}
       </ul>
-    </div>
-  );
-}
-
-// Rows carry three distinct links (artist → filter, title/price → detail, label →
-// filter) rather than one wrapping anchor, so no anchors are nested.
-function ProductRow({ product }: { product: CatalogProduct }) {
-  return (
-    <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
-      <span className="min-w-0 flex-1">
-        <Link
-          href={stockArtistHref(product.artist)}
-          className="font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
-        >
-          {product.artist}
-        </Link>
-        <span className="text-ink-muted"> — </span>
-        <Link
-          href={`/stock/${product.id}`}
-          className="text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
-        >
-          {product.title}
-        </Link>
-        {isJustIn(product.createdAt) && <JustInBadge />}
-        <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
-          <Link
-            href={stockLabelHref(product.label.name)}
-            className="transition-colors duration-150 ease-out hover:text-signal"
-          >
-            {product.label.name}
-          </Link>
-          {" · "}
-          {product.genre.name}
-          {" · "}
-          {product.productType.name}
-        </span>
-      </span>
-      <Link
-        href={`/stock/${product.id}`}
-        className="shrink-0 font-mono text-sm tabular-nums text-ink transition-colors duration-150 ease-out hover:text-signal"
-      >
-        €{Number(product.price).toFixed(2)}
-      </Link>
     </div>
   );
 }
