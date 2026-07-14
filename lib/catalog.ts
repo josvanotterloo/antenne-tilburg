@@ -209,3 +209,125 @@ export function getLatestProducts(limit = 100): Promise<CatalogProduct[]> {
     include: CATALOG_INCLUDE,
   });
 }
+
+// ——— Weekly sections (This Week / Last Week / Back In Stock) ———
+
+// The shop week runs Monday 00:00 – Sunday 24:00 in the shop's timezone, so
+// week boundaries land where a Tilburg crate-digger expects them regardless
+// of the server's clock.
+export const SHOP_TZ = "Europe/Amsterdam";
+export const BACK_IN_STOCK_DAYS = 30;
+
+// On create, createdAt (DB clock) and updatedAt (Prisma client clock) differ
+// by milliseconds; a real restock is minutes-to-days later. One minute cleanly
+// separates "never touched since creation" from "updated later".
+const RESTOCK_EPSILON_MS = 60_000;
+
+const SHOP_CLOCK = new Intl.DateTimeFormat("en-US", {
+  timeZone: SHOP_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+// Wall-clock parts of an instant, read in the shop timezone.
+function shopClock(at: Date) {
+  const p = Object.fromEntries(
+    SHOP_CLOCK.formatToParts(at).map((x) => [x.type, x.value]),
+  );
+  return {
+    year: Number(p.year),
+    month: Number(p.month),
+    day: Number(p.day),
+    hour: Number(p.hour) % 24, // "24" at midnight in some ICU versions
+    minute: Number(p.minute),
+    second: Number(p.second),
+  };
+}
+
+// UTC instant of shop-local midnight on a calendar date: guess UTC midnight,
+// then subtract the zone offset measured at the guess. Two passes absorb a
+// DST change between guess and result (CET/CEST shift by one hour, at 02:00,
+// so this always converges).
+function shopMidnightUTC(year: number, month: number, day: number): Date {
+  const target = Date.UTC(year, month - 1, day);
+  let utc = target;
+  for (let i = 0; i < 2; i++) {
+    const c = shopClock(new Date(utc));
+    const seen = Date.UTC(c.year, c.month - 1, c.day, c.hour, c.minute, c.second);
+    utc -= seen - target;
+  }
+  return new Date(utc);
+}
+
+// [start, end) of the shop week containing `now`, shifted by whole weeks
+// (0 = this week, -1 = last week). Monday 00:00 shop time is inclusive.
+export function weekRange(
+  offsetWeeks = 0,
+  now: Date = new Date(),
+): { start: Date; end: Date } {
+  const c = shopClock(now);
+  // Calendar-date arithmetic in UTC ms — no DST inside date-only math.
+  const dateOnly = Date.UTC(c.year, c.month - 1, c.day);
+  const mondayIdx = (new Date(dateOnly).getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  const monday = new Date(
+    dateOnly - mondayIdx * 86_400_000 + offsetWeeks * 7 * 86_400_000,
+  );
+  const nextMonday = new Date(monday.getTime() + 7 * 86_400_000);
+  const toMidnight = (d: Date) =>
+    shopMidnightUTC(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  return { start: toMidnight(monday), end: toMidnight(nextMonday) };
+}
+
+function weekProducts(offsetWeeks: number, now: Date): Promise<CatalogProduct[]> {
+  const { start, end } = weekRange(offsetWeeks, now);
+  return db.product.findMany({
+    where: { inStock: true, createdAt: { gte: start, lt: end } },
+    orderBy: { createdAt: "desc" },
+    include: CATALOG_INCLUDE,
+  });
+}
+
+// In-stock products added in the current shop week.
+export function getThisWeekProducts(
+  now: Date = new Date(),
+): Promise<CatalogProduct[]> {
+  return weekProducts(0, now);
+}
+
+// In-stock products added in the previous shop week.
+export function getLastWeekProducts(
+  now: Date = new Date(),
+): Promise<CatalogProduct[]> {
+  return weekProducts(-1, now);
+}
+
+// In-stock products touched within the last BACK_IN_STOCK_DAYS whose
+// updatedAt is meaningfully later than createdAt — i.e. changed since they
+// arrived (a restock, a quantity edit, a sale that left stock remaining),
+// not a brand-new arrival. Most recently updated first.
+export async function getBackInStockProducts(
+  now: Date = new Date(),
+): Promise<CatalogProduct[]> {
+  const rows = await db.product.findMany({
+    where: {
+      inStock: true,
+      quantity: { gt: 0 },
+      updatedAt: {
+        gte: new Date(now.getTime() - BACK_IN_STOCK_DAYS * 86_400_000),
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 100,
+    include: CATALOG_INCLUDE,
+  });
+  return rows.filter(
+    (p) =>
+      new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime() >
+      RESTOCK_EPSILON_MS,
+  );
+}

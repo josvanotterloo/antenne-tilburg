@@ -21,6 +21,10 @@ import {
   getLatestProducts,
   isJustIn,
   catalogPageNumbers,
+  weekRange,
+  getThisWeekProducts,
+  getLastWeekProducts,
+  getBackInStockProducts,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -272,5 +276,130 @@ describe("getLatestProducts", () => {
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 100 }),
     );
+  });
+});
+
+// The shop week runs Monday 00:00 – Sunday 24:00 in Europe/Amsterdam. All
+// boundary instants below are expressed in UTC (CEST = UTC+2 in July,
+// CET = UTC+1 in January).
+describe("weekRange (shop-timezone Mon–Sun weeks)", () => {
+  // Wednesday 15 July 2026, 12:00 in Amsterdam.
+  const WED = new Date("2026-07-15T10:00:00Z");
+
+  it("brackets the current week from Monday 00:00 shop time", () => {
+    const { start, end } = weekRange(0, WED);
+    // Monday 13 July 00:00 CEST = Sunday 12 July 22:00 UTC.
+    expect(start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-07-19T22:00:00.000Z");
+  });
+
+  it("offsets whole weeks for last week", () => {
+    const { start, end } = weekRange(-1, WED);
+    expect(start.toISOString()).toBe("2026-07-05T22:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+  });
+
+  it("Monday midnight itself belongs to the new week", () => {
+    // Exactly Monday 13 July 00:00 CEST.
+    const mondayMidnight = new Date("2026-07-12T22:00:00Z");
+    const { start } = weekRange(0, mondayMidnight);
+    expect(start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+    // One millisecond earlier is still Sunday of the previous week.
+    const justBefore = new Date("2026-07-12T21:59:59.999Z");
+    expect(weekRange(0, justBefore).start.toISOString()).toBe(
+      "2026-07-05T22:00:00.000Z",
+    );
+  });
+
+  it("handles Sunday correctly (last day of the week, not the first)", () => {
+    // Sunday 19 July 2026, 23:30 in Amsterdam.
+    const sundayNight = new Date("2026-07-19T21:30:00Z");
+    const { start } = weekRange(0, sundayNight);
+    expect(start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+  });
+
+  it("uses the winter offset outside DST", () => {
+    // Wednesday 14 January 2026, 12:00 CET (UTC+1).
+    const winter = new Date("2026-01-14T11:00:00Z");
+    const { start, end } = weekRange(0, winter);
+    // Monday 12 Jan 00:00 CET = Sunday 11 Jan 23:00 UTC.
+    expect(start.toISOString()).toBe("2026-01-11T23:00:00.000Z");
+    expect(end.toISOString()).toBe("2026-01-18T23:00:00.000Z");
+  });
+});
+
+describe("getThisWeekProducts / getLastWeekProducts", () => {
+  const WED = new Date("2026-07-15T10:00:00Z");
+
+  beforeEach(() => vi.mocked(db.product.findMany).mockResolvedValue([] as never));
+
+  it("this week: in-stock, created within the current shop week, newest first", async () => {
+    await getThisWeekProducts(WED);
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          inStock: true,
+          createdAt: {
+            gte: new Date("2026-07-12T22:00:00Z"),
+            lt: new Date("2026-07-19T22:00:00Z"),
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+  });
+
+  it("last week: the previous Mon–Sun window", async () => {
+    await getLastWeekProducts(WED);
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          inStock: true,
+          createdAt: {
+            gte: new Date("2026-07-05T22:00:00Z"),
+            lt: new Date("2026-07-12T22:00:00Z"),
+          },
+        },
+      }),
+    );
+  });
+});
+
+describe("getBackInStockProducts", () => {
+  const NOW = new Date("2026-07-15T10:00:00Z");
+  const row = (over: Record<string, unknown>) => ({
+    id: "p",
+    createdAt: new Date("2026-06-01T10:00:00Z"),
+    updatedAt: new Date("2026-07-10T10:00:00Z"),
+    ...over,
+  });
+
+  it("queries in-stock, quantity > 0, updated in the last 30 days, most recent first", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    await getBackInStockProducts(NOW);
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          inStock: true,
+          quantity: { gt: 0 },
+          updatedAt: { gte: new Date("2026-06-15T10:00:00Z") },
+        },
+        orderBy: { updatedAt: "desc" },
+      }),
+    );
+  });
+
+  it("excludes new products (updatedAt ~ createdAt) but keeps real restocks", async () => {
+    const restocked = row({ id: "restocked" });
+    // A freshly created product: updatedAt only milliseconds after createdAt.
+    const fresh = row({
+      id: "fresh",
+      createdAt: new Date("2026-07-10T10:00:00.000Z"),
+      updatedAt: new Date("2026-07-10T10:00:00.150Z"),
+    });
+    vi.mocked(db.product.findMany).mockResolvedValue([restocked, fresh] as never);
+
+    const result = await getBackInStockProducts(NOW);
+    expect(result.map((p) => p.id)).toEqual(["restocked"]);
   });
 });
