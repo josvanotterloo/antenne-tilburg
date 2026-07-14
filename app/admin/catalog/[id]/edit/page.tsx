@@ -39,6 +39,7 @@ export default async function EditProductPage({
           condition: product.condition,
           price: String(product.price),
           description: product.description,
+          coverImage: product.coverImage,
           quantity: product.quantity,
         }}
       />

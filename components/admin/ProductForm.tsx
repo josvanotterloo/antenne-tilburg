@@ -21,6 +21,7 @@ export interface ProductFormValues {
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
+  coverImage: string | null;
   quantity: number;
 }
 
@@ -50,6 +51,7 @@ export function ProductForm({ product }: ProductFormProps) {
   );
   const [price, setPrice] = useState(product?.price ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
+  const [coverImage, setCoverImage] = useState(product?.coverImage ?? "");
   // New products default to 1 (in stock); existing keep their quantity.
   const [quantity, setQuantity] = useState(
     product?.quantity != null ? String(product.quantity) : "1",
@@ -59,9 +61,27 @@ export function ProductForm({ product }: ProductFormProps) {
   // their own pending/error so neither disables the other's button.
   const submit = useAsyncAction();
   const sell = useAsyncAction();
+  const upload = useAsyncAction();
   const submitting = submit.pending;
   const selling = sell.pending;
-  const error = submit.error ?? sell.error;
+  const uploading = upload.pending;
+  const error = submit.error ?? sell.error ?? upload.error;
+
+  // Same upload contract as blog post images: POST the file, store the URL.
+  function handleCoverUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    upload.run(async () => {
+      const form = new FormData();
+      form.set("file", file);
+      const { url } = await apiSend<{ url: string }>("/api/admin/uploads", {
+        method: "POST",
+        body: form,
+      });
+      setCoverImage(url);
+    });
+  }
 
   // Quick "sold one" on the edit page. Syncs the quantity input from the route's
   // authoritative result so a later Save can't overwrite the decrement.
@@ -94,6 +114,7 @@ export function ProductForm({ product }: ProductFormProps) {
             condition,
             price,
             description,
+            coverImage,
             quantity,
           }),
         },
@@ -236,6 +257,42 @@ export function ProductForm({ product }: ProductFormProps) {
           rows={3}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
+      </Field>
+
+      <Field label="Cover image" htmlFor="cover-image" className="md:col-span-2">
+        {coverImage && (
+          // Plain <img>: local admin preview of an /uploads file with arbitrary
+          // dimensions; next/image optimization buys nothing here.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt="Cover image preview"
+            className="max-h-40 rounded border border-admin-hairline"
+          />
+        )}
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <input
+            id="cover-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleCoverUpload}
+            disabled={uploading}
+            className="text-sm text-admin-ink-muted"
+          />
+          {uploading && <span className="text-admin-ink-muted">Uploading…</span>}
+          {coverImage && !uploading && (
+            <button
+              type="button"
+              onClick={() => setCoverImage("")}
+              className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-admin-ink-muted">
+          JPG/PNG/WebP/GIF · max 5 MB · not shown on the public site yet
+        </p>
       </Field>
 
       {error && (

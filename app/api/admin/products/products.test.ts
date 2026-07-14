@@ -111,6 +111,17 @@ describe("POST /api/admin/products", () => {
     });
   });
 
+  it("accepts and stores a coverImage URL", async () => {
+    product.create.mockResolvedValue(ROW);
+    const res = await POST(
+      jsonReq("POST", { ...validBody, coverImage: "/uploads/cover.webp" }),
+    );
+    expect(res.status).toBe(201);
+    expect(product.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ coverImage: "/uploads/cover.webp" }),
+    });
+  });
+
   it("rejects invalid input with 400 and does not write", async () => {
     const res = await POST(jsonReq("POST", { ...validBody, artist: "" }));
     expect(res.status).toBe(400);

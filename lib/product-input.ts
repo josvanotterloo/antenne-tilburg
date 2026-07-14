@@ -11,6 +11,7 @@ export interface ProductInput {
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
+  coverImage: string | null;
   quantity: number;
 }
 
@@ -86,6 +87,7 @@ export function parseProductInput(body: unknown): ParseResult {
       condition: b.condition,
       price: String(price),
       description: str(b.description) || null,
+      coverImage: str(b.coverImage) || null,
       quantity,
     },
   };
@@ -101,6 +103,7 @@ export function toProductData(data: ProductInput) {
     condition: data.condition,
     price: data.price,
     description: data.description,
+    coverImage: data.coverImage,
     quantity: data.quantity,
     // inStock is derived — kept in sync so public queries (which filter on it) work.
     inStock: data.quantity > 0,

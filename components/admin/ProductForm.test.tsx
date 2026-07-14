@@ -21,6 +21,7 @@ const PRODUCT = {
   condition: "NEW" as const,
   price: "24.99",
   description: "Deep dub techno.",
+  coverImage: "/uploads/existing-cover.webp",
   quantity: 4,
 };
 
@@ -85,6 +86,45 @@ describe("ProductForm", () => {
     expect(screen.queryByRole("button", { name: /sell one/i })).toBeNull();
   });
 
+  it("renders a cover image upload field, without a preview on a new product", () => {
+    render(<ProductForm />);
+    expect(screen.getByLabelText(/cover image/i)).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: /cover image/i })).toBeNull();
+  });
+
+  it("shows the existing cover image preview when editing", () => {
+    render(<ProductForm product={PRODUCT} />);
+    expect(screen.getByRole("img", { name: /cover image/i })).toHaveAttribute(
+      "src",
+      "/uploads/existing-cover.webp",
+    );
+  });
+
+  it("uploads a picked file and previews the returned URL", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ url: "/uploads/new-cover.webp" }), {
+          status: 201,
+        }),
+      );
+
+    render(<ProductForm />);
+    const file = new File([new Uint8Array(8)], "cover.png", {
+      type: "image/png",
+    });
+    await user.upload(screen.getByLabelText(/cover image/i), file);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/uploads",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(
+      await screen.findByRole("img", { name: /cover image/i }),
+    ).toHaveAttribute("src", "/uploads/new-cover.webp");
+  });
+
   it("submits valid data and returns to the catalog", async () => {
     const user = userEvent.setup();
     const fetchMock = vi
@@ -115,6 +155,7 @@ describe("ProductForm", () => {
       productTypeId: "t1",
       condition: "NEW",
       price: "24.99",
+      coverImage: "/uploads/existing-cover.webp",
     });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/catalog"));
   });

@@ -35,6 +35,22 @@ describe("parseProductInput", () => {
     });
   });
 
+  it("accepts a coverImage URL, trims it, and nullifies it when blank or absent", () => {
+    const withImage = parseProductInput({
+      ...VALID,
+      coverImage: "  /uploads/cover.webp  ",
+    });
+    expect(withImage.ok && withImage.data.coverImage).toBe(
+      "/uploads/cover.webp",
+    );
+
+    const blank = parseProductInput({ ...VALID, coverImage: "" });
+    expect(blank.ok && blank.data.coverImage).toBeNull();
+
+    const absent = parseProductInput(VALID);
+    expect(absent.ok && absent.data.coverImage).toBeNull();
+  });
+
   it("defaults quantity to 0 and nullifies blank optionals", () => {
     const result = parseProductInput({
       ...VALID,
@@ -120,12 +136,22 @@ describe("toProductData — derives inStock from quantity", () => {
     condition: "NEW" as const,
     price: "10",
     description: null,
+    coverImage: null,
   };
 
   it("in stock when quantity > 0", () => {
     const data = toProductData({ ...base, quantity: 3 });
     expect(data.quantity).toBe(3);
     expect(data.inStock).toBe(true);
+  });
+
+  it("passes coverImage through to the stored data", () => {
+    const data = toProductData({
+      ...base,
+      coverImage: "/uploads/cover.webp",
+      quantity: 1,
+    });
+    expect(data.coverImage).toBe("/uploads/cover.webp");
   });
 
   it("out of stock when quantity is 0", () => {
