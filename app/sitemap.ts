@@ -14,6 +14,9 @@ const STATIC_ROUTES = [
   "/faq",
   "/visit",
   "/stock",
+  "/stock/this-week",
+  "/stock/last-week",
+  "/stock/back-in-stock",
   "/blog",
   "/newsletter",
 ];
