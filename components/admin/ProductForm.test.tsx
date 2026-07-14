@@ -63,6 +63,17 @@ describe("ProductForm", () => {
     ).toBeInTheDocument();
   });
 
+  it("associates labels with inputs — clicking a label focuses its field", async () => {
+    const user = userEvent.setup();
+    render(<ProductForm />);
+
+    await user.click(screen.getByText("Artist"));
+    expect(screen.getByRole("textbox", { name: /artist/i })).toHaveFocus();
+
+    await user.click(screen.getByText("Price (€)"));
+    expect(screen.getByRole("spinbutton", { name: /price/i })).toHaveFocus();
+  });
+
   it("shows the sell-one button only when editing an existing product", () => {
     const { unmount } = render(<ProductForm product={PRODUCT} />);
     expect(

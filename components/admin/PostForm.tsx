@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { imageMarkdown, insertAt } from "@/lib/markdown";
+import { Field } from "@/components/admin/Field";
 
 export interface PostFormValues {
   id: string;
@@ -89,24 +90,27 @@ export function PostForm({ post }: { post?: PostFormValues }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
-      <Field label="Title">
+      <Field label="Title" htmlFor="title">
         <input
+          id="title"
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Slug (optional — derived from title)">
+      <Field label="Slug (optional — derived from title)" htmlFor="slug">
         <input
+          id="slug"
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
           placeholder="auto"
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Body (markdown)">
+      <Field label="Body (markdown)" htmlFor="body">
         <textarea
+          id="body"
           ref={bodyRef}
           required
           rows={10}
@@ -130,8 +134,9 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           </span>
         </label>
       </Field>
-      <Field label="Cover image URL">
+      <Field label="Cover image URL" htmlFor="cover-image">
         <input
+          id="cover-image"
           value={coverImage}
           onChange={(e) => setCoverImage(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
@@ -155,15 +160,17 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           ))}
         </div>
       </Field>
-      <Field label="SEO title (optional)">
+      <Field label="SEO title (optional)" htmlFor="seo-title">
         <input
+          id="seo-title"
           value={seoTitle}
           onChange={(e) => setSeoTitle(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="SEO description (optional)">
+      <Field label="SEO description (optional)" htmlFor="seo-description">
         <textarea
+          id="seo-description"
           rows={2}
           value={seoDescription}
           onChange={(e) => setSeoDescription(e.target.value)}
@@ -194,20 +201,5 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         </button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <span className="block text-sm font-medium">{label}</span>
-      {children}
-    </div>
   );
 }

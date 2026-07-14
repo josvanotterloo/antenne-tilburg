@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, fireEvent, waitFor } from "@testing-library/react";
+import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -9,6 +9,19 @@ import { PostForm } from "@/components/admin/PostForm";
 
 beforeEach(() => vi.restoreAllMocks());
 afterEach(() => vi.unstubAllGlobals());
+
+describe("PostForm labels", () => {
+  it("exposes every field by its visible label", () => {
+    render(<PostForm />);
+
+    expect(screen.getByLabelText("Title")).toBeInTheDocument();
+    expect(screen.getByLabelText(/slug/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/body \(markdown\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/cover image url/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/seo title/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/seo description/i)).toBeInTheDocument();
+  });
+});
 
 describe("PostForm image upload", () => {
   it("uploads a picked image and inserts markdown into the body", async () => {

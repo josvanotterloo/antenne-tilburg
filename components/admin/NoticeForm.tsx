@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { Field } from "@/components/admin/Field";
 
 export interface NoticeFormValues {
   id: string;
@@ -40,16 +41,16 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
-      <div className="space-y-1">
-        <span className="block text-sm font-medium">Message</span>
+      <Field label="Message" htmlFor="message">
         <textarea
+          id="message"
           required
           rows={3}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
-      </div>
+      </Field>
 
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -61,24 +62,24 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
       </label>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-1">
-          <span className="block text-sm font-medium">Starts (optional)</span>
+        <Field label="Starts (optional)" htmlFor="starts-at">
           <input
+            id="starts-at"
             type="datetime-local"
             value={startsAt}
             onChange={(e) => setStartsAt(e.target.value)}
             className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
           />
-        </div>
-        <div className="space-y-1">
-          <span className="block text-sm font-medium">Ends (optional)</span>
+        </Field>
+        <Field label="Ends (optional)" htmlFor="ends-at">
           <input
+            id="ends-at"
             type="datetime-local"
             value={endsAt}
             onChange={(e) => setEndsAt(e.target.value)}
             className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
           />
-        </div>
+        </Field>
       </div>
       <p className="text-xs text-admin-ink-muted">
         With a window set, the notice shows automatically between those times

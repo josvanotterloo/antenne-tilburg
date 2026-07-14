@@ -16,6 +16,8 @@ export interface ComboboxProps {
   endpoint: string;
   value: ComboboxOption | null;
   onChange: (option: ComboboxOption) => void;
+  // Set on the input so an external <label htmlFor> can associate with it.
+  id?: string;
   required?: boolean;
 }
 
@@ -29,6 +31,7 @@ export function Combobox({
   endpoint,
   value,
   onChange,
+  id,
   required,
 }: ComboboxProps) {
   const listboxId = useId();
@@ -138,6 +141,7 @@ export function Combobox({
   return (
     <div ref={rootRef} className="relative">
       <input
+        id={id}
         role="combobox"
         aria-label={label}
         aria-expanded={open}

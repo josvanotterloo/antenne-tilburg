@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
+import { Field } from "@/components/admin/Field";
 
 export interface ProductFormValues {
   id: string;
@@ -107,9 +108,9 @@ export function ProductForm({ product }: ProductFormProps) {
       onSubmit={handleSubmit}
       className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
     >
-      <Field label="Artist">
+      <Field label="Artist" htmlFor="artist">
         <input
-          aria-label="Artist"
+          id="artist"
           required
           value={artist}
           onChange={(e) => setArtist(e.target.value)}
@@ -117,9 +118,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Title">
+      <Field label="Title" htmlFor="product-title">
         <input
-          aria-label="Title"
+          id="product-title"
           required
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -127,8 +128,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Label">
+      <Field label="Label" htmlFor="label">
         <Combobox
+          id="label"
           label="Label"
           endpoint="/api/admin/labels"
           value={label}
@@ -137,8 +139,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Genre">
+      <Field label="Genre" htmlFor="genre">
         <Combobox
+          id="genre"
           label="Genre"
           endpoint="/api/admin/genres"
           value={genre}
@@ -147,8 +150,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Product type">
+      <Field label="Product type" htmlFor="product-type">
         <Combobox
+          id="product-type"
           label="Product type"
           endpoint="/api/admin/product-types"
           value={productType}
@@ -176,9 +180,9 @@ export function ProductForm({ product }: ProductFormProps) {
         </div>
       </Field>
 
-      <Field label="Price (€)">
+      <Field label="Price (€)" htmlFor="price">
         <input
-          aria-label="Price (€)"
+          id="price"
           type="number"
           min="0"
           step="0.01"
@@ -189,9 +193,9 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Quantity in stock">
+      <Field label="Quantity in stock" htmlFor="quantity">
         <input
-          aria-label="Quantity in stock"
+          id="quantity"
           type="number"
           min="0"
           step="1"
@@ -215,18 +219,18 @@ export function ProductForm({ product }: ProductFormProps) {
         )}
       </Field>
 
-      <Field label="Catalog number">
+      <Field label="Catalog number" htmlFor="catalog-number">
         <input
-          aria-label="Catalog number"
+          id="catalog-number"
           value={catalogNumber}
           onChange={(e) => setCatalogNumber(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 
-      <Field label="Description" className="md:col-span-2">
+      <Field label="Description" htmlFor="description" className="md:col-span-2">
         <textarea
-          aria-label="Description"
+          id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
@@ -257,22 +261,5 @@ export function ProductForm({ product }: ProductFormProps) {
         </button>
       </div>
     </form>
-  );
-}
-
-function Field({
-  label,
-  children,
-  className,
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={className ? `space-y-1 ${className}` : "space-y-1"}>
-      <span className="block text-sm font-medium">{label}</span>
-      {children}
-    </div>
   );
 }
