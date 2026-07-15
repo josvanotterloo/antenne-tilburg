@@ -334,7 +334,7 @@ describe("getThisWeekProducts / getLastWeekProducts", () => {
   beforeEach(() => vi.mocked(db.product.findMany).mockResolvedValue([] as never));
 
   it("this week: in-stock, created within the current shop week, newest first", async () => {
-    await getThisWeekProducts(WED);
+    await getThisWeekProducts({ now: WED });
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -350,7 +350,7 @@ describe("getThisWeekProducts / getLastWeekProducts", () => {
   });
 
   it("last week: the previous Mon–Sun window", async () => {
-    await getLastWeekProducts(WED);
+    await getLastWeekProducts({ now: WED });
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -360,6 +360,59 @@ describe("getThisWeekProducts / getLastWeekProducts", () => {
             lt: new Date("2026-07-12T22:00:00Z"),
           },
         },
+      }),
+    );
+  });
+});
+
+describe("section queries — genre/condition filters", () => {
+  const WED = new Date("2026-07-15T10:00:00Z");
+
+  beforeEach(() => vi.mocked(db.product.findMany).mockResolvedValue([] as never));
+
+  it("this week filters by genre within the week window", async () => {
+    await getThisWeekProducts({ genreId: "g1", now: WED });
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          inStock: true,
+          genreId: "g1",
+          createdAt: {
+            gte: new Date("2026-07-12T22:00:00Z"),
+            lt: new Date("2026-07-19T22:00:00Z"),
+          },
+        }),
+      }),
+    );
+  });
+
+  it("last week filters by condition within the previous window", async () => {
+    await getLastWeekProducts({ condition: "SECONDHAND", now: WED });
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          inStock: true,
+          condition: "SECONDHAND",
+          createdAt: {
+            gte: new Date("2026-07-05T22:00:00Z"),
+            lt: new Date("2026-07-12T22:00:00Z"),
+          },
+        }),
+      }),
+    );
+  });
+
+  it("back in stock filters by genre and condition alongside its own clauses", async () => {
+    await getBackInStockProducts({ genreId: "g1", condition: "NEW", now: WED });
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          inStock: true,
+          genreId: "g1",
+          condition: "NEW",
+          quantity: { gt: 0 },
+          updatedAt: { gte: new Date("2026-06-15T10:00:00Z") },
+        }),
       }),
     );
   });
@@ -376,7 +429,7 @@ describe("getBackInStockProducts", () => {
 
   it("queries in-stock, quantity > 0, updated in the last 30 days, most recent first", async () => {
     vi.mocked(db.product.findMany).mockResolvedValue([] as never);
-    await getBackInStockProducts(NOW);
+    await getBackInStockProducts({ now: NOW });
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
@@ -399,7 +452,7 @@ describe("getBackInStockProducts", () => {
     });
     vi.mocked(db.product.findMany).mockResolvedValue([restocked, fresh] as never);
 
-    const result = await getBackInStockProducts(NOW);
+    const result = await getBackInStockProducts({ now: NOW });
     expect(result.map((p) => p.id)).toEqual(["restocked"]);
   });
 });

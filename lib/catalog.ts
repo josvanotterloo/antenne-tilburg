@@ -283,10 +283,29 @@ export function weekRange(
   return { start: toMidnight(monday), end: toMidnight(nextMonday) };
 }
 
-function weekProducts(offsetWeeks: number, now: Date): Promise<CatalogProduct[]> {
-  const { start, end } = weekRange(offsetWeeks, now);
+// Same filter semantics as getCatalogPage, narrowed to what the section
+// pages' sidebar offers. `now` stays injectable for deterministic tests.
+export interface SectionFilters {
+  genreId?: string | null;
+  condition?: "NEW" | "SECONDHAND" | null;
+  now?: Date;
+}
+
+function sectionWhere(f: SectionFilters): Prisma.ProductWhereInput {
+  return buildCatalogWhere({
+    genreId: f.genreId,
+    condition: f.condition,
+    onlyInStock: true,
+  });
+}
+
+function weekProducts(
+  offsetWeeks: number,
+  filters: SectionFilters,
+): Promise<CatalogProduct[]> {
+  const { start, end } = weekRange(offsetWeeks, filters.now ?? new Date());
   return db.product.findMany({
-    where: { inStock: true, createdAt: { gte: start, lt: end } },
+    where: { ...sectionWhere(filters), createdAt: { gte: start, lt: end } },
     orderBy: { createdAt: "desc" },
     include: CATALOG_INCLUDE,
   });
@@ -294,16 +313,16 @@ function weekProducts(offsetWeeks: number, now: Date): Promise<CatalogProduct[]>
 
 // In-stock products added in the current shop week.
 export function getThisWeekProducts(
-  now: Date = new Date(),
+  filters: SectionFilters = {},
 ): Promise<CatalogProduct[]> {
-  return weekProducts(0, now);
+  return weekProducts(0, filters);
 }
 
 // In-stock products added in the previous shop week.
 export function getLastWeekProducts(
-  now: Date = new Date(),
+  filters: SectionFilters = {},
 ): Promise<CatalogProduct[]> {
-  return weekProducts(-1, now);
+  return weekProducts(-1, filters);
 }
 
 // In-stock products touched within the last BACK_IN_STOCK_DAYS whose
@@ -311,11 +330,12 @@ export function getLastWeekProducts(
 // arrived (a restock, a quantity edit, a sale that left stock remaining),
 // not a brand-new arrival. Most recently updated first.
 export async function getBackInStockProducts(
-  now: Date = new Date(),
+  filters: SectionFilters = {},
 ): Promise<CatalogProduct[]> {
+  const now = filters.now ?? new Date();
   const rows = await db.product.findMany({
     where: {
-      inStock: true,
+      ...sectionWhere(filters),
       quantity: { gt: 0 },
       updatedAt: {
         gte: new Date(now.getTime() - BACK_IN_STOCK_DAYS * 86_400_000),
