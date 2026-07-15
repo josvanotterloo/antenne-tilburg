@@ -2,8 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("@/lib/catalog", async (importOriginal) => {
@@ -84,6 +93,32 @@ describe.each(PAGES)("/stock/$name", ({ Page, query, heading }) => {
     expect(
       screen.getByRole("link", { name: /all stock/i }),
     ).toHaveAttribute("href", "/stock");
+  });
+
+  it("shows the persistent stock nav with this section marked current", async () => {
+    render(await Page());
+
+    expect(screen.getByRole("link", { name: /this week/i })).toHaveAttribute(
+      "href",
+      "/stock/this-week",
+    );
+    expect(screen.getByRole("link", { name: /last week/i })).toHaveAttribute(
+      "href",
+      "/stock/last-week",
+    );
+    expect(
+      screen.getByRole("link", { name: /back in stock/i }),
+    ).toHaveAttribute("href", "/stock/back-in-stock");
+
+    expect(screen.getByRole("link", { name: heading })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("has no search input — filtering lives on /stock only", async () => {
+    render(await Page());
+    expect(screen.queryByRole("searchbox")).toBeNull();
   });
 
   it("shows the empty state when there is nothing", async () => {

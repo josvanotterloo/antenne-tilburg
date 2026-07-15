@@ -12,6 +12,7 @@ import {
   type CatalogProduct,
 } from "@/lib/catalog";
 import { ProductRow } from "@/components/stock/ProductRow";
+import { StockNav } from "@/components/stock/StockNav";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Stock" };
@@ -128,24 +129,8 @@ export default async function StockPage({
         Stock
       </h1>
 
-      {/* Weekly sections — standalone pages, linked here rather than
-          cluttering the main nav. */}
-      <nav
-        aria-label="Stock sections"
-        className="flex flex-wrap gap-x-4 gap-y-2 font-mono text-xs font-medium uppercase tracking-[0.06em]"
-      >
-        {[
-          ["This Week", "/stock/this-week"],
-          ["Last Week", "/stock/last-week"],
-          ["Back In Stock", "/stock/back-in-stock"],
-        ].map(([label, href]) => (
-          <Link key={href} href={href} className={idleLink}>
-            {label}
-          </Link>
-        ))}
-      </nav>
-
-      <form method="get" action="/stock" className="flex gap-2">
+      <StockNav active="all">
+        <form method="get" action="/stock" className="flex gap-2">
         <input
           type="search"
           name="q"
@@ -158,13 +143,14 @@ export default async function StockPage({
           (k) =>
             p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
         )}
-        <button
-          type="submit"
-          className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
-        >
-          Search
-        </button>
-      </form>
+          <button
+            type="submit"
+            className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
+          >
+            Search
+          </button>
+        </form>
+      </StockNav>
 
       {activeChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">

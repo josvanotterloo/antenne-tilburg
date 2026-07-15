@@ -2,8 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("@/lib/db", () => ({
@@ -79,6 +88,28 @@ describe("/stock page", () => {
     expect(getCatalogPage).toHaveBeenCalledWith(
       expect.objectContaining({ onlyInStock: true }),
     );
+  });
+
+  it("shows the stock nav with All Stock current, alongside the search input", async () => {
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+
+    expect(screen.getByRole("link", { name: /all stock/i })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: /this week/i })).toHaveAttribute(
+      "href",
+      "/stock/this-week",
+    );
+    expect(screen.getByRole("link", { name: /last week/i })).toHaveAttribute(
+      "href",
+      "/stock/last-week",
+    );
+    expect(
+      screen.getByRole("link", { name: /back in stock/i }),
+    ).toHaveAttribute("href", "/stock/back-in-stock");
+
+    expect(screen.getByRole("searchbox")).toBeInTheDocument();
   });
 });
 

@@ -14,5 +14,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LastWeekPage() {
-  return <SectionPage heading="Last Week" products={await getLastWeekProducts()} />;
+  return <SectionPage heading="Last Week" active="last-week" products={await getLastWeekProducts()} />;
 }

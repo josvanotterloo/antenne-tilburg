@@ -17,6 +17,7 @@ export default async function BackInStockPage() {
   return (
     <SectionPage
       heading="Back In Stock"
+      active="back-in-stock"
       products={await getBackInStockProducts()}
     />
   );

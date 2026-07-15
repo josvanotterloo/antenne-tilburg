@@ -14,5 +14,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ThisWeekPage() {
-  return <SectionPage heading="This Week" products={await getThisWeekProducts()} />;
+  return <SectionPage heading="This Week" active="this-week" products={await getThisWeekProducts()} />;
 }
