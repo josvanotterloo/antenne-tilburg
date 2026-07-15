@@ -13,41 +13,33 @@ import {
 } from "@/lib/catalog";
 import { ProductRow } from "@/components/stock/ProductRow";
 import { StockNav } from "@/components/stock/StockNav";
+import {
+  ActiveChips,
+  ConditionFilter,
+  FilterGroup,
+  activeLink,
+  filterHref,
+  idleLink,
+  one,
+  parseCondition,
+  resolveFilterId,
+  type FilterChip,
+  type SearchParams,
+} from "@/components/stock/StockFilters";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Stock" };
 
-type SearchParams = Record<string, string | string[] | undefined>;
-const one = (v: string | string[] | undefined) =>
-  (Array.isArray(v) ? v[0] : v) ?? undefined;
-
-const NONE = "__none__"; // sentinel id → matches nothing when a name is unknown
-
-// Build a /stock URL from the current params plus a patch. Filter/sort changes
-// reset pagination; pass `page` in the patch to keep or set it.
-function stockHref(
+const stockHref = (
   current: Record<string, string | undefined>,
   patch: Record<string, string | undefined>,
-): string {
-  const merged = { ...current, ...patch };
-  if (!("page" in patch)) delete merged.page;
-  const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, v);
-  const qs = sp.toString();
-  return qs ? `/stock?${qs}` : "/stock";
-}
+) => filterHref("/stock", current, patch);
 
 const SORTS = [
   { key: "date", label: "Date added", order: "desc" },
   { key: "artist", label: "Artist A–Z", order: "asc" },
   { key: "label", label: "Label A–Z", order: "asc" },
 ];
-
-const filterLabel =
-  "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
-const activeLink =
-  "text-ink underline decoration-signal underline-offset-4";
-const idleLink = "text-ink-muted transition-colors duration-150 ease-out hover:text-ink";
 
 export default async function StockPage({
   searchParams,
@@ -63,7 +55,7 @@ export default async function StockPage({
     artist: one(sp.artist),
     genre: one(sp.genre),
     label: one(sp.label),
-    condition: one(sp.condition) === "SECONDHAND" ? "SECONDHAND" : one(sp.condition) === "NEW" ? "NEW" : undefined,
+    condition: parseCondition(one(sp.condition)),
     sort: one(sp.sort),
     order: one(sp.order),
     view: one(sp.view) === "grid" ? "grid" : undefined,
@@ -75,20 +67,11 @@ export default async function StockPage({
     db.label.findMany({ orderBy: { name: "asc" } }),
   ]);
 
-  const resolve = (
-    list: { id: string; name: string }[],
-    name: string | undefined,
-  ) =>
-    name
-      ? (list.find((x) => x.name.toLowerCase() === name.toLowerCase())?.id ??
-        NONE)
-      : undefined;
-
   const result = await getCatalogPage({
     q: p.q,
     artist: p.artist,
-    genreId: resolve(genres, p.genre),
-    labelId: resolve(labels, p.label),
+    genreId: resolveFilterId(genres, p.genre),
+    labelId: resolveFilterId(labels, p.label),
     condition: p.condition as "NEW" | "SECONDHAND" | undefined,
     onlyInStock: true,
     sort: p.sort,
@@ -121,7 +104,7 @@ export default async function StockPage({
       label: p.condition,
       href: stockHref(p, { condition: undefined }),
     },
-  ].filter(Boolean) as { key: string; label: string; href: string }[];
+  ].filter(Boolean) as FilterChip[];
 
   return (
     <div className="space-y-8">
@@ -152,25 +135,7 @@ export default async function StockPage({
         </form>
       </StockNav>
 
-      {activeChips.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {activeChips.map((chip) => (
-            <Link
-              key={chip.key}
-              href={chip.href}
-              className="inline-flex items-center gap-1 border border-hairline px-3 py-1 font-mono text-xs uppercase tracking-[0.05em] text-ink-muted transition-colors duration-150 ease-out hover:border-signal hover:text-ink"
-            >
-              {chip.label} <span aria-hidden>×</span>
-            </Link>
-          ))}
-          <Link
-            href="/stock"
-            className="px-2 py-1 font-mono text-xs uppercase tracking-[0.06em] text-ink-muted underline transition-colors duration-150 ease-out hover:text-signal"
-          >
-            Clear all
-          </Link>
-        </div>
-      )}
+      <ActiveChips chips={activeChips} clearHref="/stock" />
 
       <div className="grid gap-8 md:grid-cols-[12rem_1fr]">
         <aside className="space-y-6 font-mono text-sm">
@@ -179,22 +144,10 @@ export default async function StockPage({
             options={genres}
             active={p.genre}
             param="genre"
+            basePath="/stock"
             current={p}
           />
-          <div className="space-y-1">
-            <h3 className={filterLabel}>Condition</h3>
-            {["NEW", "SECONDHAND"].map((c) => (
-              <Link
-                key={c}
-                href={stockHref(p, {
-                  condition: p.condition === c ? undefined : c,
-                })}
-                className={`block ${p.condition === c ? activeLink : idleLink}`}
-              >
-                {c}
-              </Link>
-            ))}
-          </div>
+          <ConditionFilter basePath="/stock" current={p} />
         </aside>
 
         <section className="space-y-4">
@@ -260,41 +213,6 @@ export default async function StockPage({
           />
         </section>
       </div>
-    </div>
-  );
-}
-
-function FilterGroup({
-  title,
-  options,
-  active,
-  param,
-  current,
-}: {
-  title: string;
-  options: { id: string; name: string }[];
-  active: string | undefined;
-  param: string;
-  current: Record<string, string | undefined>;
-}) {
-  return (
-    <div className="space-y-1">
-      <h3 className={filterLabel}>{title}</h3>
-      <ul>
-        {options.map((o) => {
-          const on = active?.toLowerCase() === o.name.toLowerCase();
-          return (
-            <li key={o.id}>
-              <Link
-                href={stockHref(current, { [param]: on ? undefined : o.name })}
-                className={`block ${on ? activeLink : idleLink}`}
-              >
-                {o.name}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }
