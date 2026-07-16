@@ -35,6 +35,22 @@ row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 Run tests: see `.claude/skills/run-tests/SKILL.md` — always use the run-tests skill,
 never construct custom test commands.
 
+## Code Discipline
+Binding for all work in this repo.
+
+- **Read every file you will touch before touching it** — read, not skim.
+- **State your assumptions before writing code**; flag tradeoffs explicitly.
+- **Write the minimum code that solves the current problem** — not the future
+  one.
+- **Your diff should be as small as the task allows** — do not touch what you
+  were not asked to touch.
+- **When fixing a bug: write the failing test first, watch it fail, then
+  fix.** This proves you found the cause, not the symptom.
+- **Specs are acceptance criteria**: "reject X, return 400, test both cases" —
+  not "add validation".
+- **If you find yourself restructuring code you were not asked to change,
+  stop and ask.**
+
 ## Testing Philosophy
 Binding for all work in this repo. Full version: `docs/instructions/testing.md`.
 
@@ -50,6 +66,25 @@ Binding for all work in this repo. Full version: `docs/instructions/testing.md`.
   internals.
 - **Never** change an existing passing test to make new code pass. If an
   existing test breaks, the new code is wrong.
+
+## Test Contract
+Binding for all work in this repo. Full version: `docs/instructions/testing.md`
+(§ Test Contract).
+
+- **Tests define the interface contract** — code serves the tests, never the
+  other way around.
+- **Never change an existing passing test to make new code pass** — if it
+  breaks, the new code is wrong.
+- **The only valid reason to change a test** is when the interface itself has
+  deliberately changed.
+- **Interface changes are architectural decisions** — always flag them
+  explicitly and wait for user approval before proceeding.
+- **Test behavior, not implementation** — "when I do X, I expect Y", never
+  CSS classes or internal function calls.
+- **If you cannot test something behaviorally**, that is a signal the design
+  needs rethinking.
+- **A shrinking test suite is a warning sign** — removing tests requires
+  explicit justification and user approval.
 
 ## Autonomy
 

@@ -43,6 +43,37 @@ never hand-construct a test command.
    wrong, not the test. Only edit a test when the *behaviour it asserts* is
    genuinely being changed on purpose — and then say why.
 
+## Test Contract
+
+The principles above, sharpened into a contract. Also summarized in
+`CLAUDE.md` (## Test Contract).
+
+1. **Tests define the interface contract.** Code serves the tests, never the
+   other way around. When code and a test disagree, the test is the record of
+   what the interface promised.
+
+2. **Never change an existing passing test to make new code pass.** If it
+   breaks, the new code is wrong (principle 7 above, restated as contract).
+
+3. **The only valid reason to change a test** is when the interface itself
+   has deliberately changed — the behaviour the test asserts is being changed
+   on purpose, not as a side effect.
+
+4. **Interface changes are architectural decisions.** Always flag them
+   explicitly and wait for user approval before proceeding. A commit that
+   silently rewrites tests to fit new code has skipped that decision.
+
+5. **Test behavior, not implementation.** "When I do X, I expect Y" — never
+   CSS classes or internal function calls (principles 1–2 above).
+
+6. **If you cannot test something behaviorally, that is a signal the design
+   needs rethinking** — hard to test usually means hard to use: hidden state,
+   missing seams, or an interface that doesn't say what it does.
+
+7. **A shrinking test suite is a warning sign.** Removing tests requires
+   explicit justification and user approval; a deleted test is a promise
+   silently withdrawn.
+
 ## Examples
 
 **Good — behaviour:**
