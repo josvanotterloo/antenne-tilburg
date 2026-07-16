@@ -59,4 +59,15 @@ describe("StockNav", () => {
     );
     expect(screen.getByRole("searchbox")).toBeInTheDocument();
   });
+
+  it("falls back to a default search form that submits ?q= to /stock", () => {
+    render(<StockNav active="this-week" />);
+
+    const input = screen.getByRole("searchbox");
+    expect(input).toHaveAttribute("name", "q");
+    expect(input.closest("form")).toHaveAttribute("action", "/stock");
+    expect(
+      screen.getByRole("button", { name: /search/i }),
+    ).toBeInTheDocument();
+  });
 });

@@ -128,9 +128,11 @@ describe.each(PAGES)("/stock/$name", ({ Page, query, heading, basePath }) => {
     );
   });
 
-  it("has no search input — filtering lives on /stock only", async () => {
+  it("shows a search input that submits to /stock (full search support)", async () => {
     render(await Page({ searchParams: Promise.resolve({}) }));
-    expect(screen.queryByRole("searchbox")).toBeNull();
+    const input = screen.getByRole("searchbox");
+    expect(input).toHaveAttribute("name", "q");
+    expect(input.closest("form")).toHaveAttribute("action", "/stock");
   });
 
   it("passes genre and condition filters through to the query", async () => {

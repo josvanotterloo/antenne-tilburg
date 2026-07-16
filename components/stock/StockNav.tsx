@@ -9,10 +9,32 @@ const SECTIONS = [
 
 export type StockSection = (typeof SECTIONS)[number]["key"];
 
+// Search on the section pages submits to /stock — the sections don't filter
+// by search term, the full listing does.
+function DefaultSearchForm() {
+  return (
+    <form method="get" action="/stock" className="flex gap-2">
+      <input
+        type="search"
+        name="q"
+        placeholder="Search artist, title, description…"
+        className="flex-1 border border-hairline bg-canvas px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-muted focus-visible:border-signal"
+      />
+      <button
+        type="submit"
+        className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
+      >
+        Search
+      </button>
+    </form>
+  );
+}
+
 // Persistent navigation across the stock surfaces. The active section gets
-// the signal underline (DESIGN.md nav rule); the optional child is the
-// search form — /stock only, since the section pages don't filter. On small
-// screens the search wraps onto its own row below the links.
+// the signal underline (DESIGN.md nav rule). The search slot always renders:
+// /stock passes its filter-preserving form as children; the section pages
+// get the default form above. On small screens the search wraps onto its
+// own row below the links.
 export function StockNav({
   active,
   children,
@@ -41,9 +63,9 @@ export function StockNav({
           </Link>
         ))}
       </nav>
-      {children && (
-        <div className="w-full sm:w-auto sm:max-w-xl sm:flex-1">{children}</div>
-      )}
+      <div className="w-full sm:w-auto sm:max-w-xl sm:flex-1">
+        {children ?? <DefaultSearchForm />}
+      </div>
     </div>
   );
 }
