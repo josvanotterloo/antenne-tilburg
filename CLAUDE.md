@@ -34,6 +34,9 @@ row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 ## Testing
 Run tests: see `.claude/skills/run-tests/SKILL.md` — always use the run-tests skill,
 never construct custom test commands.
+CI runs the full suite on every push via GitHub Actions (see
+`docs/instructions/ci.md`). Claude Code runs tests during TDD only, not as a
+pre-merge verification step.
 
 ## Code Discipline
 Binding for all work in this repo.

@@ -2,34 +2,65 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
+    branches: [master]
 
 jobs:
-  build-test:
+  ci:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Use Node 22
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: antenne_tilburg_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test -d antenne_tilburg_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+      EMAIL_ENCRYPTION_KEY: ${{ secrets.EMAIL_ENCRYPTION_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # No engines field in package.json; @types/node pins the 20.x line.
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: npm
 
-      # Single-package layout. For workspaces, run install/test/lint per workspace
-      # (e.g. add `working-directory: backend` steps) instead of these root steps.
-      - name: Install
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
       - name: Generate Prisma client
-        run: npm run prisma:generate
+        run: npx prisma generate
 
-      - name: Typecheck
-        run: npm run typecheck
+      - name: TypeScript check
+        run: npx tsc --noEmit
 
-      - name: Test
-        run: npm test
+      - name: ESLint
+        run: npm run lint
 
-      - name: Lint
-        run: npm run lint --if-present
+      # Fuzzy catalog search needs pg_trgm; create it before migrate deploy so
+      # the extension exists regardless of migration ordering.
+      - name: Enable pg_trgm
+        run: psql "$DATABASE_URL" -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;'
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      # Canonical full-suite entry point — same script the run-tests skill uses.
+      - name: Run full test suite
+        run: bash scripts/run-tests.sh

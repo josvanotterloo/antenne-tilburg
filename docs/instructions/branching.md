@@ -17,7 +17,9 @@ Apply karpathy-guidelines before writing any code:
 - Branch naming: `feature/<short-description>` (kebab-case)
 - Never commit directly to the default branch.
 - Before merging:
-  - All tests pass (run the `run-tests` skill)
+  - CI is green (GitHub Actions runs the full suite on every push — see
+    `docs/instructions/ci.md`). Claude Code runs tests during TDD cycles only,
+    not as a separate pre-merge verification step.
   - Lint / architecture checks clean (if the project configures them)
   - `/code-review` has been run (mandatory — see the close-out checklist) and all
     Medium+ findings are fixed
@@ -47,8 +49,10 @@ Every feature branch must complete these steps before the session ends:
 5. Create `docs/features/NNN-<feature-name>.md` (if you keep feature docs)
 6. Fill in `docs/sessions/YYYY-MM-DD.md` using the session log template
 7. Update any test-count baseline referenced in `CLAUDE.md`
-8. Run the project's deterministic checks (lint, tests, any architecture check).
-   Reserve AI review for the parts a script can't decide — it saves tokens.
+8. Run the project's deterministic checks (lint, any architecture check).
+   CI handles final test verification on every push — don't re-run the suite
+   locally as a close-out step. Reserve AI review for the parts a script can't
+   decide — it saves tokens.
 9. Commit and push docs changes
 
 ## Verification shortcuts
