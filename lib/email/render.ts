@@ -1,4 +1,6 @@
 import { EMAIL, escapeHtml, wrapEmail } from "./theme";
+import { SHOP, SOCIAL_LINKS } from "@/lib/shop-info";
+import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
 
 // A small, email-safe markdown → HTML renderer built as plain strings. Runs in an
 // App Router route handler, so it must NOT depend on react-dom/server. Supports the
@@ -201,6 +203,45 @@ export function renderNewsletterEmail({
   const inner = `<h1 style="color:${EMAIL.text};font-size:24px;margin:0 0 24px;">${escapeHtml(subject)}</h1>
 ${markdownToHtml(body)}
 <hr style="border:none;border-top:1px solid ${EMAIL.hairline};margin:32px 0 16px;" />
+<p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0;">You are receiving this because you subscribed to the Antenne Tilburg newsletter. <a href="${unsubscribeUrl}" style="color:${EMAIL.accent};">Unsubscribe</a>.</p>`;
+  return wrapEmail(inner);
+}
+
+// Render the structured newsletter (header md → social links → grouped new
+// arrivals → footer md → contact block → unsubscribe) to email-safe HTML.
+export function renderStructuredNewsletterEmail({
+  subject,
+  header,
+  arrivals,
+  footer,
+  unsubscribeUrl,
+}: {
+  subject: string;
+  header: string;
+  arrivals: ArrivalsGroup[];
+  footer: string;
+  unsubscribeUrl: string;
+}): string {
+  const socials = SOCIAL_LINKS.map(
+    (s) =>
+      `<p style="margin:0 0 4px;"><a href="${s.href}" style="${styles.a}">${s.href}</a></p>`,
+  ).join("\n");
+
+  const text = arrivalsText(arrivals);
+  const arrivalsBlock = text
+    ? `<pre style="${styles.pre}">${escapeHtml(text)}</pre>`
+    : `<p style="margin:0 0 16px;color:${EMAIL.muted};">No new arrivals in this period.</p>`;
+
+  const inner = `<h1 style="color:${EMAIL.text};font-size:24px;margin:0 0 24px;">${escapeHtml(subject)}</h1>
+${markdownToHtml(header)}
+<div style="margin:0 0 24px;">
+${socials}
+</div>
+<h2 style="${styles.h2}">New arrivals</h2>
+${arrivalsBlock}
+${markdownToHtml(footer)}
+<hr style="border:none;border-top:1px solid ${EMAIL.hairline};margin:32px 0 16px;" />
+<p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0 0 12px;">${escapeHtml(SHOP.name)} · ${escapeHtml(SHOP.addressLine)} · ${escapeHtml(SHOP.addressNote)} · <a href="${SHOP.phoneHref}" style="color:${EMAIL.accent};">${escapeHtml(SHOP.phone)}</a></p>
 <p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0;">You are receiving this because you subscribed to the Antenne Tilburg newsletter. <a href="${unsubscribeUrl}" style="color:${EMAIL.accent};">Unsubscribe</a>.</p>`;
   return wrapEmail(inner);
 }

@@ -5,7 +5,11 @@ vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
 }));
 vi.mock("@/lib/db", () => ({
-  db: { newsletterSubscriber: { findMany: vi.fn() } },
+  db: {
+    newsletterSubscriber: { findMany: vi.fn() },
+    product: { findMany: vi.fn() },
+    newsletterTemplate: { upsert: vi.fn() },
+  },
 }));
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
 
@@ -36,10 +40,18 @@ beforeEach(() => {
   ];
   vi.mocked(requireAdmin).mockResolvedValue(null);
   vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue(confirmed as never);
+  vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+  vi.mocked(db.newsletterTemplate.upsert).mockResolvedValue({} as never);
   vi.mocked(sendEmail).mockResolvedValue(undefined);
 });
 
-const valid = { subject: "New arrivals", body: "Fresh **wax**" };
+const valid = {
+  subject: "New arrivals",
+  header: "Fresh **wax**",
+  footer: "See you at the shop",
+  from: "2026-07-13",
+  to: "2026-07-17",
+};
 
 describe("POST /api/admin/newsletter/send", () => {
   it("returns the 401 from requireAdmin and sends nothing", async () => {
@@ -51,10 +63,54 @@ describe("POST /api/admin/newsletter/send", () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("400s an invalid subject/body", async () => {
-    const res = await post({ subject: "", body: "" });
+  it("400s an invalid subject", async () => {
+    const res = await post({ ...valid, subject: "" });
     expect(res.status).toBe(400);
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("400s a reversed arrivals date range", async () => {
+    const res = await post({ ...valid, from: "2026-07-17", to: "2026-07-13" });
+    expect(res.status).toBe(400);
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("persists the header/footer to the template singleton on send", async () => {
+    await post(valid);
+    expect(db.newsletterTemplate.upsert).toHaveBeenCalledWith({
+      where: { id: "singleton" },
+      create: {
+        id: "singleton",
+        headerText: "Fresh **wax**",
+        footerText: "See you at the shop",
+      },
+      update: {
+        headerText: "Fresh **wax**",
+        footerText: "See you at the shop",
+      },
+    });
+  });
+
+  it("assembles all three parts into the sent email", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([
+      {
+        artist: "Vril",
+        catalogNumber: "ZR-001",
+        quantity: 1,
+        createdAt: new Date("2026-07-14T10:00:00Z"),
+        updatedAt: new Date("2026-07-14T10:00:00Z"),
+        label: { name: "Zulema Records" },
+        genre: { name: "Techno" },
+      },
+    ] as never);
+
+    await post(valid);
+
+    const html = vi.mocked(sendEmail).mock.calls[0][0].html;
+    expect(html).toContain("<strong"); // header markdown
+    expect(html).toContain("techno"); // arrivals group
+    expect(html).toContain("VRIL [Zulema Records ZR-001]");
+    expect(html).toContain("See you at the shop"); // footer
   });
 
   it("sends only to CONFIRMED subscribers and reports the count", async () => {

@@ -22,6 +22,8 @@ import {
   isJustIn,
   catalogPageNumbers,
   weekRange,
+  shopDayRange,
+  isRestock,
   getThisWeekProducts,
   getLastWeekProducts,
   getBackInStockProducts,
@@ -420,8 +422,11 @@ describe("section queries — genre/condition filters", () => {
 
 describe("getBackInStockProducts", () => {
   const NOW = new Date("2026-07-15T10:00:00Z");
+  // Real rows always carry quantity (the where clause enforces > 0); the
+  // fixture models that so the shared isRestock predicate sees a full row.
   const row = (over: Record<string, unknown>) => ({
     id: "p",
+    quantity: 2,
     createdAt: new Date("2026-06-01T10:00:00Z"),
     updatedAt: new Date("2026-07-10T10:00:00Z"),
     ...over,
@@ -454,5 +459,66 @@ describe("getBackInStockProducts", () => {
 
     const result = await getBackInStockProducts({ now: NOW });
     expect(result.map((p) => p.id)).toEqual(["restocked"]);
+  });
+});
+
+describe("shopDayRange (inclusive shop-local date range)", () => {
+  it("brackets from-midnight to the day after to-midnight, shop time", () => {
+    const range = shopDayRange("2026-07-13", "2026-07-15");
+    expect(range).not.toBeNull();
+    // 13 Jul 00:00 CEST = 12 Jul 22:00Z; end is exclusive: 16 Jul 00:00 CEST.
+    expect(range!.start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+    expect(range!.end.toISOString()).toBe("2026-07-15T22:00:00.000Z");
+  });
+
+  it("supports a single-day range (from == to)", () => {
+    const range = shopDayRange("2026-07-13", "2026-07-13");
+    expect(range!.start.toISOString()).toBe("2026-07-12T22:00:00.000Z");
+    expect(range!.end.toISOString()).toBe("2026-07-13T22:00:00.000Z");
+  });
+
+  it("uses the winter offset outside DST", () => {
+    const range = shopDayRange("2026-01-12", "2026-01-12");
+    expect(range!.start.toISOString()).toBe("2026-01-11T23:00:00.000Z");
+  });
+
+  it("rejects malformed dates and reversed ranges", () => {
+    expect(shopDayRange("2026-7-3", "2026-07-15")).toBeNull();
+    expect(shopDayRange("nope", "2026-07-15")).toBeNull();
+    expect(shopDayRange("2026-07-15", "2026-07-13")).toBeNull();
+  });
+});
+
+describe("isRestock", () => {
+  const base = new Date("2026-07-01T10:00:00.000Z");
+
+  it("true when updated well after creation with stock remaining", () => {
+    expect(
+      isRestock({
+        createdAt: base,
+        updatedAt: new Date("2026-07-10T10:00:00Z"),
+        quantity: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it("false for a fresh product (create-time clock jitter)", () => {
+    expect(
+      isRestock({
+        createdAt: base,
+        updatedAt: new Date(base.getTime() + 150),
+        quantity: 2,
+      }),
+    ).toBe(false);
+  });
+
+  it("false when out of stock regardless of timestamps", () => {
+    expect(
+      isRestock({
+        createdAt: base,
+        updatedAt: new Date("2026-07-10T10:00:00Z"),
+        quantity: 0,
+      }),
+    ).toBe(false);
   });
 });

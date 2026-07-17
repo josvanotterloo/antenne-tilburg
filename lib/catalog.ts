@@ -299,6 +299,44 @@ function sectionWhere(f: SectionFilters): Prisma.ProductWhereInput {
   });
 }
 
+// Inclusive shop-local calendar-date range [from 00:00, day-after-to 00:00),
+// as UTC instants. Returns null on malformed dates or a reversed range.
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function shopDayRange(
+  from: string,
+  to: string,
+): { start: Date; end: Date } | null {
+  const f = ISO_DATE.exec(from);
+  const t = ISO_DATE.exec(to);
+  if (!f || !t) return null;
+  const start = shopMidnightUTC(Number(f[1]), Number(f[2]), Number(f[3]));
+  const dayAfterTo = new Date(
+    Date.UTC(Number(t[1]), Number(t[2]) - 1, Number(t[3])) + 86_400_000,
+  );
+  const end = shopMidnightUTC(
+    dayAfterTo.getUTCFullYear(),
+    dayAfterTo.getUTCMonth() + 1,
+    dayAfterTo.getUTCDate(),
+  );
+  if (start.getTime() >= end.getTime()) return null;
+  return { start, end };
+}
+
+// A restock: touched meaningfully after creation (see RESTOCK_EPSILON_MS)
+// with stock remaining. Shared by Back In Stock and the newsletter arrivals.
+export function isRestock(p: {
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  quantity: number;
+}): boolean {
+  return (
+    p.quantity > 0 &&
+    new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime() >
+      RESTOCK_EPSILON_MS
+  );
+}
+
 function weekProducts(
   offsetWeeks: number,
   filters: SectionFilters,
@@ -345,9 +383,5 @@ export async function getBackInStockProducts(
     take: 100,
     include: CATALOG_INCLUDE,
   });
-  return rows.filter(
-    (p) =>
-      new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime() >
-      RESTOCK_EPSILON_MS,
-  );
+  return rows.filter(isRestock);
 }

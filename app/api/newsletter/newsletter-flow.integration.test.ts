@@ -82,6 +82,24 @@ vi.mock("@/lib/db", () => {
           return rows;
         }),
       },
+      // Structured newsletter: the send route loads arrivals and persists the
+      // header/footer template. One canned arrival; template writes recorded.
+      product: {
+        findMany: vi.fn(async () => [
+          {
+            artist: "Vril",
+            catalogNumber: "ZR-001",
+            quantity: 1,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            label: { name: "Zulema Records" },
+            genre: { name: "Techno" },
+          },
+        ]),
+      },
+      newsletterTemplate: {
+        upsert: vi.fn(async ({ create }: { create: Record<string, string> }) => create),
+      },
     },
   };
 });
@@ -155,16 +173,25 @@ describe("newsletter flow (integration)", () => {
     expect(res2.status).toBe(200);
     expect(store.get(sub.id)!.status).toBe("CONFIRMED");
 
-    // 3. Send → 200, sent=1, Resend stub called with correct to/subject/html.
+    // 3. Send (structured) → 200, sent=1, Resend stub called with the
+    // assembled header + arrivals + footer html.
     vi.mocked(sendEmail).mockClear();
-    const res3 = await sendReq({ subject: "New arrivals", body: "Fresh **wax**" });
+    const res3 = await sendReq({
+      subject: "New arrivals",
+      header: "Fresh **wax**",
+      footer: "See you at the shop",
+      from: "2026-07-13",
+      to: "2026-07-17",
+    });
     expect(res3.status).toBe(200);
     expect(await res3.json()).toMatchObject({ ok: true, sent: 1, failed: 0 });
     expect(sendEmail).toHaveBeenCalledTimes(1);
     const emailArg = vi.mocked(sendEmail).mock.calls[0][0];
     expect(emailArg.to).toBe("ada@x.com");
     expect(emailArg.subject).toBe("New arrivals");
-    expect(emailArg.html).toContain("<strong"); // markdown rendered
+    expect(emailArg.html).toContain("<strong"); // header markdown rendered
+    expect(emailArg.html).toContain("VRIL [Zulema Records ZR-001]"); // arrivals
+    expect(emailArg.html).toContain("See you at the shop"); // footer
 
     // 4. Unsubscribe link in the sent email carries the subscriber's token.
     expect(emailArg.html).toContain(

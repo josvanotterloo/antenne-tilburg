@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 
-import { renderNewsletterEmail } from "@/lib/email/render";
+import { renderNewsletterEmail, renderStructuredNewsletterEmail } from "@/lib/email/render";
 import { renderConfirmEmail } from "@/lib/email/confirm";
 
 describe("renderNewsletterEmail", () => {
@@ -109,5 +109,103 @@ describe("renderConfirmEmail", () => {
       "https://antenne.test/api/newsletter/confirm?token=xyz",
     );
     expect(html.toLowerCase()).toContain("confirm");
+  });
+});
+
+describe("renderStructuredNewsletterEmail", () => {
+  const GROUPS = [
+    {
+      genre: "Techno",
+      items: [
+        {
+          artist: "Jeff Mills",
+          label: "SMEJ Associated Records",
+          catalogNumber: "AICT 43",
+          restock: false,
+        },
+        {
+          artist: "Vril",
+          label: "Zulema Records",
+          catalogNumber: "ZR-001",
+          restock: true,
+        },
+      ],
+    },
+  ];
+
+  const email = () =>
+    renderStructuredNewsletterEmail({
+      subject: "July arrivals",
+      header: "Hello **crate diggers**",
+      arrivals: GROUPS,
+      footer: "See you _soon_ at the shop.",
+      unsubscribeUrl: "https://example.com/u?token=t1",
+    });
+
+  it("renders header and footer markdown", () => {
+    const html = email();
+    expect(html).toContain("<strong");
+    expect(html).toContain("crate diggers");
+    expect(html).toContain("<em>soon</em>");
+  });
+
+  it("renders the grouped arrivals block — lowercase genre, indent, restock star", () => {
+    const html = email();
+    expect(html).toContain("techno");
+    expect(html).toContain("  JEFF MILLS [SMEJ Associated Records AICT 43]");
+    expect(html).toContain("  VRIL [Zulema Records ZR-001] *");
+  });
+
+  it("appends the social links as plain URLs after the header", () => {
+    const html = email();
+    expect(html).toContain("https://www.facebook.com/antennerecordshop/");
+    expect(html).toContain("https://www.instagram.com/antenne.recordshop/");
+    expect(html).toContain("https://soundcloud.com/antennerecordshoptilburg");
+    // Plain-URL style: the anchor text is the URL itself.
+    expect(html).toMatch(
+      /<a [^>]*>https:\/\/soundcloud\.com\/antennerecordshoptilburg<\/a>/,
+    );
+  });
+
+  it("ends with the contact block and the personalised unsubscribe link", () => {
+    const html = email();
+    expect(html).toContain("Antenne Recordshop");
+    expect(html).toContain("Noordstraat 82, 5038 EK Tilburg");
+    expect(html).toContain("+31 13 542 1708");
+    expect(html).toContain("https://example.com/u?token=t1");
+  });
+
+  it("says so when there are no arrivals in the range", () => {
+    const html = renderStructuredNewsletterEmail({
+      subject: "s",
+      header: "h",
+      arrivals: [],
+      footer: "f",
+      unsubscribeUrl: "https://example.com/u",
+    });
+    expect(html).toMatch(/no new arrivals/i);
+  });
+
+  it("escapes HTML in arrivals data (artist names are attacker-adjacent input)", () => {
+    const html = renderStructuredNewsletterEmail({
+      subject: "s",
+      header: "h",
+      arrivals: [
+        {
+          genre: "Techno",
+          items: [
+            {
+              artist: "<script>x</script>",
+              label: "L",
+              catalogNumber: null,
+              restock: false,
+            },
+          ],
+        },
+      ],
+      footer: "f",
+      unsubscribeUrl: "https://example.com/u",
+    });
+    expect(html).not.toContain("<script>");
   });
 });
