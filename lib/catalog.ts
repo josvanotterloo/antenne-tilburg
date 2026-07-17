@@ -323,6 +323,19 @@ export function shopDayRange(
   return { start, end };
 }
 
+// An instant's calendar date in the shop timezone, as yyyy-mm-dd (en-CA
+// locale formats exactly that). Used for date-input defaults.
+const SHOP_DATE = new Intl.DateTimeFormat("en-CA", {
+  timeZone: SHOP_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+export function shopDateISO(date: Date): string {
+  return SHOP_DATE.format(date);
+}
+
 // A restock: touched meaningfully after creation (see RESTOCK_EPSILON_MS)
 // with stock remaining. Shared by Back In Stock and the newsletter arrivals.
 export function isRestock(p: {

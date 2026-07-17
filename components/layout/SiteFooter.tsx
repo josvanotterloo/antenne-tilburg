@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SHOP } from "@/lib/shop-info";
 
 import NewsletterForm from "@/components/NewsletterForm";
 import SocialLinks from "@/components/SocialLinks";
@@ -48,15 +49,15 @@ export function SiteFooter() {
         <div className="space-y-4">
           <h2 className={heading}>Contact</h2>
           <address className="space-y-1 font-mono text-sm not-italic text-ink-muted">
-            <p className="text-ink">Antenne Recordshop</p>
-            <p>Noordstraat 82, 5038 EK Tilburg</p>
-            <p>Inside Sam-Sam vintage clothing store</p>
+            <p className="text-ink">{SHOP.name}</p>
+            <p>{SHOP.addressLine}</p>
+            <p>{SHOP.addressNote}</p>
             <p>
               <a
-                href="tel:+31135421708"
+                href={SHOP.phoneHref}
                 className="transition-colors duration-150 ease-out hover:text-signal"
               >
-                +31 13 542 1708
+                {SHOP.phone}
               </a>
             </p>
           </address>

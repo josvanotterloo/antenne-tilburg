@@ -1,3 +1,5 @@
+import { SOCIAL_LINKS } from "@/lib/shop-info";
+
 // Reusable social links. Inline SVGs (no icon library); icons use `currentColor`
 // so the #6B7DC9 signal hover recolours them. Standalone so the footer and home
 // page can drop it in later.
@@ -55,23 +57,17 @@ function SoundCloudIcon() {
   );
 }
 
-const SOCIALS = [
-  {
-    label: "Facebook",
-    href: "https://www.facebook.com/antennerecordshop/",
-    Icon: FacebookIcon,
-  },
-  {
-    label: "Instagram",
-    href: "https://www.instagram.com/antenne.recordshop/",
-    Icon: InstagramIcon,
-  },
-  {
-    label: "SoundCloud",
-    href: "https://soundcloud.com/antennerecordshoptilburg",
-    Icon: SoundCloudIcon,
-  },
-] as const;
+const ICONS = {
+  Facebook: FacebookIcon,
+  Instagram: InstagramIcon,
+  SoundCloud: SoundCloudIcon,
+} as const;
+
+// URLs live in lib/shop-info.ts, shared with the newsletter email renderer.
+const SOCIALS = SOCIAL_LINKS.map((link) => ({
+  ...link,
+  Icon: ICONS[link.label],
+}));
 
 export default function SocialLinks({ className = "" }: { className?: string }) {
   return (

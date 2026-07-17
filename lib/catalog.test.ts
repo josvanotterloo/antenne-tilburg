@@ -23,6 +23,7 @@ import {
   catalogPageNumbers,
   weekRange,
   shopDayRange,
+  shopDateISO,
   isRestock,
   getThisWeekProducts,
   getLastWeekProducts,
@@ -486,6 +487,14 @@ describe("shopDayRange (inclusive shop-local date range)", () => {
     expect(shopDayRange("2026-7-3", "2026-07-15")).toBeNull();
     expect(shopDayRange("nope", "2026-07-15")).toBeNull();
     expect(shopDayRange("2026-07-15", "2026-07-13")).toBeNull();
+  });
+});
+
+describe("shopDateISO", () => {
+  it("formats an instant as its shop-local calendar date", () => {
+    // 22:30Z on 12 July is already 13 July in Amsterdam (CEST).
+    expect(shopDateISO(new Date("2026-07-12T22:30:00Z"))).toBe("2026-07-13");
+    expect(shopDateISO(new Date("2026-01-11T23:30:00Z"))).toBe("2026-01-12");
   });
 });
 
