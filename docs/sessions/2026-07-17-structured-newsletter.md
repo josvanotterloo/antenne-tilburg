@@ -7,7 +7,7 @@
   `lib/shop-info.ts` (footer/SocialLinks/email single source),
   `renderStructuredNewsletterEmail`, template + arrivals routes, structured
   send route, and the three-part composer UI. TDD at every layer
-  (~40 new/migrated tests; suite 491 → 546... final count 546? see CI).
+  (suite 491 → 529 tests).
 - Interface changes flagged up front and migrated deliberately per the Test
   Contract: send-input, send route, integration test, composer tests.
 
