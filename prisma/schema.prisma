@@ -169,3 +169,13 @@ model WantListRequest {
   notes     String?
   createdAt DateTime @default(now())
 }
+
+// Reusable newsletter header/footer — written once, remembered between sends.
+// Singleton: exactly one row, fixed id "singleton", written via upsert.
+// updatedAt doubles as "when the template was last used/saved".
+model NewsletterTemplate {
+  id         String   @id
+  headerText String
+  footerText String
+  updatedAt  DateTime @updatedAt
+}
