@@ -156,15 +156,38 @@ describe("renderStructuredNewsletterEmail", () => {
     expect(html).toContain("  VRIL [Zulema Records ZR-001] *");
   });
 
-  it("appends the social links as plain URLs after the header", () => {
+  // Bug fix (2026-07-20): social links used to be auto-appended after the
+  // header, which duplicated them for shop owners who already type their
+  // social links into the header template themselves.
+  it("does not automatically append a social links block", () => {
     const html = email();
-    expect(html).toContain("https://www.facebook.com/antennerecordshop/");
-    expect(html).toContain("https://www.instagram.com/antenne.recordshop/");
-    expect(html).toContain("https://soundcloud.com/antennerecordshoptilburg");
-    // Plain-URL style: the anchor text is the URL itself.
-    expect(html).toMatch(
-      /<a [^>]*>https:\/\/soundcloud\.com\/antennerecordshoptilburg<\/a>/,
-    );
+    expect(html).not.toContain("https://www.facebook.com/antennerecordshop/");
+    expect(html).not.toContain("https://www.instagram.com/antenne.recordshop/");
+    expect(html).not.toContain("https://soundcloud.com/antennerecordshoptilburg");
+  });
+
+  it("does not duplicate a social link the header already includes", () => {
+    const html = renderStructuredNewsletterEmail({
+      subject: "July arrivals",
+      header: "Hi! Find us at https://www.facebook.com/antennerecordshop/",
+      arrivals: GROUPS,
+      footer: "See you _soon_ at the shop.",
+      unsubscribeUrl: "https://example.com/u?token=t1",
+    });
+    const occurrences = html.split(
+      "https://www.facebook.com/antennerecordshop/",
+    ).length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("uses the same font size for body paragraphs and the arrivals pre block", () => {
+    const html = email();
+    const pStyle = /<p style="([^"]*)">Hello/.exec(html)?.[1];
+    const preStyle = /<pre style="([^"]*)">/.exec(html)?.[1];
+    expect(pStyle).toBeDefined();
+    expect(preStyle).toBeDefined();
+    expect(pStyle).toContain("font-size:16px");
+    expect(preStyle).toContain("font-size:16px");
   });
 
   it("ends with the contact block and the personalised unsubscribe link", () => {

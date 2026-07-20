@@ -1,5 +1,5 @@
 import { EMAIL, escapeHtml, wrapEmail } from "./theme";
-import { SHOP, SOCIAL_LINKS } from "@/lib/shop-info";
+import { SHOP } from "@/lib/shop-info";
 import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
 
 // A small, email-safe markdown → HTML renderer built as plain strings. Runs in an
@@ -8,14 +8,19 @@ import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
 // blockquotes, rules) with inline styles, and escapes raw HTML so admin-authored
 // markdown has no injection surface.
 
+// Base text size shared by ordinary body copy (paragraphs) and the new-
+// arrivals <pre> block, so the two never visually drift apart again — the
+// <pre> previously hardcoded 13px against the (inherited) 15px body size.
+const BASE_FONT_SIZE = "16px";
+
 const styles = {
-  p: `margin:0 0 16px;color:${EMAIL.text};`,
+  p: `margin:0 0 16px;color:${EMAIL.text};font-size:${BASE_FONT_SIZE};`,
   h2: `color:${EMAIL.text};font-size:20px;margin:24px 0 8px;`,
   h3: `color:${EMAIL.text};font-size:17px;margin:20px 0 8px;`,
   list: `margin:0 0 16px;padding-left:20px;color:${EMAIL.text};`,
   li: `margin:0 0 4px;`,
   blockquote: `margin:0 0 16px;padding:0 0 0 12px;border-left:2px solid ${EMAIL.hairline};color:${EMAIL.muted};font-style:italic;`,
-  pre: `font-family:${EMAIL.mono};font-size:13px;color:${EMAIL.text};background:${EMAIL.panel};padding:12px;overflow-x:auto;margin:0 0 16px;`,
+  pre: `font-family:${EMAIL.mono};font-size:${BASE_FONT_SIZE};color:${EMAIL.text};background:${EMAIL.panel};padding:12px;overflow-x:auto;margin:0 0 16px;`,
   hr: `border:none;border-top:1px solid ${EMAIL.hairline};margin:24px 0;`,
   code: `font-family:${EMAIL.mono};font-size:13px;color:${EMAIL.accent};`,
   a: `color:${EMAIL.accent};text-decoration:underline;`,
@@ -207,8 +212,10 @@ ${markdownToHtml(body)}
   return wrapEmail(inner);
 }
 
-// Render the structured newsletter (header md → social links → grouped new
-// arrivals → footer md → contact block → unsubscribe) to email-safe HTML.
+// Render the structured newsletter (header md → grouped new arrivals →
+// footer md → contact block → unsubscribe) to email-safe HTML. Social links
+// are NOT auto-appended — the shop owner includes them in their header
+// template, and auto-appending duplicated them.
 export function renderStructuredNewsletterEmail({
   subject,
   header,
@@ -222,21 +229,13 @@ export function renderStructuredNewsletterEmail({
   footer: string;
   unsubscribeUrl: string;
 }): string {
-  const socials = SOCIAL_LINKS.map(
-    (s) =>
-      `<p style="margin:0 0 4px;"><a href="${s.href}" style="${styles.a}">${s.href}</a></p>`,
-  ).join("\n");
-
   const text = arrivalsText(arrivals);
   const arrivalsBlock = text
     ? `<pre style="${styles.pre}">${escapeHtml(text)}</pre>`
-    : `<p style="margin:0 0 16px;color:${EMAIL.muted};">No new arrivals in this period.</p>`;
+    : `<p style="margin:0 0 16px;color:${EMAIL.muted};font-size:${BASE_FONT_SIZE};">No new arrivals in this period.</p>`;
 
   const inner = `<h1 style="color:${EMAIL.text};font-size:24px;margin:0 0 24px;">${escapeHtml(subject)}</h1>
 ${markdownToHtml(header)}
-<div style="margin:0 0 24px;">
-${socials}
-</div>
 <h2 style="${styles.h2}">New arrivals</h2>
 ${arrivalsBlock}
 ${markdownToHtml(footer)}
