@@ -137,7 +137,35 @@ describe("NewsletterComposer (structured)", () => {
     expect(preview).toHaveTextContent("VRIL [Zulema Records ZR-001] *");
     expect(preview).toHaveTextContent("See you at the shop"); // footer
     expect(preview).toHaveTextContent("Noordstraat 82"); // contact block
-    expect(preview).toHaveTextContent("soundcloud.com"); // social links
+  });
+
+  // Bug fix (2026-07-20): the preview used to fabricate its own social-links
+  // block, independently of the real email renderer — which no longer
+  // appends one (shop owners type socials into their header directly). A
+  // stale preview block would mislead the admin into thinking social links
+  // are handled for them when they are not.
+  it("does not show a fabricated social-links block in the preview", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole("button", { name: /preview/i }));
+
+    const preview = screen.getByTestId("newsletter-preview");
+    expect(preview).not.toHaveTextContent("soundcloud.com");
+    expect(preview).not.toHaveTextContent("facebook.com");
+    expect(preview).not.toHaveTextContent("instagram.com");
+  });
+
+  it("tells the admin to add their own social links, not that they're automatic", () => {
+    setup();
+    expect(
+      screen.queryByText(/social links.*are appended automatically/i),
+    ).toBeNull();
+    expect(screen.getByText(/not added automatically/i)).toBeInTheDocument();
+    // The contact-block auto-append (a separate, still-true behavior) stays.
+    expect(
+      screen.getByText(/contact block.*appended automatically/i),
+    ).toBeInTheDocument();
   });
 
   it("sends the structured newsletter and reports the count", async () => {

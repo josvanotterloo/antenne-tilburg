@@ -5,7 +5,7 @@ import { useState } from "react";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
-import { SHOP, SOCIAL_LINKS } from "@/lib/shop-info";
+import { SHOP } from "@/lib/shop-info";
 import { PostBody } from "@/components/PostBody";
 import { Field } from "@/components/admin/Field";
 
@@ -118,8 +118,8 @@ export function NewsletterComposer({
           className="w-full rounded border border-admin-hairline px-2 py-1 font-mono text-sm"
         />
         <p className="text-xs text-admin-ink-muted">
-          Remembered between newsletters. Social links (Facebook, Instagram,
-          SoundCloud) are appended automatically.
+          Remembered between newsletters. Include your own social links here
+          — they are not added automatically.
         </p>
       </Field>
 
@@ -239,13 +239,6 @@ export function NewsletterComposer({
             Email preview
           </p>
           <PostBody body={header} />
-          <div className="space-y-0.5 text-sm">
-            {SOCIAL_LINKS.map((s) => (
-              <p key={s.label} className="text-signal">
-                {s.href}
-              </p>
-            ))}
-          </div>
           <h2 className="text-lg font-semibold text-ink">New arrivals</h2>
           {arrivalsBlock ? (
             <pre className="overflow-x-auto font-mono text-xs leading-5 text-ink">
