@@ -61,6 +61,32 @@ Body paragraphs and the arrivals `<pre>` block share one `BASE_FONT_SIZE`
 (16px) constant, fixed 2026-07-20 after the `<pre>` block hardcoded 13px
 against the (inherited) 15px body size and visibly mismatched in preview.
 
+### Backslash-escaped characters
+
+`markdownToHtml` (used by both header and footer) supports `\*`, `\_` and
+`\\` as escapes for a literal character, fixed 2026-07-21: the engine
+previously had no escape mechanism, so a run like `\*\*\*\*\*\*\*\*` (an
+escaped divider line, e.g. framing "discogs") got misread by the italic
+regex as mismatched emphasis pairs instead of eight literal asterisks.
+`ESCAPED_CHAR` is stashed via the same sentinel mechanism as built
+links/images, before any emphasis parsing runs, in `formatEmphasis`.
+
+Known, unchanged limitation: consecutive non-blank lines within one
+markdown block still join into a single paragraph with a space (soft-wrap,
+matching CommonMark's default) — an escaped divider line, its content, and
+a closing divider line render as one line (`******** discogs ********`),
+not three stacked lines, unless separated by a blank line. Not in scope
+for the escape fix; flagged in case a shop owner expects a visual line
+break.
+
+**Note:** the *composer's live preview* (in-browser "Preview" button) uses
+`react-markdown` via `PostBody`, a fully spec-compliant CommonMark parser
+that already supported backslash escapes correctly before this fix — the
+bug only ever affected the actual sent email (`lib/email/render.ts`), not
+what the admin sees in the browser. Verified by calling
+`markdownToHtml` directly (the real send-time code path) rather than
+through the browser preview, which would not have exercised the bug.
+
 ## Verified end-to-end (dev)
 
 Loaded arrivals for 1–17 July against the real dev DB: three genre groups,
