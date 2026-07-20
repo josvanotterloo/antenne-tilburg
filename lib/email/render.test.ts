@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 
-import { renderNewsletterEmail, renderStructuredNewsletterEmail } from "@/lib/email/render";
+import {
+  markdownToHtml,
+  renderNewsletterEmail,
+  renderStructuredNewsletterEmail,
+} from "@/lib/email/render";
 import { renderConfirmEmail } from "@/lib/email/confirm";
 
 describe("renderNewsletterEmail", () => {
@@ -83,6 +87,7 @@ describe("renderNewsletterEmail — markdown coverage", () => {
     expect(render("a _dusty_ tape")).toContain("<em");
   });
 
+
   it("renders blockquotes and horizontal rules", () => {
     expect(render("> come dig")).toContain("<blockquote");
     expect(render("---")).toContain("<hr");
@@ -96,6 +101,48 @@ describe("renderNewsletterEmail — markdown coverage", () => {
     const out = render("hi <script>alert('x')</script> there");
     expect(out).not.toContain("<script>");
     expect(out).toContain("&lt;script&gt;");
+  });
+});
+
+// Bug fix (2026-07-21): the engine had no backslash-escape mechanism, so
+// `\*` fed straight into the bold/italic regexes. A lone `\*` leaked its
+// backslash through untouched; a run of them (e.g. `\*\*\*\*\*\*\*\*`) got
+// glued into mismatched, garbled <em> pairs by the italic regex. Both cases
+// should render as plain literal asterisks — no different from any other
+// character — and must not become bold/italic/<hr>.
+describe("markdownToHtml — escaped asterisks", () => {
+  it("renders a lone escaped asterisk as a literal character, not emphasis", () => {
+    const out = markdownToHtml("5 \\* 3 = 15");
+    expect(out).toContain("5 * 3 = 15");
+    expect(out).not.toContain("<em");
+    expect(out).not.toContain("<strong");
+  });
+
+  it("renders a run of escaped asterisks as literal asterisks, not <hr>/<strong>/<em>", () => {
+    const escapedRule = "\\*".repeat(8); // source: \*\*\*\*\*\*\*\* (8 escaped *)
+    const out = markdownToHtml(`${escapedRule}\ndiscogs\n${escapedRule}`);
+    expect(out).not.toContain("<hr");
+    expect(out).not.toContain("<strong");
+    expect(out).not.toContain("<em");
+    expect(out).toContain("*".repeat(8)); // literal ******** survives
+    expect(out).toContain("discogs");
+  });
+
+  it("renders an escaped bold marker (\\*\\*) as literal asterisks, not <strong>", () => {
+    const out = markdownToHtml("\\*\\*not bold\\*\\*");
+    expect(out).not.toContain("<strong");
+    expect(out).toContain("**not bold**");
+  });
+
+  it("still renders unescaped emphasis and a real horizontal rule normally", () => {
+    // Regression guard: the fix must not defeat real markdown syntax.
+    expect(markdownToHtml("a *dusty* tape")).toContain("<em");
+    expect(markdownToHtml("a **loud** tape")).toContain("<strong");
+    expect(markdownToHtml("***")).toContain("<hr");
+  });
+
+  it("renders an escaped backslash as a single literal backslash", () => {
+    expect(markdownToHtml("C:\\\\Users")).toContain("C:\\Users");
   });
 });
 

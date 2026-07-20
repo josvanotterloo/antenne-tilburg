@@ -34,6 +34,13 @@ const STASH_OPEN = "";
 const STASH_CLOSE = "";
 const STASH_RE = /(\d+)/g;
 
+// Backslash-escaped punctuation: `\X` for any of `\ * _` renders as a
+// literal X and must be invisible to the bold/italic regexes below —
+// otherwise a run like `\*\*\*\*\*\*\*\*` (an escaped divider line) gets
+// misread as pairs of italic markers and comes out as mismatched, garbled
+// <em> tags instead of eight literal asterisks.
+const ESCAPED_CHAR = /\\([\\*_])/g;
+
 // Bold/italic passes. Applied to plain text and to link labels, but never to
 // built URLs. Bold before italic so `**` isn't consumed by the single-`*` rule.
 function applyEmphasis(text: string): string {
@@ -55,7 +62,12 @@ function formatEmphasis(escaped: string): string {
   const keep = (html: string) =>
     `${STASH_OPEN}${stash.push(html) - 1}${STASH_CLOSE}`;
 
-  const withTags = escaped
+  // Stash backslash-escaped characters first, before any markdown syntax is
+  // interpreted, so `\*`/`\_`/`\\` always survive as literal characters —
+  // invisible to the image/link/bold/italic passes below.
+  const withEscapes = escaped.replace(ESCAPED_CHAR, (_, ch: string) => keep(ch));
+
+  const withTags = withEscapes
     .replace(
       /!\[([^\]]*)\]\(([^)\s]+)\)/g,
       (_, alt: string, url: string) =>
