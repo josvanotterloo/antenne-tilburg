@@ -3,8 +3,12 @@ import type { Metadata } from "next";
 
 import { getLatestProducts, isJustIn, type CatalogProduct } from "@/lib/catalog";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
+import { getOpeningHours, toOpeningHoursSpecification } from "@/lib/opening-hours";
+import { localBusinessJsonLd } from "@/lib/structured-data";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   description:
     "Antenne Recordshop — electronic-music vinyl and tape in Tilburg, inside Sam-Sam vintage. New releases, a deep second-hand section, independent Discogs stock, and the 100 latest arrivals.",
@@ -22,14 +26,21 @@ const GENRE_STATIC = [
 ];
 
 export default async function HomePage() {
-  const [products, allPosts] = await Promise.all([
+  const [products, allPosts, hours] = await Promise.all([
     getLatestProducts(100),
     getPublishedPosts(),
+    getOpeningHours(),
   ]);
   const posts = allPosts.slice(0, 3);
+  const jsonLd = localBusinessJsonLd(toOpeningHoursSpecification(hours));
 
   return (
     <div className="space-y-20 sm:space-y-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
+      />
+
       {/* Hero */}
       <section className="relative -mx-4 overflow-hidden border-b border-hairline px-4 pb-14 pt-6">
         <div

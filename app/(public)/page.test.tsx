@@ -14,10 +14,14 @@ vi.mock("@/lib/blog", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/blog")>();
   return { ...actual, getPublishedPosts: vi.fn() };
 });
+vi.mock("@/lib/db", () => ({
+  db: { openingHours: { findMany: vi.fn() } },
+}));
 
 import HomePage from "@/app/(public)/page";
 import { getLatestProducts } from "@/lib/catalog";
 import { getPublishedPosts } from "@/lib/blog";
+import { db } from "@/lib/db";
 
 const PRODUCT = {
   id: "p1",
@@ -60,6 +64,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getLatestProducts).mockResolvedValue([PRODUCT] as never);
   vi.mocked(getPublishedPosts).mockResolvedValue([POST] as never);
+  vi.mocked(db.openingHours.findMany).mockResolvedValue([
+    { dayOfWeek: 1, opensAt: "12:00", closesAt: "18:00", closed: false },
+  ] as never);
 });
 
 describe("home page", () => {
@@ -94,5 +101,30 @@ describe("home page", () => {
     vi.mocked(getPublishedPosts).mockResolvedValue([] as never);
     render(await HomePage());
     expect(hrefs()).toContain("/stock");
+  });
+
+  it("emits MusicStore structured data with live opening hours", async () => {
+    const { container } = render(await HomePage());
+    const ld = container.querySelector('script[type="application/ld+json"]');
+    expect(ld).not.toBeNull();
+    const data = JSON.parse(ld?.textContent ?? "{}");
+    expect(data["@type"]).toBe("MusicStore");
+    expect(data.name).toBe("Antenne Recordshop");
+    expect(data.openingHoursSpecification).toEqual([
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: "Monday",
+        opens: "12:00",
+        closes: "18:00",
+      },
+    ]);
+  });
+
+  it("degrades to no opening hours in structured data if the DB call fails", async () => {
+    vi.mocked(db.openingHours.findMany).mockRejectedValue(new Error("db down"));
+    const { container } = render(await HomePage());
+    const ld = container.querySelector('script[type="application/ld+json"]');
+    const data = JSON.parse(ld?.textContent ?? "{}");
+    expect(data.openingHoursSpecification).toEqual([]);
   });
 });

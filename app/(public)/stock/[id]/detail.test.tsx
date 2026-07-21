@@ -100,4 +100,16 @@ describe("/stock/[id] detail", () => {
     await expect(call("p1")).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFound).toHaveBeenCalled();
   });
+
+  it("emits Product + MusicRecording structured data with the correct price and availability", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    const { container } = render(await call("p1"));
+    const ld = container.querySelector('script[type="application/ld+json"]');
+    expect(ld).not.toBeNull();
+    const data = JSON.parse(ld?.textContent ?? "{}");
+    expect(data["@type"]).toEqual(["Product", "MusicRecording"]);
+    expect(data.name).toBe("Vril — Torus");
+    expect(data.offers.price).toBe("24.99");
+    expect(data.offers.availability).toBe("https://schema.org/InStock");
+  });
 });

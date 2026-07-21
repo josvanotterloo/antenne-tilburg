@@ -9,7 +9,11 @@ import {
   isRestock,
   stockArtistHref,
   stockLabelHref,
+  composeProductDescription,
+  CATALOG_INCLUDE,
 } from "@/lib/catalog";
+import { productJsonLd } from "@/lib/structured-data";
+import { serializeJsonLd } from "@/lib/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +22,7 @@ export const dynamic = "force-dynamic";
 const getProduct = cache((id: string) =>
   db.product.findUnique({
     where: { id },
-    include: { label: true, genre: true, productType: true },
+    include: CATALOG_INCLUDE,
   }),
 );
 
@@ -34,9 +38,7 @@ export async function generateMetadata({
   }
   return {
     title: `${product.artist} — ${product.title}`,
-    description:
-      product.description ??
-      `${product.artist} — ${product.title} (${product.productType.name}) on ${product.label.name}.`,
+    description: composeProductDescription(product),
   };
 }
 
@@ -57,6 +59,11 @@ export default async function ProductDetailPage({
 
   return (
     <article className="space-y-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd(product)) }}
+      />
+
       <Link
         href="/stock"
         className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"

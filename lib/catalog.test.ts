@@ -28,6 +28,7 @@ import {
   getThisWeekProducts,
   getLastWeekProducts,
   getBackInStockProducts,
+  composeProductDescription,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -529,5 +530,26 @@ describe("isRestock", () => {
         quantity: 0,
       }),
     ).toBe(false);
+  });
+});
+
+describe("composeProductDescription", () => {
+  const base = {
+    artist: "Vril",
+    title: "Torus",
+    productType: { name: "LP" },
+    label: { name: "Zulema Records" },
+  };
+
+  it("uses the product's own description when present", () => {
+    expect(
+      composeProductDescription({ ...base, description: "Hypnotic dub-techno LP." }),
+    ).toBe("Hypnotic dub-techno LP.");
+  });
+
+  it("falls back to a composed description when there is none", () => {
+    expect(composeProductDescription({ ...base, description: null })).toBe(
+      "Vril — Torus (LP) on Zulema Records.",
+    );
   });
 });

@@ -45,6 +45,21 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   return where;
 }
 
+// The product's own description, or a composed fallback — shared by the public
+// detail page's <meta name="description"> and its Product JSON-LD.
+export function composeProductDescription(p: {
+  artist: string;
+  title: string;
+  description: string | null;
+  productType: { name: string };
+  label: { name: string };
+}): string {
+  return (
+    p.description ??
+    `${p.artist} — ${p.title} (${p.productType.name}) on ${p.label.name}.`
+  );
+}
+
 // Fresh /stock URLs filtering by a single artist or label — used by the clickable
 // artist/label links on the listing and detail pages.
 export const stockArtistHref = (artist: string) =>

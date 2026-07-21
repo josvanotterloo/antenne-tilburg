@@ -1,5 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("@/lib/db", () => ({
+  db: { openingHours: { findMany: vi.fn() } },
+}));
 
 import {
   parseOpeningHoursInput,
@@ -7,7 +11,10 @@ import {
   WEEK_ORDER,
   formatHourRange,
   orderOpeningHours,
+  toOpeningHoursSpecification,
+  getOpeningHours,
 } from "@/lib/opening-hours";
+import { db } from "@/lib/db";
 
 const openRow = (dayOfWeek: number) => ({
   dayOfWeek,
@@ -99,5 +106,45 @@ describe("orderOpeningHours", () => {
   it("skips days that are missing from the input", () => {
     const rows = [{ dayOfWeek: 2 }, { dayOfWeek: 6 }];
     expect(orderOpeningHours(rows).map((r) => r.dayOfWeek)).toEqual([2, 6]);
+  });
+});
+
+describe("toOpeningHoursSpecification", () => {
+  it("maps open days to schema.org OpeningHoursSpecification entries", () => {
+    const spec = toOpeningHoursSpecification([openRow(1)]);
+    expect(spec).toEqual([
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: "Monday",
+        opens: "12:00",
+        closes: "18:00",
+      },
+    ]);
+  });
+
+  it("omits closed days", () => {
+    const rows = [
+      openRow(1),
+      { dayOfWeek: 0, opensAt: "00:00", closesAt: "00:00", closed: true },
+    ];
+    expect(toOpeningHoursSpecification(rows)).toHaveLength(1);
+  });
+});
+
+describe("getOpeningHours", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns hours ordered Monday-first", async () => {
+    vi.mocked(db.openingHours.findMany).mockResolvedValue([
+      openRow(0),
+      openRow(1),
+    ] as never);
+    const hours = await getOpeningHours();
+    expect(hours.map((r) => r.dayOfWeek)).toEqual([1, 0]);
+  });
+
+  it("degrades to an empty list if the DB call fails", async () => {
+    vi.mocked(db.openingHours.findMany).mockRejectedValue(new Error("db down"));
+    expect(await getOpeningHours()).toEqual([]);
   });
 });

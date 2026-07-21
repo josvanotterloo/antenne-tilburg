@@ -1,3 +1,5 @@
+import { db } from "@/lib/db";
+
 // Opening hours: a fixed set of weekday rows (dayOfWeek 0=Sunday..6=Saturday).
 // The admin bulk-edits all rows; validation normalizes the payload.
 
@@ -38,6 +40,39 @@ export function orderOpeningHours<T extends { dayOfWeek: number }>(
   return WEEK_ORDER.map((day) =>
     rows.find((r) => r.dayOfWeek === day),
   ).filter((r): r is T => r !== undefined);
+}
+
+// Ordered opening hours, degrading to an empty list rather than failing the
+// page if the DB is unavailable.
+export async function getOpeningHours(): Promise<HourRow[]> {
+  try {
+    return orderOpeningHours(await db.openingHours.findMany());
+  } catch (error) {
+    console.error("getOpeningHours: failed to load opening hours", error);
+    return [];
+  }
+}
+
+export interface OpeningHoursSpec {
+  "@type": "OpeningHoursSpecification";
+  dayOfWeek: string;
+  opens: string;
+  closes: string;
+}
+
+// Schema.org markup for the home page's LocalBusiness JSON-LD. Closed days are
+// omitted — schema.org has no clean way to represent "closed" in this list.
+export function toOpeningHoursSpecification(
+  rows: { dayOfWeek: number; opensAt: string; closesAt: string; closed: boolean }[],
+): OpeningHoursSpec[] {
+  return rows
+    .filter((r) => !r.closed)
+    .map((r) => ({
+      "@type": "OpeningHoursSpecification" as const,
+      dayOfWeek: DAY_NAMES[r.dayOfWeek],
+      opens: r.opensAt,
+      closes: r.closesAt,
+    }));
 }
 
 export type ParseResult =
