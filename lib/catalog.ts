@@ -127,7 +127,7 @@ export async function searchProductIds(q: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-const CATALOG_INCLUDE = {
+export const CATALOG_INCLUDE = {
   label: true,
   genre: true,
   productType: true,
