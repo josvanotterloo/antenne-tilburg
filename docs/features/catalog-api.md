@@ -1,6 +1,6 @@
 # Public catalog API (`/api/catalog`)
 
-**Status:** branch `feature/public-catalog-api` (2026-07-21).
+**Status:** branch `feature/public-catalog-api` — merged to `master` (2026-07-21).
 
 ## Summary
 A public, unauthenticated JSON feed of in-stock products, for AI shopping agents and
