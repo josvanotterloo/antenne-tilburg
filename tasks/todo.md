@@ -105,9 +105,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 559 tests cover managed-list
+Done — Vitest runner + `run-tests` skill in place; 575 tests cover managed-list
 delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
-markdown rendering, sitemap, the public catalog API, and the public/admin flows.
+markdown rendering, sitemap, the public catalog API, Schema.org structured data,
+and the public/admin flows.
 
 ## Done
 

@@ -1,6 +1,6 @@
 # Schema.org structured data (Product, MusicRecording, MusicStore)
 
-**Status:** branch `feature/schema-org-markup` (2026-07-21).
+**Status:** branch `feature/schema-org-markup` — merged to `master` (2026-07-21).
 
 ## Summary
 JSON-LD structured data on the public product detail page and the home page, so
