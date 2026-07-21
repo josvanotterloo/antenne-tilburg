@@ -2,17 +2,21 @@ import Link from "next/link";
 
 import {
   isJustIn,
+  isRestock,
   stockArtistHref,
   stockLabelHref,
   type CatalogProduct,
 } from "@/lib/catalog";
 
+const badgeClass =
+  "ml-2 align-middle font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal";
+
 export function JustInBadge() {
-  return (
-    <span className="ml-2 align-middle font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
-      Just In
-    </span>
-  );
+  return <span className={badgeClass}>Just In</span>;
+}
+
+export function RestockBadge() {
+  return <span className={badgeClass}>Restock</span>;
 }
 
 // The /stock list row, shared with the weekly section pages. Rows carry three
@@ -42,6 +46,7 @@ export function ProductRow({
           {product.title}
         </Link>
         {isJustIn(product.createdAt) && <JustInBadge />}
+        {isRestock(product) && <RestockBadge />}
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
           <Link
             href={stockLabelHref(product.label.name)}

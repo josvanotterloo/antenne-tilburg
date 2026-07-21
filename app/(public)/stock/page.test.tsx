@@ -41,6 +41,7 @@ const PRODUCT = {
   inStock: true,
   coverImage: null,
   description: null,
+  quantity: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
   labelId: "l1",
@@ -71,6 +72,44 @@ describe("/stock page", () => {
     expect(screen.getByText("Vril")).toBeInTheDocument();
     expect(screen.getByText(/Torus/)).toBeInTheDocument();
     expect(screen.getByText(/Zulema Records/)).toBeInTheDocument();
+  });
+
+  it("shows the RESTOCK badge in list view when the product is a restock", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [
+        {
+          ...PRODUCT,
+          createdAt: new Date("2026-06-01T10:00:00Z"),
+          updatedAt: new Date("2026-07-10T10:00:00Z"),
+          quantity: 2,
+        },
+      ] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    render(await StockPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText(/restock/i)).toBeInTheDocument();
+  });
+
+  it("shows the RESTOCK badge in grid view when the product is a restock", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [
+        {
+          ...PRODUCT,
+          createdAt: new Date("2026-06-01T10:00:00Z"),
+          updatedAt: new Date("2026-07-10T10:00:00Z"),
+          quantity: 2,
+        },
+      ] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    render(
+      await StockPage({ searchParams: Promise.resolve({ view: "grid" }) }),
+    );
+    expect(screen.getByText(/restock/i)).toBeInTheDocument();
   });
 
   it("passes the ?q= search term through to the catalog query", async () => {

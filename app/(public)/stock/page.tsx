@@ -7,6 +7,7 @@ import {
   catalogPageNumbers,
   getCatalogPage,
   isJustIn,
+  isRestock,
   stockArtistHref,
   stockLabelHref,
   type CatalogProduct,
@@ -249,11 +250,21 @@ function ProductCard({ product }: { product: CatalogProduct }) {
         >
           €{Number(product.price).toFixed(2)}
         </Link>
-        {isJustIn(product.createdAt) && (
-          <span className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
-            Just In
-          </span>
-        )}
+        {/* Grouped so both badges stay one flex child alongside the price —
+            a product cannot logically be both in practice, but this stays
+            correct if it ever occurs. */}
+        <span className="flex items-center gap-1.5">
+          {isJustIn(product.createdAt) && (
+            <span className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
+              Just In
+            </span>
+          )}
+          {isRestock(product) && (
+            <span className="font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
+              Restock
+            </span>
+          )}
+        </span>
       </div>
     </div>
   );

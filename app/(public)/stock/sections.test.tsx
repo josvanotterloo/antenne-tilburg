@@ -44,6 +44,7 @@ const PRODUCT = {
   title: "Torus",
   price: "24.99",
   condition: "NEW",
+  quantity: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
   label: { id: "l1", name: "Zulema Records" },
@@ -98,6 +99,19 @@ describe.each(PAGES)("/stock/$name", ({ Page, query, heading, basePath }) => {
     expect(meta).toHaveTextContent(/Techno/);
     expect(meta).toHaveTextContent(/NEW/);
     expect(screen.getByText(/€24\.99/)).toBeInTheDocument();
+  });
+
+  it("shows the RESTOCK badge when the product is a restock (e.g. new this week AND restocked)", async () => {
+    query.mockResolvedValue([
+      {
+        ...PRODUCT,
+        createdAt: new Date("2026-06-01T10:00:00Z"),
+        updatedAt: new Date("2026-07-10T10:00:00Z"),
+        quantity: 2,
+      },
+    ] as never);
+    render(await Page({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText(/restock/i)).toBeInTheDocument();
   });
 
   it("links back to the full stock listing", async () => {

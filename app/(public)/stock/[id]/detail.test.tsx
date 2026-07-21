@@ -29,6 +29,7 @@ const PRODUCT = {
   inStock: true,
   coverImage: null,
   description: "Hypnotic dub-techno LP.",
+  quantity: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
   labelId: "l1",
@@ -66,6 +67,23 @@ describe("/stock/[id] detail", () => {
     expect(
       screen.getAllByRole("link", { name: "Zulema Records" })[0],
     ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
+  });
+
+  it("shows the RESTOCK badge when the product is a restock", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue({
+      ...PRODUCT,
+      createdAt: new Date("2026-06-01T10:00:00Z"),
+      updatedAt: new Date("2026-07-10T10:00:00Z"),
+      quantity: 2,
+    } as never);
+    render(await call("p1"));
+    expect(screen.getByText(/restock/i)).toBeInTheDocument();
+  });
+
+  it("does not show the RESTOCK badge for a freshly created product", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    render(await call("p1"));
+    expect(screen.queryByText(/restock/i)).toBeNull();
   });
 
   it("404s when the product does not exist", async () => {

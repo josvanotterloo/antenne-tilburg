@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { db } from "@/lib/db";
-import { isJustIn, stockArtistHref, stockLabelHref } from "@/lib/catalog";
+import {
+  isJustIn,
+  isRestock,
+  stockArtistHref,
+  stockLabelHref,
+} from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +51,7 @@ export default async function ProductDetailPage({
   if (!product || !product.inStock) notFound();
 
   const justIn = isJustIn(product.createdAt);
+  const restock = isRestock(product);
 
   const dt = "font-mono text-xs uppercase tracking-[0.06em] text-ink-muted";
 
@@ -70,6 +76,11 @@ export default async function ProductDetailPage({
           {justIn && (
             <span className="ml-2 align-middle font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal">
               Just In
+            </span>
+          )}
+          {restock && (
+            <span className="ml-2 align-middle font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal">
+              Restock
             </span>
           )}
         </h1>
