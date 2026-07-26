@@ -101,6 +101,14 @@ For any task expected to take more than 30 minutes or touch more than 5 files:
 
 This ensures session-limit interruptions preserve progress rather than losing it.
 
+## Session Management
+- For any task touching more than 3 files: use Plan Mode (/plan) before writing any code — get approval on the approach before implementation starts
+- When errors increase in a long session or Claude makes repeated wrong assumptions: use /rewind rather than manually undoing changes
+- Use /context to inspect the context window if Claude makes unexpected assumptions about the codebase
+- Update tasks/lessons.md immediately when a new pitfall is discovered — do not wait until close-out
+- Do not block the main thread: while Claude Code is running a long task, use the time to plan the next one, review docs, or make decisions that will be needed later
+- Context degrades in long sessions — if a session has been running for more than 2 hours or 10+ feature commits, start a fresh session with a clean handoff prompt rather than continuing in a degraded context window
+
 ## Prompting Tips
 For complex or ambiguous tasks, prefix your prompt with `ultrathink` to trigger
 high-effort reasoning before starting.
