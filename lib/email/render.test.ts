@@ -146,6 +146,144 @@ describe("markdownToHtml — escaped asterisks", () => {
   });
 });
 
+describe("markdownToHtml — fenced code blocks", () => {
+  it("renders a fenced code block as <pre>, contents escaped", () => {
+    const out = markdownToHtml("```\nconst x = 1 < 2;\n```");
+    expect(out).toContain("<pre");
+    expect(out).toContain("const x = 1 &lt; 2;");
+    expect(out).not.toContain("<script");
+  });
+
+  it("does not treat lines inside a fence as their own markdown blocks", () => {
+    const out = markdownToHtml("```\n## not a heading\n```");
+    expect(out).not.toContain("<h2");
+    expect(out).toContain("## not a heading");
+  });
+
+  it("consumes every line up to the closing fence, not just the first", () => {
+    const out = markdownToHtml("```\nline one\nline two\nline three\n```\nafter");
+    expect(out).toContain("line one");
+    expect(out).toContain("line two");
+    expect(out).toContain("line three");
+    // Everything after the closing fence is a separate paragraph, not code.
+    expect(out).toMatch(/<\/pre>[\s\S]*<p[^>]*>after<\/p>/);
+  });
+});
+
+describe("markdownToHtml — blank lines and block boundaries", () => {
+  it("collapses multiple consecutive blank lines to a single gap between blocks", () => {
+    const out = markdownToHtml("first\n\n\nsecond");
+    expect(out.split("<p ").length - 1).toBe(2);
+  });
+
+  it("stops a paragraph at a heading with no blank line in between", () => {
+    const out = markdownToHtml("plain line\n## Heading");
+    expect(out).toContain("<p");
+    expect(out).toContain("<h2");
+    expect(out).not.toContain("## Heading</p>");
+  });
+});
+
+describe("markdownToHtml — heading levels render distinct sizes", () => {
+  it("gives h2 and h3 different font sizes", () => {
+    const h2 = markdownToHtml("## Big");
+    const h3 = markdownToHtml("### Small");
+    expect(h2).toContain("font-size:20px");
+    expect(h3).toContain("font-size:17px");
+  });
+});
+
+describe("markdownToHtml — list and blockquote edge cases", () => {
+  it("accepts * as a bullet marker, not just -", () => {
+    const out = markdownToHtml("* one\n* two");
+    expect(out).toContain("<ul");
+    expect(out).toContain("one");
+    expect(out).toContain("two");
+  });
+
+  it("accepts a blockquote marker with no space after >", () => {
+    const out = markdownToHtml(">no space");
+    expect(out).toContain("<blockquote");
+    expect(out).toContain("no space");
+  });
+
+  it("renders double-digit ordered list markers", () => {
+    const out = markdownToHtml("10. tenth\n11. eleventh");
+    expect(out).toContain("<ol");
+    expect(out).toContain("tenth");
+    expect(out).toContain("eleventh");
+  });
+
+  it("stops an unordered list at the first non-matching line, not just at end of input", () => {
+    const out = markdownToHtml("- one\n- two\nplain");
+    const listEnd = out.indexOf("</ul>");
+    expect(listEnd).toBeGreaterThan(-1);
+    expect(out.indexOf("plain")).toBeGreaterThan(listEnd);
+    // "plain" must not have become a third <li>.
+    expect(out.match(/<li/g)).toHaveLength(2);
+  });
+
+  it("stops an ordered list at the first non-matching line", () => {
+    const out = markdownToHtml("1. first\n2. second\nplain");
+    const listEnd = out.indexOf("</ol>");
+    expect(out.indexOf("plain")).toBeGreaterThan(listEnd);
+    expect(out.match(/<li/g)).toHaveLength(2);
+  });
+
+  it("joins consecutive blockquote lines and stops before trailing plain text", () => {
+    const out = markdownToHtml("> line one\n> line two\nplain");
+    const quoteEnd = out.indexOf("</blockquote>");
+    expect(out).toContain("line one line two");
+    expect(out.indexOf("plain")).toBeGreaterThan(quoteEnd);
+  });
+});
+
+describe("markdownToHtml — horizontal rule detection", () => {
+  it("trims surrounding whitespace before checking for a rule", () => {
+    expect(markdownToHtml("   ***   ")).toContain("<hr");
+  });
+
+  it("requires at least three marker characters — two is just a paragraph", () => {
+    const out = markdownToHtml("--");
+    expect(out).not.toContain("<hr");
+    expect(out).toContain("<p");
+  });
+});
+
+describe("markdownToHtml — heading marker must be at line start", () => {
+  it("does not treat a mid-line ## as a heading", () => {
+    const out = markdownToHtml("Some notes ## not a heading");
+    expect(out).not.toContain("<h2");
+    expect(out).toContain("<p");
+    expect(out).toContain("Some notes ## not a heading");
+  });
+});
+
+describe("markdownToHtml — image with empty alt text", () => {
+  it("still renders as an image when alt text is empty", () => {
+    const out = markdownToHtml("![](https://x.test/a.png)");
+    expect(out).toContain('src="https://x.test/a.png"');
+    expect(out).toContain('alt=""');
+  });
+});
+
+describe("markdownToHtml — double-digit stash indices", () => {
+  it("restores more than 9 stashed links in one paragraph correctly", () => {
+    // A dozen new-arrival links in one newsletter paragraph — plausible
+    // real content that happens to force the internal placeholder-stash
+    // index into double digits (0–11), exercising the same boundary a
+    // contrived escape-character stress test would, without depending on
+    // input no admin would ever actually type.
+    const links = Array.from(
+      { length: 12 },
+      (_, i) => `[Release ${i + 1}](https://www.discogs.com/release/${1000 + i})`,
+    ).join(", ");
+    const out = markdownToHtml(`New arrivals this week: ${links}`);
+    expect(out).toContain('href="https://www.discogs.com/release/1011"');
+    expect(out.match(/<a href=/g)).toHaveLength(12);
+  });
+});
+
 describe("renderConfirmEmail", () => {
   const html = renderConfirmEmail({
     confirmUrl: "https://antenne.test/api/newsletter/confirm?token=xyz",

@@ -22,3 +22,7 @@ next-env.d.ts
 # Uploaded media (served from public/uploads; use object storage in prod)
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# Stryker mutation testing
+/reports/
+.stryker-tmp/

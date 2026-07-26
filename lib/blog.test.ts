@@ -32,6 +32,17 @@ describe("postDateLabel", () => {
   it("accepts an ISO string", () => {
     expect(postDateLabel("2026-01-09T23:30:00.000Z")).toBe("09 Jan 2026");
   });
+
+  it("uses the correct three-letter abbreviation for every month", () => {
+    const abbreviations = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+    abbreviations.forEach((abbr, month) => {
+      const d = new Date(Date.UTC(2026, month, 15));
+      expect(postDateLabel(d)).toBe(`15 ${abbr} 2026`);
+    });
+  });
 });
 
 describe("postExcerpt", () => {
@@ -67,6 +78,35 @@ describe("postExcerpt", () => {
     expect(postExcerpt("## New in\n\nFresh **wax** and _tape_.")).toBe(
       "New in Fresh wax and tape.",
     );
+  });
+
+  it("strips inline code markers but keeps their contents", () => {
+    expect(postExcerpt("Grab the `TR-909` reissue.")).toBe(
+      "Grab the TR-909 reissue.",
+    );
+  });
+
+  it("strips triple-marker emphasis (bold + italic together)", () => {
+    expect(postExcerpt("***loud***")).toBe("loud");
+  });
+
+  it("removes a stray, unpaired emphasis character", () => {
+    expect(postExcerpt("a * lone asterisk")).toBe("a lone asterisk");
+  });
+
+  it("returns text unchanged at exactly the max length (no truncation)", () => {
+    const text = "a".repeat(50);
+    expect(postExcerpt(text, 50)).toBe(text);
+  });
+
+  it("trims leading/trailing whitespace left after collapsing", () => {
+    expect(postExcerpt("  \n  padded body  \n  ")).toBe("padded body");
+  });
+
+  it("cuts mid-word when the truncated slice has no word boundary", () => {
+    const body = "a".repeat(200); // one continuous word, no spaces anywhere
+    const out = postExcerpt(body, 100);
+    expect(out).toBe(`${"a".repeat(100)}…`);
   });
 });
 
