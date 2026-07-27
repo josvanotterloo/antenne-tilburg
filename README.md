@@ -7,8 +7,8 @@ project's domain code. Copy this directory to start a new project:
 cp -R ~/Documents/projects/_project-template ~/Documents/projects/<new-project>
 ```
 
-Then `chmod +x .claude/skills/run-tests/scripts/run-tests.sh` (the executable bit
-does not survive the sandbox) and fill in the bracketed placeholders.
+Then `chmod +x scripts/run-tests.sh` (the executable bit does not survive the
+sandbox) and fill in the bracketed placeholders.
 
 ## What's included
 
