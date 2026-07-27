@@ -53,6 +53,20 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      # Production-dependency vulnerabilities only — dev-only findings (e.g.
+      # the eslint-toolchain brace-expansion cascade) are assessed and tracked
+      # in tasks/todo.md instead of gating every push. See
+      # docs/features/security-dependency-updates.md.
+      - name: npm audit (production dependencies)
+        run: npm audit --audit-level=high --omit=dev
+
+      # Native `semgrep scan`, not the deprecated semgrep/semgrep-action —
+      # free/token-free for this ruleset, no Semgrep account needed.
+      - name: Semgrep security scan
+        run: |
+          python3 -m pip install semgrep
+          semgrep scan --config p/typescript --config p/security-audit --severity ERROR --error
+
       # Fuzzy catalog search needs pg_trgm; create it before migrate deploy so
       # the extension exists regardless of migration ordering.
       - name: Enable pg_trgm

@@ -2,9 +2,41 @@
 
 `.github/workflows/ci.yml` runs on **every push to any branch** and on
 **pull requests targeting `master`**: checkout → Node 20 → `npm ci` →
-`prisma generate` → `tsc --noEmit` → ESLint → enable `pg_trgm` →
-`prisma migrate deploy` → full test suite (`scripts/run-tests.sh`, the same
-script the run-tests skill uses).
+`prisma generate` → `tsc --noEmit` → ESLint → `npm audit` (production deps)
+→ Semgrep security scan → enable `pg_trgm` → `prisma migrate deploy` →
+full test suite (`scripts/run-tests.sh`, the same script the run-tests
+skill uses).
+
+## Security scanning
+
+Two gates run right after ESLint, before anything touches the database:
+
+- **`npm audit --audit-level=high --omit=dev`** — fails the build on any
+  `high` or `critical` vulnerability in **production** dependencies.
+  `--omit=dev` means dev-only tooling vulnerabilities never block CI —
+  those are triaged separately and, when accepted as non-exploitable
+  (e.g. a `devDependency` that never runs against attacker-controlled
+  input), tracked as a follow-up in `tasks/todo.md`'s Security section
+  rather than gating every push. See
+  `docs/features/security-dependency-updates.md` for the reasoning behind
+  that split and the current accepted-risk item.
+
+- **Semgrep** (`p/typescript` + `p/security-audit` rulesets, `--severity
+  ERROR --error`) — a static analysis scan for real code-level security
+  bugs `npm audit` can't see, since `npm audit` only checks *known
+  vulnerable dependency versions*, not bugs in this repo's own code.
+  Catches things like missing crypto parameters, injection-prone
+  patterns, and other rule-matched anti-patterns. Runs via the plain
+  `semgrep scan` CLI (installed with `pip` in the step), not the
+  `semgrep/semgrep-action` GitHub Action — that action is deprecated
+  (its README is now just a pointer to native Semgrep support). Free and
+  token-free: no `SEMGREP_APP_TOKEN` or Semgrep account is needed for
+  this ruleset-based, non-platform invocation.
+  `--severity ERROR` scopes the gate to blocking findings only — `WARNING`
+  and `INFO` findings are excluded so the gate stays actionable instead of
+  noisy. This step found and fixed a real issue during rollout: a missing
+  `authTagLength` on the AES-GCM decrypt call in `lib/email-crypto.ts`
+  (`javascript.node-crypto.security.gcm-no-tag-length`).
 
 A `postgres:16` service container backs the migration step
 (user `test` / password `test` / db `antenne_tilburg_test`, health-checked,
