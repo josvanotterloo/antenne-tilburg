@@ -32,6 +32,13 @@ Apply karpathy-guidelines before writing any code:
 - Delete the branch after merging.
 - Push the branch to the remote before merging if work spans multiple sessions.
 
+## Commit types
+
+Commit types: `feat` (new feature), `fix` (bug fix), `refactor` (no behavior
+change), `docs` (documentation), `test` (tests only), `chore` (tooling/
+config), `perf` (performance), `ci` (CI pipeline changes). Format: `type:
+description` — e.g. `feat: add restock badge to stock pages`.
+
 ## Planning
 
 For multi-session implementations: write the plan to `docs/superpowers/plans/` as a

@@ -55,6 +55,8 @@ Only proceed after confirming these with the user.
   sensible defaults when `seoTitle` / `seoDescription` are unset.
 - **Resilience:** public server components that read the DB should degrade
   gracefully if the query fails (see `NoticeBanner` / `SiteFooter`).
+- **Prefer immutability** — never mutate state or props in place; return new
+  objects/arrays instead.
 
 ## TDD order
 

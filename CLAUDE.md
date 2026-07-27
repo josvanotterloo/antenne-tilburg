@@ -1,5 +1,13 @@
 # Project Instructions
 
+Global rules in `~/.claude/rules/common/` that conflict with this project's
+docs are superseded by this file. Project-specific docs take precedence.
+Conflicting files: `testing.md` (superseded by `docs/instructions/testing.md`),
+`patterns.md` (superseded by `docs/instructions/generate-route.md`),
+`development-workflow.md` (superseded by `docs/instructions/branching.md`),
+`security.md` (superseded by CI gates and the OWASP audit — see
+`docs/instructions/ci.md` and `docs/security/owasp-audit-2026-07-09.md`).
+
 Antenne Tilburg — website for Antenne Recordshop (electronic-music vinyl & tapes,
 inside Sam-Sam vintage, Tilburg). Public site + admin for products, blog, events,
 notices, opening hours, newsletter and want-list. Full spec:
