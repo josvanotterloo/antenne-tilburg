@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:acceptance": "vitest run features",
     "test:mutate": "stryker run",
+    "test:property": "vitest run --reporter=verbose -t property",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed"
@@ -42,6 +43,7 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.10",
+    "fast-check": "^4.9.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.4.47",
     "prisma": "^6.19.3",

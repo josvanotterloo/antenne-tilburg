@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import fc from "fast-check";
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -550,6 +551,47 @@ describe("composeProductDescription", () => {
   it("falls back to a composed description when there is none", () => {
     expect(composeProductDescription({ ...base, description: null })).toBe(
       "Vril — Torus (LP) on Zulema Records.",
+    );
+  });
+});
+
+describe("property", () => {
+  it("buildCatalogWhere never throws for any genre name string", () => {
+    fc.assert(
+      fc.property(fc.string(), (genreId) => {
+        expect(() => buildCatalogWhere({ genreId })).not.toThrow();
+      }),
+    );
+  });
+
+  it("pageToSkip is always >= 0 for any page number >= 1", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1 }), (page) => {
+        expect(pageToSkip(page)).toBeGreaterThanOrEqual(0);
+      }),
+    );
+  });
+
+  it("buildCatalogOrderBy always returns a non-empty array or non-empty object", () => {
+    // Not literally "always a non-empty array" — only sort === "artist"
+    // returns an array (lib/catalog.ts:79-81); "label"/"date"/default and
+    // any unrecognized sort value return a single plain object instead.
+    // sort/order are fuzzed with arbitrary strings too, not just the
+    // recognized values — real callers pass the raw ?sort=/?order= URL
+    // query params, so the switch's default branch (garbage input) needs
+    // covering, not just the 3 recognized values plus undefined.
+    fc.assert(
+      fc.property(
+        fc.oneof(fc.constantFrom("artist", "label", "date", undefined), fc.string()),
+        fc.oneof(fc.constantFrom("asc", "desc", undefined), fc.string()),
+        (sort, order) => {
+          const result = buildCatalogOrderBy(sort, order);
+          const nonEmpty = Array.isArray(result)
+            ? result.length > 0
+            : Object.keys(result).length > 0;
+          expect(nonEmpty).toBe(true);
+        },
+      ),
     );
   });
 });

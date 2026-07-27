@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import fc from "fast-check";
 
 import {
   markdownToHtml,
@@ -415,5 +416,58 @@ describe("renderStructuredNewsletterEmail", () => {
       unsubscribeUrl: "https://example.com/u",
     });
     expect(html).not.toContain("<script>");
+  });
+});
+
+describe("property", () => {
+  it("markdownToHtml never throws for any string input", () => {
+    fc.assert(
+      fc.property(fc.string(), (input) => {
+        expect(() => markdownToHtml(input)).not.toThrow();
+      }),
+    );
+  });
+
+  it("markdownToHtml returns a non-empty string for any non-blank input", () => {
+    // Not literally "any string" — blank/whitespace-only input legitimately
+    // produces "" (the block-parsing loop skips blank lines and pushes
+    // nothing), confirmed by tracing lib/email/render.ts's main loop.
+    fc.assert(
+      fc.property(
+        fc.string().filter((s) => s.trim() !== ""),
+        (input) => {
+          expect(markdownToHtml(input).length).toBeGreaterThan(0);
+        },
+      ),
+    );
+  });
+
+  it("an escaped \\*, \\_, or \\\\ always appears as its literal character in the output", () => {
+    // Surrounding text is restricted to plain letters/digits/spaces — any
+    // markdown-significant character (\, *, _, but also ` # - > [ ] and
+    // newlines) can shift block classification or merge with the escaped
+    // token's own backslash and swallow the "real" escaped character.
+    // fast-check found two such interactions while this test was written:
+    // a bare "\" prefix merging with "\*"'s leading backslash, and a "```"
+    // prefix turning the whole line into an (unclosed) code-fence opener
+    // that discards everything after it. A positive, markdown-inert
+    // character set rules out this whole class rather than excluding
+    // symbols one discovery at a time.
+    const safeChar = fc.constantFrom(
+      ..."abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",
+    );
+    const safeText = fc.string({ unit: safeChar });
+    fc.assert(
+      fc.property(
+        safeText,
+        fc.constantFrom("\\*", "\\_", "\\\\"),
+        safeText,
+        (prefix, escaped, suffix) => {
+          const literal = escaped[1];
+          const out = markdownToHtml(`${prefix}${escaped}${suffix}`);
+          expect(out).toContain(literal);
+        },
+      ),
+    );
   });
 });
