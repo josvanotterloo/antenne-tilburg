@@ -12,9 +12,14 @@ Apply karpathy-guidelines before writing any code:
 
 ## Rules
 
-- The default working branch is `main`.  <!-- change to `master` if you prefer -->
+- The default working branch is `master`.
 - Always create a feature branch before starting any new work.
-- Branch naming: `feature/<short-description>` (kebab-case)
+- Branch naming: `<prefix>/<short-description>` (kebab-case), where prefix is
+  one of:
+  - `feature/` — new functionality
+  - `fix/` — bug fixes
+  - `chore/` — maintenance, tooling, dependency updates
+  - `docs/` — documentation-only changes
 - Never commit directly to the default branch.
 - Before merging:
   - CI is green (GitHub Actions runs the full suite on every push — see
@@ -50,12 +55,14 @@ Every feature branch must complete these steps before the session ends:
 4. Push to the remote
 5. Create `docs/features/NNN-<feature-name>.md` (if you keep feature docs)
 6. Fill in `docs/sessions/YYYY-MM-DD.md` using the session log template
-7. Update any test-count baseline referenced in `CLAUDE.md`
-8. Run the project's deterministic checks (lint, any architecture check).
+7. Add a row to `tasks/lessons.md` for any new mistake or pitfall discovered
+   during the session
+8. Update any test-count baseline referenced in `tasks/todo.md`
+9. Run the project's deterministic checks (lint, any architecture check).
    CI handles final test verification on every push — don't re-run the suite
    locally as a close-out step. Reserve AI review for the parts a script can't
    decide — it saves tokens.
-9. Commit and push docs changes
+10. Commit and push docs changes
 
 ## Verification shortcuts
 

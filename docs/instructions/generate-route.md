@@ -5,7 +5,7 @@ section, a public page pulling real data, an API route, or a shared component.
 
 ## Role
 
-You are implementing a new module in the Antenne Tilburg app (Next.js 14 App
+You are implementing a new module in the Antenne Tilburg app (Next.js 16 App
 Router + TypeScript + Prisma + NextAuth + Tailwind). Follow this instruction
 exactly. Do not write code before completing the context requirements.
 
@@ -43,8 +43,9 @@ Only proceed after confirming these with the user.
 - **Server vs Client:** default to Server Components. Add `"use client"` only
   when you need state, effects, or event handlers (e.g. forms).
 - **Auth:** `/admin/*` is already gated by `proxy.ts`. For mutations, also
-  re-check the session server-side (`getServerSession(authOptions)`) — never
-  trust the client. Reject unauthenticated writes before any DB call.
+  call `requireAdmin()` (`lib/api-auth.ts`) first thing in the handler and
+  return immediately if it gives back a response — never trust the client.
+  Reject unauthenticated writes before any DB call.
 - **Validation at the boundary:** validate/parse all input before any I/O; reject
   bad input first. Guard destructive deletes (e.g. don't delete a Label/Genre/
   ProductType that still has linked products — surface a clear error instead).
