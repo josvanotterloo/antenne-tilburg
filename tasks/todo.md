@@ -71,6 +71,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Contract migration after prod backfill: verify zero `emailHash IS NULL`
       rows, then `ALTER COLUMN "emailHash" SET NOT NULL` (closes the
       transitional nullable state for good)
+- [ ] Re-check the `brace-expansion`/`minimatch` advisory (9 `high` npm
+      audit findings, assessed dev-only/non-exploitable, not fixed) after
+      any future `eslint`, `@eslint/*`, or `eslint-config-next` bump —
+      `docs/features/security-dependency-updates.md`
 
 ### Code quality
 - [x] Full-codebase code review (Phase 3, 2026-07-09/10) — 1 High + 5 Medium
