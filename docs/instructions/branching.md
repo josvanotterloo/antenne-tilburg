@@ -37,8 +37,10 @@ boundaries — the file does.
 
 Every feature branch must complete these steps before the session ends:
 
-1. **Run `/code-review` — mandatory, every time, no exceptions.** Run it after the
-   tests pass and before merging (step 3). **All Medium+ findings must be fixed
+1. **Run `/code-review` when the change warrants it** — see `CLAUDE.md`
+   (## When to run /code-review) for exactly which changes require it and
+   which can rely on CI instead. When it applies, run it after the tests
+   pass and before merging (step 3). **All Medium+ findings must be fixed
    before merging** — never merge with an open Medium or higher finding. (Lower-
    severity findings are fixed at your discretion.)
 2. For frontend changes, do a visual consistency check: open the app and compare any

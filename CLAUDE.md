@@ -109,6 +109,26 @@ This ensures session-limit interruptions preserve progress rather than losing it
 - Do not block the main thread: while Claude Code is running a long task, use the time to plan the next one, review docs, or make decisions that will be needed later
 - Context degrades in long sessions — if a session has been running for more than 2 hours or 10+ feature commits, start a fresh session with a clean handoff prompt rather than continuing in a degraded context window
 
+## When to run /code-review
+
+Run /code-review:
+- Any change to auth, security, encryption, or payment logic
+- Any new API route or change to an existing API contract
+- Any architectural decision (new lib/ module, new data model, new third-party integration)
+- Any change touching more than 5 files
+- Before any production deployment
+
+Skip /code-review (rely on CI instead):
+- Pure styling changes (CSS, Tailwind classes)
+- Copy/content changes
+- Documentation and config updates
+- Test-only changes with no production code touched
+- Minor bug fixes to a single, well-tested function
+
+CI handles security scanning (semgrep + npm audit) and test verification
+automatically on every push. /code-review is reserved for architectural
+judgment that automated tools cannot replace.
+
 ## Prompting Tips
 For complex or ambiguous tasks, prefix your prompt with `ultrathink` to trigger
 high-effort reasoning before starting.
