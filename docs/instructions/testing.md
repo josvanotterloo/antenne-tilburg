@@ -112,3 +112,70 @@ assertions do the opposite: they lock in today's implementation, break on every
 tidy-up, and give false confidence because they pass whether or not the feature
 actually works. Testing what the user experiences is the only coverage that
 earns its maintenance cost.
+
+## Additional Testing Layers
+
+Three layers on top of the core Vitest unit/integration/contract suite above,
+inspired by Uncle Bob's Acceptance→Unit pipeline. All three principles above
+(behavior not implementation, TDD, never weaken an existing test) apply to
+these exactly as they do to ordinary unit tests.
+
+### Gherkin/BDD acceptance tests
+
+`features/*.feature` (Gherkin) + `features/step-definitions/*.test.ts`, run
+via [`@amiceli/vitest-cucumber`](https://vitest-cucumber.miceli.click/) —
+Gherkin scenarios execute as real Vitest tests, not through the standalone
+`cucumber-js` CLI. This is deliberate: every existing "integration" test in
+this repo fakes `db`/`email`/`auth` with Vitest's `vi.mock`, which the
+standalone CLI can't use (it runs step definitions as plain Node files
+outside Vitest). Running Gherkin through Vitest means acceptance tests get
+`vi.mock` for free and are automatically swept into `npm test` / CI — no
+separate acceptance-test CI step exists or is needed.
+
+- Run: `npm run test:acceptance` (`vitest run features`), or just `npm test`.
+- Step definitions call real route handlers / `lib/` functions directly —
+  no browser automation, no HTTP server. See
+  `docs/features/acceptance-tests.md`.
+
+### Stryker mutation testing
+
+`stryker.config.mjs` mutates `lib/`'s pure, framework-free core (currently
+`catalog.ts`, `email/render.ts`, `token.ts`, `authorize.ts`, `blog.ts`,
+`notice.ts`, `rss.ts` — the exact set asked for in the session that added
+this, not a claim that every pure `lib/` file is covered). `app/` and
+`components/` are excluded — UI mutation testing is too noisy to act on.
+
+- Run: `npm run test:mutate` (`stryker run`). **Not** wired into CI or
+  `scripts/run-tests.sh` — a full run takes ~2 minutes and isn't a
+  per-push gate. Run manually after meaningful changes to the mutated
+  files, or periodically to catch drift.
+- Goal: mutation score ≥80%. When a mutant survives, the fix is a new or
+  strengthened *behavioral* test for the real gap the mutant exposed —
+  never a test shaped around the specific mutant (e.g. a contrived input
+  no real caller would ever produce, just to hit a regex-boundary
+  character). If mutation testing surfaces a test like that, re-derive a
+  realistic scenario that exercises the same code path instead.
+- See `docs/features/mutation-testing.md`, including a documented
+  Stryker↔Vitest 4 runner discrepancy found while chasing one file's score.
+
+### fast-check property tests
+
+`describe("property", ...)` blocks inside the *existing* `lib/*.test.ts`
+files (not separate files) using [fast-check](https://fast-check.dev/).
+
+- Run: `npm run test:property` (`vitest run --reporter=verbose -t property`
+  — filtered by test name, since these live inside existing test files).
+  Also runs automatically as part of `npm test` / CI.
+- Before writing a property, verify it's actually true against the real
+  implementation — don't assume a plausible-sounding property holds. Two
+  properties in this codebase were corrected after tracing the code
+  disproved the naive version (`buildCatalogOrderBy` doesn't always
+  return an array; `markdownToHtml` doesn't always return non-empty
+  output for blank input). See `docs/features/property-tests.md`.
+- fast-check runs unseeded by default (100 random inputs per property).
+  This is a feature, not flakiness: if a property test fails intermittently,
+  treat it as a real signal and read fast-check's shrunk counterexample —
+  it may point at a genuine edge case in the code under test, or (as
+  happened twice while adding this layer) at the property test's own
+  input construction combining generated values in a way that breaks the
+  specific case under test. Either way, don't retry it away.
