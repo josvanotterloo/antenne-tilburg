@@ -109,6 +109,11 @@ For any task expected to take more than 30 minutes or touch more than 5 files:
 
 This ensures session-limit interruptions preserve progress rather than losing it.
 
+### Pushing
+Always push to origin after committing to master unless explicitly told
+otherwise. Committing to master implies pushing. Never hold back a push
+waiting to be asked.
+
 ## Session Management
 - For any task touching more than 3 files: use Plan Mode (/plan) before writing any code — get approval on the approach before implementation starts
 - When errors increase in a long session or Claude makes repeated wrong assumptions: use /rewind rather than manually undoing changes
