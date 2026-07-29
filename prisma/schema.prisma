@@ -20,6 +20,18 @@ enum PostStatus {
   PUBLISHED
 }
 
+enum SupplyOrderStatus {
+  PENDING
+  PARTIAL
+  RECEIVED
+}
+
+enum StockTransactionType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
 // Two equal admin accounts (shop owner + builder). No role tiers.
 model User {
   id           String   @id @default(cuid())
@@ -94,6 +106,8 @@ model Product {
   id                String          @id @default(cuid())
   title             String
   productArtists    ProductArtist[]
+  transactions      StockTransaction[]
+  supplyOrderLines  SupplyOrderLine[]
   // Denormalized copy of the position-0 artist's name — exists purely so
   // catalog sort and the tsvector don't need a per-row join/aggregate. Kept
   // in sync on every product write and on artist rename (see lib/product-input.ts
@@ -111,9 +125,10 @@ model Product {
   description       String?
   coverImage        String?
   quantity          Int             @default(0)
-  // Derived from quantity (> 0) and kept in sync on every write; public queries
-  // filter on it. See lib/product-input.ts (toProductData) and the sell-one route.
-  inStock           Boolean         @default(true)
+  // Derived from quantity (> 0) and kept in sync by lib/stock.ts on every
+  // transaction. Defaults false to match quantity's 0 default — a brand-new
+  // product has no stock until a transaction (adjust/receive) gives it some.
+  inStock           Boolean         @default(false)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
@@ -131,6 +146,69 @@ model Product {
   @@index([inStock])
   @@index([createdAt])
   @@index([primaryArtistName])
+}
+
+model Supplier {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  contact      String?
+  supplyOrders SupplyOrder[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model SupplyOrder {
+  id         String            @id @default(cuid())
+  supplierId String
+  supplier   Supplier          @relation(fields: [supplierId], references: [id])
+  reference  String?
+  notes      String?
+  orderedAt  DateTime
+  receivedAt DateTime?
+  status     SupplyOrderStatus @default(PENDING)
+  lines      SupplyOrderLine[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([supplierId])
+  @@index([status])
+}
+
+// One product per order (@@unique below) — ordering more of the same record
+// later means a new line on a still-PENDING order, or a new order.
+model SupplyOrderLine {
+  id               String             @id @default(cuid())
+  supplyOrderId    String
+  supplyOrder      SupplyOrder        @relation(fields: [supplyOrderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product            @relation(fields: [productId], references: [id])
+  quantityOrdered  Int
+  quantityReceived Int                @default(0)
+  transactions     StockTransaction[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([supplyOrderId, productId])
+  @@index([productId])
+}
+
+// The ledger. Every row's `quantity` is the actual applied delta (see
+// lib/stock.ts) — summed chronologically per product, it always equals
+// that product's Product.quantity. `note` carries the adjustment reason
+// (required by the /adjust route) or context for IN/OUT.
+model StockTransaction {
+  id                String               @id @default(cuid())
+  productId         String
+  product           Product              @relation(fields: [productId], references: [id])
+  type              StockTransactionType
+  quantity          Int
+  note              String?
+  supplyOrderLineId String?
+  supplyOrderLine   SupplyOrderLine?     @relation(fields: [supplyOrderLineId], references: [id])
+  createdAt         DateTime             @default(now())
+
+  @@index([productId, createdAt])
+  @@index([supplyOrderLineId])
 }
 
 // Blog posts (new arrivals, events, restocks). Also feeds SEO via fresh content.
