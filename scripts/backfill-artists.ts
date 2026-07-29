@@ -38,16 +38,44 @@ async function main() {
       const created = await prisma.artist.create({ data: { name } });
       return { ...created, created: true };
     },
-    linkProductArtist: ({ productId, artistId, position }) =>
+    // One db.$transaction, not two separate writes: either the ProductArtist
+    // link and primaryArtistName both land, or neither does. Prevents a
+    // crash mid-loop from leaving a product half-migrated in a way the
+    // completion check below can't see.
+    linkAndSetPrimaryArtist: ({ productId, artistId, artistName, position }) =>
+      prisma
+        .$transaction([
+          prisma.productArtist.create({ data: { productId, artistId, position } }),
+          prisma.product.update({
+            where: { id: productId },
+            data: { primaryArtistName: artistName },
+          }),
+        ])
+        .then(() => undefined),
+    // Secondary artist on a split legacy string (e.g. the "Surgeon" half of
+    // "Jeff Mills / Surgeon") — just a link; primaryArtistName is already
+    // set by linkAndSetPrimaryArtist for position 0.
+    linkArtist: ({ productId, artistId, position }) =>
       prisma.productArtist
         .create({ data: { productId, artistId, position } })
         .then(() => undefined),
-    setPrimaryArtistName: ({ productId, primaryArtistName }) =>
-      prisma.product
-        .update({ where: { id: productId }, data: { primaryArtistName } })
-        .then(() => undefined),
-    countProductsWithoutArtist: () =>
-      prisma.product.count({ where: { productArtists: { none: {} } } }),
+    // Raw SQL, not the typed Prisma Client model: primaryArtistName is
+    // declared as required (non-null) String in the *finalized* schema.prisma,
+    // so the generated client's where-filter type doesn't accept `null` for
+    // it — but at backfill time (pre-finalize_artist_entity) the column is
+    // still nullable in the actual database. Also checks primaryArtistName
+    // directly rather than only link existence, so a product left over from
+    // any prior non-transactional partial run (link present, name still
+    // null) is correctly reported as not done, not silently skipped.
+    countProductsWithoutArtist: async () => {
+      const [{ count }] = await prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(*)::bigint AS count FROM "Product" p
+        WHERE NOT EXISTS (
+          SELECT 1 FROM "ProductArtist" pa WHERE pa."productId" = p.id
+        ) OR p."primaryArtistName" IS NULL
+      `;
+      return Number(count);
+    },
   });
 
   console.log(

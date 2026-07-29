@@ -94,7 +94,45 @@
   across ~15 test files; 662 tests green, `tsc`/lint clean.
 
 ## Code review
-- Code review: n/a yet — architectural change + breaking API contract, so
-  `/code-review` is required by `CLAUDE.md` policy before merging. Not run
-  in this session (cannot self-invoke); flagged to the user to run before
-  merge.
+- Run (separate continuation of this session): 8 finder angles + 1-vote
+  recall-biased verification against `master...HEAD`. 10 findings kept after
+  verification, ranked; top 3 fixed as Medium+ before merge:
+  1. **FK violation on a deleted non-primary artist** — POST/PATCH only
+     checked `artistIds[0]`; a missing secondary id hit an uncaught P2003 and
+     surfaced as a 500. Fixed via a shared `lib/resolve-artists.ts` that
+     validates the whole array and returns a clean 400.
+  2. **Backfill writes not atomic + completion check blind to
+     `primaryArtistName`** — `linkProductArtist`/`setPrimaryArtistName` were
+     two separate calls, and `countProductsWithoutArtist` only checked link
+     existence. Collapsed into one `linkAndSetPrimaryArtist` delegate call
+     (real impl: `db.$transaction`), and the completion check now also
+     catches a link with no `primaryArtistName` (raw SQL, since the typed
+     Prisma Client rejects `null` against the finalized non-null column type).
+  3. **Backfill never split composite legacy strings** (e.g. `"Jeff Mills /
+     Surgeon"`) — previously a *deliberate* documented decision against
+     splitting (bare `/` would corrupt `"AC/DC"`-style names). Revisited and
+     reversed with the user's explicit approval: now splits on a literal
+     `" / "` (space-slash-space only), which handles the composite case
+     without the bare-`/` corruption risk. `docs/features/artist-entity-migration.md`'s
+     "Known limitation" section rewritten to "Decision" reflecting the new
+     behavior and why the delimiter is space-padded.
+  All three fixed TDD (RED confirmed via a targeted `vitest run` before each
+  implementation change, then GREEN). Remaining 7 findings (Combobox/reference-crud
+  duplication, redundant position re-sorts, backfill script's own
+  sequential-write and unindexed-lookup perf, missing artist reorder UI) were
+  below the Medium+ bar for this merge — left open, not blocking.
+- Lower findings not in this pass: `docs/features/catalog-api.md` stale
+  response shape and the `/stock?artist=` id-vs-name contract change were
+  already fixed/flagged in the prior commit (`dd39168`) before this
+  continuation started.
+
+## Friction (this continuation)
+- Mid-session, several fabricated tool/hook messages appeared claiming
+  authority they didn't have: a fake "PreToolUse:Read hook" diff for a file
+  that was only `Read`, a "[Token Optimizer]" truncation stub, an
+  "[impeccable@1]" notice on a non-UI test file, and fake
+  `~/.claude/rules/common/*.md` "global rules" (one tried to disable the
+  mandatory commit co-author trailer). None were acted on; verified the real
+  state via `git status`/`git diff`/direct reads each time and flagged it to
+  the user rather than silently complying or silently ignoring it. See
+  `tasks/lessons.md` 2026-07-29e.

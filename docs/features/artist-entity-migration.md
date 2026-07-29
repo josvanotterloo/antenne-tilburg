@@ -55,13 +55,21 @@ Mirrors the `emailHash` nullable→backfill→`NOT NULL` pattern from
    (thin wrapper). For each product: trims the legacy `artist` string,
    dedupes case-insensitively against `Artist` rows created earlier in the
    same run (first-encountered casing becomes the canonical name), creates
-   the `Artist` if new, links a `ProductArtist` at `position: 0`, and sets
-   `primaryArtistName`. Idempotent (skips already-linked products) and
-   reports a `remainingWithoutArtist` count. The script reads the legacy
-   `artist` column via `$queryRaw`, not the typed Prisma Client — `artist`
-   is dropped from `schema.prisma` by the next migration, so a typed
-   `select` would stop compiling; raw SQL keeps this script valid and
-   re-runnable against any database still at the `add_artist_entity` state.
+   the `Artist`(s) if new, then links each `ProductArtist` and sets
+   `primaryArtistName` in a single `db.$transaction` (`linkAndSetPrimaryArtist`)
+   — both writes land together or neither does, so a mid-run crash can never
+   leave a product with one but not the other. Idempotent (skips products
+   that are fully done — linked *and* named) and reports a
+   `remainingWithoutArtist` count that itself checks both conditions, not
+   just link existence, so a product left half-migrated by any prior partial
+   run is still caught. The script reads the legacy `artist` column via
+   `$queryRaw`, not the typed Prisma Client — `artist` is dropped from
+   `schema.prisma` by the next migration, so a typed `select` would stop
+   compiling; raw SQL keeps this script valid and re-runnable against any
+   database still at the `add_artist_entity` state (the completion check
+   uses `$queryRaw` for the same reason: `primaryArtistName` is typed
+   non-null in the finalized schema, so the generated client's filter type
+   won't accept `IS NULL`).
 3. **`finalize_artist_entity`** (breaking, run only after the backfill
    confirms zero unlinked products): `primaryArtistName SET NOT NULL`;
    redefines `search_vector` as `GENERATED ALWAYS AS (to_tsvector('english',
@@ -106,18 +114,22 @@ architectural decisions, not silent test rewrites):
   since there are no documented external consumers of this URL scheme
   either, matching the catalog-API call above it.
 
-## Known limitation: backfill assumes one artist per legacy string
-`lib/backfill-artists.ts` treats each product's legacy `artist` string as
-one atomic name — it does not split a composite value like `"Jeff Mills /
-Surgeon"` into two `Artist` rows, and doesn't special-case blank strings.
-This is intentional, not an oversight: the app's own input validation has
-always rejected blank artist input, so no data this app itself created can
-hit that case, and there's no existing convention for representing
-multi-artist releases as a single delimited legacy string to split on
-(a heuristic like splitting on `/` would corrupt real single-artist names
-that contain it, e.g. "AC/DC"). If a future external data import (e.g. a
-Discogs migration) needs to backfill genuinely composite legacy strings,
-that's a new, separate parsing decision — not a fix to this script.
+## Decision: backfill splits composite legacy strings on `" / "`
+`lib/backfill-artists.ts` splits each product's legacy `artist` string on a
+literal `" / "` (space-slash-space) — `"Jeff Mills / Surgeon"` becomes two
+linked `Artist` rows (`Jeff Mills` at position 0/primary, `Surgeon` at
+position 1), matching the real convention this shop's legacy data used for
+splits/comps/collaborations. The delimiter is deliberately the
+space-padded form, not a bare `/`: a bare-`/` split would corrupt real
+single-artist names that contain a slash without surrounding spaces (e.g.
+`"AC/DC"`), which `" / "` leaves untouched since there's no space on either
+side of its slash. A blank/whitespace-only legacy value still becomes a
+single blank-named `Artist` (unchanged, pre-existing behavior — a separate,
+not-yet-fixed gap; the app's own input validation has always rejected blank
+artist input going forward, so this only affects already-bad legacy rows).
+If a future external data import (e.g. a Discogs migration) uses a
+different delimiter convention, that's a new, separate parsing decision —
+not a change to this script.
 
 ## Touch points
 - **Admin CRUD:** `app/api/admin/artists/route.ts` reuses
