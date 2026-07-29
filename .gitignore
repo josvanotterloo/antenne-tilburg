@@ -26,3 +26,6 @@ next-env.d.ts
 # Stryker mutation testing
 /reports/
 .stryker-tmp/
+
+# Git worktrees (local scratch, never committed)
+/.worktrees/
