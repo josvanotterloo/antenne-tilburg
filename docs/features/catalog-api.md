@@ -27,7 +27,7 @@ No authentication required.
   "products": [
     {
       "id": "...",
-      "artist": "Biosphere",
+      "artists": [{ "id": "...", "name": "Biosphere" }],
       "title": "Substrata",
       "label": "Dirty Carpets",
       "catalogNumber": "DC001",
@@ -47,6 +47,11 @@ No authentication required.
 }
 ```
 
+- `artists` is an ordered array (`{id, name}`, position-0 first) — changed from a
+  single `artist: string` by the artist-entity migration
+  (`docs/features/artist-entity-migration.md`), since a release can have more
+  than one artist (splits, comps, collaborations). A deliberate, flagged
+  interface change; no documented external consumers existed at the time.
 - `total` is the full count of matching in-stock products, independent of `limit` —
   callers can tell there are more results beyond a truncated `products` array. Same
   semantics as `total` in `getCatalogPage` (`lib/catalog.ts`).

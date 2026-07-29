@@ -13,7 +13,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
-    artist: { findUnique: vi.fn() },
+    artist: { findMany: vi.fn() },
   },
 }));
 
@@ -33,7 +33,7 @@ const product = db.product as unknown as {
   update: Mock;
   delete: Mock;
 };
-const artist = db.artist as unknown as { findUnique: Mock };
+const artist = db.artist as unknown as { findMany: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
 
 const ROW = {
@@ -80,7 +80,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
-  artist.findUnique.mockResolvedValue({ id: "a1", name: "Vril" });
+  artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
 });
 
 describe("GET /api/admin/products", () => {
@@ -123,8 +123,19 @@ describe("POST /api/admin/products", () => {
   });
 
   it("returns 400 when the primary artist no longer exists", async () => {
-    artist.findUnique.mockResolvedValue(null);
+    artist.findMany.mockResolvedValue([]);
     const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(400);
+    expect(product.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when a non-primary artist no longer exists (not just the primary)", async () => {
+    // The exact gap the review found: only artistIds[0] used to be checked,
+    // so a missing second artist hit an unhandled FK violation instead.
+    artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
+    const res = await POST(
+      jsonReq("POST", { ...validBody, artistIds: ["a1", "a2"] }),
+    );
     expect(res.status).toBe(400);
     expect(product.create).not.toHaveBeenCalled();
   });
@@ -198,8 +209,18 @@ describe("PATCH /api/admin/products/[id]", () => {
   });
 
   it("returns 400 when the primary artist no longer exists", async () => {
-    artist.findUnique.mockResolvedValue(null);
+    artist.findMany.mockResolvedValue([]);
     const res = await PATCH(jsonReq("PATCH", validBody), ctx("p1"));
+    expect(res.status).toBe(400);
+    expect(product.update).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when a non-primary artist no longer exists", async () => {
+    artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
+    const res = await PATCH(
+      jsonReq("PATCH", { ...validBody, artistIds: ["a1", "a2"] }),
+      ctx("p1"),
+    );
     expect(res.status).toBe(400);
     expect(product.update).not.toHaveBeenCalled();
   });

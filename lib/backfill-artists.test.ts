@@ -112,6 +112,43 @@ describe("backfillArtists", () => {
     expect(primaryNames.get("p2")).toBe("Vril");
   });
 
+  it("sets primaryArtistName before linking, so a crash between the two still leaves the product retryable", async () => {
+    const { delegate } = fakeDelegate([{ id: "p1", artist: "Vril" }]);
+
+    await backfillArtists(delegate);
+
+    const setOrder = vi.mocked(delegate.setPrimaryArtistName).mock
+      .invocationCallOrder[0];
+    const linkOrder = vi.mocked(delegate.linkProductArtist).mock
+      .invocationCallOrder[0];
+    expect(setOrder).toBeLessThan(linkOrder);
+  });
+
+  it("recovers if the run is interrupted after setPrimaryArtistName but before linkProductArtist", async () => {
+    const { delegate, links, primaryNames } = fakeDelegate([
+      { id: "p1", artist: "Vril" },
+    ]);
+    vi.mocked(delegate.linkProductArtist).mockRejectedValueOnce(
+      new Error("crashed"),
+    );
+
+    await expect(backfillArtists(delegate)).rejects.toThrow("crashed");
+    // primaryArtistName was set, but no link exists yet — countProductsWithoutArtist
+    // (and a re-run's findProductsNeedingBackfill) must still see this product
+    // as needing backfill, not silently "done".
+    expect(primaryNames.get("p1")).toBe("Vril");
+    expect(links).toEqual([]);
+    expect(await delegate.countProductsWithoutArtist()).toBe(1);
+
+    // Re-run picks it up and finishes the job; re-setting the same name is harmless.
+    const result = await backfillArtists(delegate);
+    expect(result).toEqual({
+      productsLinked: 1,
+      artistsCreated: 0,
+      remainingWithoutArtist: 0,
+    });
+  });
+
   it("is idempotent — running twice does not create duplicate Artists or links", async () => {
     const { delegate } = fakeDelegate([
       { id: "p1", artist: "Jeff Mills" },

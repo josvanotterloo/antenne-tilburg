@@ -103,6 +103,61 @@ describe("MultiCombobox", () => {
     ]);
   });
 
+  it("moving the second chip up swaps it with the first (position is load-bearing)", async () => {
+    const user = userEvent.setup();
+    const { onChange } = setup({
+      selected: [
+        { id: "1", name: "Jeff Mills" },
+        { id: "2", name: "Surgeon" },
+      ],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Move Surgeon up" }));
+
+    expect(onChange).toHaveBeenCalledWith([
+      { id: "2", name: "Surgeon" },
+      { id: "1", name: "Jeff Mills" },
+    ]);
+  });
+
+  it("moving the first chip down swaps it with the second", async () => {
+    const user = userEvent.setup();
+    const { onChange } = setup({
+      selected: [
+        { id: "1", name: "Jeff Mills" },
+        { id: "2", name: "Surgeon" },
+      ],
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: "Move Jeff Mills down" }),
+    );
+
+    expect(onChange).toHaveBeenCalledWith([
+      { id: "2", name: "Surgeon" },
+      { id: "1", name: "Jeff Mills" },
+    ]);
+  });
+
+  it("disables move-up on the first chip and move-down on the last", () => {
+    setup({
+      selected: [
+        { id: "1", name: "Jeff Mills" },
+        { id: "2", name: "Surgeon" },
+      ],
+    });
+
+    expect(screen.getByRole("button", { name: "Move Jeff Mills up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Surgeon down" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Jeff Mills down" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Move Surgeon up" })).toBeEnabled();
+  });
+
+  it("does not render reorder buttons with only one artist selected", () => {
+    setup({ selected: [{ id: "1", name: "Jeff Mills" }] });
+    expect(screen.queryByRole("button", { name: /^Move /i })).toBeNull();
+  });
+
   it("removing a chip calls onChange with that artist excluded, others preserved in order", async () => {
     const user = userEvent.setup();
     const { onChange } = setup({
@@ -126,6 +181,31 @@ describe("MultiCombobox", () => {
     await screen.findByRole("option", { name: "Jeff Mills" });
 
     expect(screen.queryByRole("option", { name: "Vril" })).toBeNull();
+  });
+
+  it("blocks submission (native required) when required and nothing is selected", () => {
+    const { container } = setup({ required: true, selected: [] });
+    const proxy = container.querySelector(
+      'input[aria-hidden="true"]',
+    ) as HTMLInputElement;
+    expect(proxy).not.toBeNull();
+    expect(proxy.checkValidity()).toBe(false);
+  });
+
+  it("the required proxy becomes valid once at least one artist is selected", () => {
+    const { container } = setup({
+      required: true,
+      selected: [{ id: "3", name: "Vril" }],
+    });
+    const proxy = container.querySelector(
+      'input[aria-hidden="true"]',
+    ) as HTMLInputElement;
+    expect(proxy.checkValidity()).toBe(true);
+  });
+
+  it("does not render the required proxy when required is not set", () => {
+    const { container } = setup({ selected: [] });
+    expect(container.querySelector('input[aria-hidden="true"]')).toBeNull();
   });
 
   it("quick-adds a new artist and appends it to the selection", async () => {

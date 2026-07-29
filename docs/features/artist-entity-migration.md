@@ -94,6 +94,31 @@ WHERE p.search_vector @@ websearch_to_tsquery('english', ${term})
 Verified live: searching `?q=Surgeon` (the *secondary*, non-primary artist
 on the seeded "Frequencies Split" fixture) correctly returns that product.
 
+## Deliberate interface changes
+Flagged explicitly per this repo's Test Contract (interface changes are
+architectural decisions, not silent test rewrites):
+- **Public catalog API** (`app/api/catalog/route.ts`): `artist: string` →
+  `artists: {id, name}[]` (ordered) — see `docs/features/catalog-api.md`.
+- **`/stock?artist=` query param**: name-based → id-based (`lib/catalog.ts`'s
+  `stockArtistHref`, `CatalogFilters.artistIds`). Ids are stable across
+  artist renames, which names aren't. A bookmarked/shared link in the old
+  `?artist=<name>` form now matches nothing instead of erroring — accepted,
+  since there are no documented external consumers of this URL scheme
+  either, matching the catalog-API call above it.
+
+## Known limitation: backfill assumes one artist per legacy string
+`lib/backfill-artists.ts` treats each product's legacy `artist` string as
+one atomic name — it does not split a composite value like `"Jeff Mills /
+Surgeon"` into two `Artist` rows, and doesn't special-case blank strings.
+This is intentional, not an oversight: the app's own input validation has
+always rejected blank artist input, so no data this app itself created can
+hit that case, and there's no existing convention for representing
+multi-artist releases as a single delimited legacy string to split on
+(a heuristic like splitting on `/` would corrupt real single-artist names
+that contain it, e.g. "AC/DC"). If a future external data import (e.g. a
+Discogs migration) needs to backfill genuinely composite legacy strings,
+that's a new, separate parsing decision — not a fix to this script.
+
 ## Touch points
 - **Admin CRUD:** `app/api/admin/artists/route.ts` reuses
   `lib/reference-crud.ts`'s `collectionHandlers` verbatim for GET

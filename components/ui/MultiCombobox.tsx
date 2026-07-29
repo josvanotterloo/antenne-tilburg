@@ -98,6 +98,17 @@ export function MultiCombobox({
     onChange(selected.filter((o) => o.id !== id));
   }
 
+  // Selection order is load-bearing (position 0 becomes the primary artist —
+  // see Product.primaryArtistName), so a misordered pick needs a fix short of
+  // removing and re-adding everything after it.
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= selected.length) return;
+    const next = [...selected];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  }
+
   function quickAdd() {
     const name = query.trim();
     if (!name || busy) return;
@@ -141,12 +152,34 @@ export function MultiCombobox({
     <div ref={rootRef} className="relative">
       {selected.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-1.5">
-          {selected.map((option) => (
+          {selected.map((option, index) => (
             <li
               key={option.id}
               className="flex items-center gap-1 rounded border border-admin-hairline bg-admin-raised px-2 py-0.5 text-sm"
             >
+              {selected.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Move ${option.name} up`}
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                  className="text-admin-ink-muted hover:text-admin-ink disabled:opacity-30"
+                >
+                  ↑
+                </button>
+              )}
               {option.name}
+              {selected.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Move ${option.name} down`}
+                  disabled={index === selected.length - 1}
+                  onClick={() => move(index, 1)}
+                  className="text-admin-ink-muted hover:text-admin-ink disabled:opacity-30"
+                >
+                  ↓
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={`Remove ${option.name}`}
@@ -180,6 +213,30 @@ export function MultiCombobox({
         onKeyDown={onKeyDown}
         className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
       />
+
+      {required && (
+        // The visible search input's value is just the in-progress query
+        // text, not a proxy for "has a selection" — a native `required` on
+        // it would incorrectly block submission whenever the search box is
+        // empty, even with artists already selected. This hidden input is a
+        // real, browser-enforced native validity check tied to selection
+        // state instead (Combobox's single-select `required` transfers
+        // directly since that input's own value IS the selection; this one
+        // doesn't).
+        <input
+          type="text"
+          required
+          aria-hidden="true"
+          tabIndex={-1}
+          value={selected.length > 0 ? "x" : ""}
+          // Not readOnly/disabled: both are "barred from constraint
+          // validation" per the HTML spec, which would make `required` on
+          // this input inert. onChange is a no-op instead — sr-only +
+          // tabIndex=-1 already keep a real user from reaching it.
+          onChange={() => {}}
+          className="sr-only"
+        />
+      )}
 
       {open && itemCount > 0 && (
         <ul

@@ -38,18 +38,27 @@ export async function backfillArtists(
 
   // Sequential, not parallel: case-insensitive dedup relies on each
   // findOrCreateArtist call seeing artists created earlier in this loop.
+  //
+  // setPrimaryArtistName runs BEFORE linkProductArtist, not after: a
+  // ProductArtist link is what findProductsNeedingBackfill/
+  // countProductsWithoutArtist treat as "this product is done". If the
+  // process crashes between the two writes, doing the link last means the
+  // product is still correctly seen as unlinked and gets retried (and
+  // re-setting primaryArtistName to the same value is harmless) — instead
+  // of silently landing with a link but no primaryArtistName, which the
+  // completion check wouldn't catch.
   for (const product of products) {
     const name = product.artist.trim();
     const artist = await delegate.findOrCreateArtist(name);
     if (artist.created) artistsCreated += 1;
+    await delegate.setPrimaryArtistName({
+      productId: product.id,
+      primaryArtistName: artist.name,
+    });
     await delegate.linkProductArtist({
       productId: product.id,
       artistId: artist.id,
       position: 0,
-    });
-    await delegate.setPrimaryArtistName({
-      productId: product.id,
-      primaryArtistName: artist.name,
     });
     productsLinked += 1;
   }

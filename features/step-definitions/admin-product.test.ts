@@ -37,8 +37,9 @@ vi.mock("@/lib/db", () => {
   return {
     db: {
       artist: {
-        findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
-          ARTISTS[where.id] ?? null,
+        findMany: vi.fn(
+          async ({ where }: { where: { id: { in: string[] } } }) =>
+            where.id.in.map((id) => ARTISTS[id]).filter(Boolean),
         ),
       },
       product: {

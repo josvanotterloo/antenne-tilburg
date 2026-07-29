@@ -78,6 +78,11 @@ model ProductArtist {
   position  Int     @default(0)
 
   @@unique([productId, artistId])
+  // Guards "position 0 = primary artist" at the DB level — without this,
+  // nothing prevents two rows for the same product both at position 0 (or
+  // any other duplicate/non-contiguous position) from a future write path
+  // that doesn't go through toProductData's array-index assignment.
+  @@unique([productId, position])
   @@index([productId])
   @@index([artistId])
 }

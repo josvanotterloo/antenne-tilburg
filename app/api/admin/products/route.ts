@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
+import { resolveArtists } from "@/lib/resolve-artists";
 
 export async function GET() {
   const denied = await requireAdmin();
@@ -29,22 +30,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
+  // Every selected artist must still exist, not just the primary one — a
+  // missing non-primary id would otherwise hit an unhandled ProductArtist FK
+  // violation instead of this graceful 400. The admin form's Quick Add
+  // creates a new artist immediately (before the product form ever
+  // submits), same as label/genre/productType, so this is a genuine
+  // deleted-out-from-under-you race, not the common case.
+  const artists = await resolveArtists(db.artist, parsed.data.artistIds);
+  if (!artists) {
+    return NextResponse.json(
+      { error: "Selected artist no longer exists" },
+      { status: 400 },
+    );
+  }
+
   try {
-    // artistIds[0] must already exist: the admin form's Quick Add creates a
-    // new artist immediately (before the product form ever submits), same as
-    // label/genre/productType.
-    const primaryArtist = await db.artist.findUnique({
-      where: { id: parsed.data.artistIds[0] },
-    });
-    if (!primaryArtist) {
-      return NextResponse.json(
-        { error: "Selected artist no longer exists" },
-        { status: 400 },
-      );
-    }
     const created = await db.product.create({
       data: toProductData(parsed.data, {
-        primaryArtistName: primaryArtist.name,
+        primaryArtistName: artists[0].name,
         mode: "create",
       }),
     });
