@@ -13,7 +13,6 @@ const VALID = {
   condition: "NEW",
   price: "24.99",
   description: "  hypnotic  ",
-  quantity: 1,
 };
 
 describe("parseProductInput", () => {
@@ -31,7 +30,6 @@ describe("parseProductInput", () => {
       condition: "NEW",
       price: "24.99",
       description: "hypnotic", // trimmed
-      quantity: 1,
     });
   });
 
@@ -51,40 +49,16 @@ describe("parseProductInput", () => {
     expect(absent.ok && absent.data.coverImage).toBeNull();
   });
 
-  it("defaults quantity to 0 and nullifies blank optionals", () => {
+  it("nullifies blank optionals", () => {
     const result = parseProductInput({
       ...VALID,
       catalogNumber: "",
       description: "  ",
-      quantity: undefined,
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data.catalogNumber).toBeNull();
     expect(result.data.description).toBeNull();
-    expect(result.data.quantity).toBe(0);
-  });
-
-  it("accepts quantity as a number or a numeric string", () => {
-    expect(
-      parseProductInput({ ...VALID, quantity: 5 }).ok &&
-        (parseProductInput({ ...VALID, quantity: 5 }) as { data: { quantity: number } }).data
-          .quantity,
-    ).toBe(5);
-    const asString = parseProductInput({ ...VALID, quantity: "3" });
-    expect(asString.ok && asString.data.quantity).toBe(3);
-  });
-
-  it.each([
-    ["negative number", -1],
-    ["non-integer number", 1.5],
-    ["non-numeric string", "abc"],
-    ["float string", "1.5"],
-    ["hex string", "0x10"],
-    ["exponent string", "1e3"],
-    ["boolean", true],
-  ])("rejects %s quantity", (_label, quantity) => {
-    expect(parseProductInput({ ...VALID, quantity }).ok).toBe(false);
   });
 
   it.each([
@@ -118,8 +92,8 @@ describe("parseProductInput", () => {
     ["negative", "-1"],
     ["non-numeric", "abc"],
     ["empty", ""],
-    // Loose Number() coercions that must be rejected (mirrors quantity). "1e309"
-    // → Infinity would otherwise store as Decimal "Infinity" and 500 in Prisma.
+    // Loose Number() coercions that must be rejected. "1e309" → Infinity
+    // would otherwise store as Decimal "Infinity" and 500 in Prisma.
     ["infinity", "1e309"],
     ["hex", "0x10"],
     ["exponent", "1e3"],
@@ -138,7 +112,7 @@ describe("parseProductInput", () => {
   });
 });
 
-describe("toProductData — derives inStock from quantity", () => {
+describe("toProductData — no longer touches quantity/inStock", () => {
   const base = {
     artistIds: ["a1", "a2"],
     title: "Torus",
@@ -152,35 +126,23 @@ describe("toProductData — derives inStock from quantity", () => {
     coverImage: null,
   };
 
-  it("in stock when quantity > 0", () => {
-    const data = toProductData(
-      { ...base, quantity: 3 },
-      { primaryArtistName: "Vril", mode: "create" },
-    );
-    expect(data.quantity).toBe(3);
-    expect(data.inStock).toBe(true);
+  it("never includes quantity or inStock in the returned data", () => {
+    const data = toProductData(base, { primaryArtistName: "Vril", mode: "create" });
+    expect(data).not.toHaveProperty("quantity");
+    expect(data).not.toHaveProperty("inStock");
   });
 
   it("passes coverImage through to the stored data", () => {
     const data = toProductData(
-      { ...base, coverImage: "/uploads/cover.webp", quantity: 1 },
+      { ...base, coverImage: "/uploads/cover.webp" },
       { primaryArtistName: "Vril", mode: "create" },
     );
     expect(data.coverImage).toBe("/uploads/cover.webp");
   });
 
-  it("out of stock when quantity is 0", () => {
-    const data = toProductData(
-      { ...base, quantity: 0 },
-      { primaryArtistName: "Vril", mode: "create" },
-    );
-    expect(data.quantity).toBe(0);
-    expect(data.inStock).toBe(false);
-  });
-
   it("sets primaryArtistName and creates ordered ProductArtist links on create (no deleteMany)", () => {
     const data = toProductData(
-      { ...base, quantity: 1 },
+      base,
       { primaryArtistName: "Vril", mode: "create" },
     );
     expect(data.primaryArtistName).toBe("Vril");
@@ -194,7 +156,7 @@ describe("toProductData — derives inStock from quantity", () => {
 
   it("replaces the full artist set on update (deleteMany then create)", () => {
     const data = toProductData(
-      { ...base, quantity: 1 },
+      base,
       { primaryArtistName: "Vril", mode: "update" },
     );
     expect(data.productArtists).toEqual({

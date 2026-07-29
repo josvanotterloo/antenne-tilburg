@@ -12,7 +12,6 @@ export interface ProductInput {
   price: string;
   description: string | null;
   coverImage: string | null;
-  quantity: number;
 }
 
 export type ParseResult =
@@ -62,7 +61,7 @@ export function parseProductInput(body: unknown): ParseResult {
   // Price accepts a finite non-negative number, or a decimal string (digits with
   // an optional single fractional part). Rejects loose Number() coercions —
   // Infinity/1e309 (would store as Decimal "Infinity" → Prisma 500), hex, and
-  // exponent strings — mirroring the strict quantity rule below.
+  // exponent strings.
   let price: number;
   if (typeof b.price === "number") {
     price = b.price;
@@ -73,23 +72,6 @@ export function parseProductInput(body: unknown): ParseResult {
   }
   if (!Number.isFinite(price) || price < 0) {
     return { ok: false, error: "Price must be a non-negative number" };
-  }
-
-  // Quantity drives stock. Absent/blank → 0; a plain number, or a string of only
-  // digits (no signs, decimals, hex, or exponents). Rejects loose coercions.
-  const rawQty = typeof b.quantity === "string" ? b.quantity.trim() : b.quantity;
-  let quantity: number;
-  if (rawQty === undefined || rawQty === null || rawQty === "") {
-    quantity = 0;
-  } else if (typeof rawQty === "number") {
-    quantity = rawQty;
-  } else if (typeof rawQty === "string" && /^\d+$/.test(rawQty)) {
-    quantity = Number(rawQty);
-  } else {
-    return { ok: false, error: "Quantity must be a non-negative whole number" };
-  }
-  if (!Number.isInteger(quantity) || quantity < 0) {
-    return { ok: false, error: "Quantity must be a non-negative whole number" };
   }
 
   return {
@@ -105,7 +87,6 @@ export function parseProductInput(body: unknown): ParseResult {
       price: String(price),
       description: str(b.description) || null,
       coverImage: str(b.coverImage) || null,
-      quantity,
     },
   };
 }
@@ -131,9 +112,6 @@ export function toProductData(
     price: data.price,
     description: data.description,
     coverImage: data.coverImage,
-    quantity: data.quantity,
-    // inStock is derived — kept in sync so public queries (which filter on it) work.
-    inStock: data.quantity > 0,
     label: { connect: { id: data.labelId } },
     genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },

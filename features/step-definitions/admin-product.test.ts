@@ -96,7 +96,6 @@ const VALID_PRODUCT = {
   condition: "NEW",
   price: "24.99",
   description: null,
-  quantity: 2,
 };
 
 describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
@@ -120,12 +119,10 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
       expect(res.status).toBe(201);
     });
 
-    Then("the product appears in the public catalog", async () => {
+    Then("the product does not yet appear in the public catalog", async () => {
       const res = await GET(new Request("http://localhost/api/catalog"));
       const body = await res.json();
-      expect(body.products).toHaveLength(1);
-      expect(body.products[0].artists).toEqual([{ id: "a1", name: "Vril" }]);
-      expect(body.products[0].title).toBe("Torus");
+      expect(body.products).toHaveLength(0);
     });
   });
 });
