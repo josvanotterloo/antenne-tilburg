@@ -20,6 +20,7 @@ vi.mock("@/lib/db", () => ({
     genre: { findMany: vi.fn() },
     label: { findMany: vi.fn() },
     productType: { findMany: vi.fn() },
+    artist: { findMany: vi.fn() },
   },
 }));
 vi.mock("@/lib/catalog", async (importOriginal) => {
@@ -33,7 +34,9 @@ import { getCatalogPage } from "@/lib/catalog";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   catalogNumber: "ZR-001",
   price: "24.99",
@@ -57,6 +60,7 @@ beforeEach(() => {
   vi.mocked(db.genre.findMany).mockResolvedValue([] as never);
   vi.mocked(db.label.findMany).mockResolvedValue([] as never);
   vi.mocked(db.productType.findMany).mockResolvedValue([] as never);
+  vi.mocked(db.artist.findMany).mockResolvedValue([] as never);
   vi.mocked(getCatalogPage).mockResolvedValue({
     products: [PRODUCT] as never,
     total: 1,
@@ -189,7 +193,7 @@ describe("/stock public filter restrictions", () => {
     ] as never);
     await StockPage({
       searchParams: Promise.resolve({
-        artist: "Vril",
+        artist: "a1",
         genre: "Techno",
         condition: "NEW",
         label: "Warp Records",
@@ -198,7 +202,7 @@ describe("/stock public filter restrictions", () => {
       }),
     });
     const arg = vi.mocked(getCatalogPage).mock.calls[0][0];
-    expect(arg.artist).toBe("Vril");
+    expect(arg.artistIds).toEqual(["a1"]);
     expect(arg.genreId).toBe("g1");
     expect(arg.labelId).toBe("l1");
     expect(arg.condition).toBe("NEW");
@@ -210,10 +214,33 @@ describe("/stock public filter restrictions", () => {
     render(await StockPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("link", { name: "Vril" })).toHaveAttribute(
       "href",
-      "/stock?artist=Vril",
+      "/stock?artist=a1",
     );
     expect(
       screen.getByRole("link", { name: "Zulema Records" }),
     ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
+  });
+
+  it("renders one removable chip per active artist filter", async () => {
+    vi.mocked(db.artist.findMany).mockResolvedValue([
+      { id: "a1", name: "Vril" },
+      { id: "a2", name: "Surgeon" },
+    ] as never);
+    render(
+      await StockPage({
+        searchParams: Promise.resolve({ artist: ["a1", "a2"] }),
+      }),
+    );
+    // "Vril" also appears as the product row's own artist link (href a1) —
+    // the chip (href a2, removing itself and leaving only a2 active) is the
+    // other of the two.
+    const vrilLinks = screen.getAllByRole("link", { name: "Vril" });
+    expect(
+      vrilLinks.some((l) => l.getAttribute("href") === "/stock?artist=a2"),
+    ).toBe(true);
+    expect(screen.getByRole("link", { name: "Surgeon" })).toHaveAttribute(
+      "href",
+      "/stock?artist=a1",
+    );
   });
 });

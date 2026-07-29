@@ -12,7 +12,7 @@ import { ProductForm } from "@/components/admin/ProductForm";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Vril",
+  artists: [{ id: "a1", name: "Vril" }],
   title: "Torus",
   catalogNumber: "ZR-001",
   label: { id: "l1", name: "Zulema Records" },
@@ -32,7 +32,9 @@ describe("ProductForm", () => {
   it("renders every field of the product", () => {
     render(<ProductForm />);
 
-    expect(screen.getByRole("textbox", { name: /artist/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("combobox", { name: /artists/i }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /title/i })).toBeInTheDocument();
     expect(
       screen.getByRole("textbox", { name: /catalog number/i }),
@@ -68,8 +70,8 @@ describe("ProductForm", () => {
     const user = userEvent.setup();
     render(<ProductForm />);
 
-    await user.click(screen.getByText("Artist"));
-    expect(screen.getByRole("textbox", { name: /artist/i })).toHaveFocus();
+    await user.click(screen.getByText("Artists"));
+    expect(screen.getByRole("combobox", { name: /artists/i })).toHaveFocus();
 
     await user.click(screen.getByText("Price (€)"));
     expect(screen.getByRole("spinbutton", { name: /price/i })).toHaveFocus();
@@ -132,10 +134,6 @@ describe("ProductForm", () => {
       .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
 
     render(<ProductForm product={PRODUCT} />);
-
-    const artist = screen.getByRole("textbox", { name: /artist/i });
-    await user.clear(artist);
-    await user.type(artist, "Vril & Rrose");
     await user.click(screen.getByRole("button", { name: /save changes/i }));
 
     await waitFor(() => {
@@ -148,7 +146,7 @@ describe("ProductForm", () => {
       (fetchMock.mock.calls[0][1] as RequestInit).body as string,
     );
     expect(body).toMatchObject({
-      artist: "Vril & Rrose",
+      artistIds: ["a1"],
       title: "Torus",
       labelId: "l1",
       genreId: "g1",
@@ -158,5 +156,33 @@ describe("ProductForm", () => {
       coverImage: "/uploads/existing-cover.webp",
     });
     await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/catalog"));
+  });
+
+  it("removing an artist chip and submitting sends the remaining artistIds", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+
+    render(
+      <ProductForm
+        product={{
+          ...PRODUCT,
+          artists: [
+            { id: "a1", name: "Vril" },
+            { id: "a2", name: "Rrose" },
+          ],
+        }}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Remove Vril" }));
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.artistIds).toEqual(["a2"]);
   });
 });

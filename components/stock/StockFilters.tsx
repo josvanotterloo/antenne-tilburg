@@ -11,6 +11,9 @@ export type SearchParams = Record<string, string | string[] | undefined>;
 export const one = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v) ?? undefined;
 
+export const many = (v: string | string[] | undefined): string[] =>
+  v === undefined ? [] : Array.isArray(v) ? v : [v];
+
 export function parseCondition(
   v: string | undefined,
 ): "NEW" | "SECONDHAND" | undefined {
@@ -32,15 +35,23 @@ export function resolveFilterId(
 
 // Build a URL on `basePath` from the current params plus a patch. Filter and
 // sort changes reset pagination; pass `page` in the patch to keep or set it.
+// A value may be an array (e.g. multiple active artist filters) to emit
+// repeated `?key=a&key=b` params — every other param stays single-valued.
 export function filterHref(
   basePath: string,
-  current: Record<string, string | undefined>,
-  patch: Record<string, string | undefined>,
+  current: Record<string, string | string[] | undefined>,
+  patch: Record<string, string | string[] | undefined>,
 ): string {
   const merged = { ...current, ...patch };
   if (!("page" in patch)) delete merged.page;
   const sp = new URLSearchParams();
-  for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, v);
+  for (const [k, v] of Object.entries(merged)) {
+    if (Array.isArray(v)) {
+      for (const item of v) if (item) sp.append(k, item);
+    } else if (v) {
+      sp.set(k, v);
+    }
+  }
   const qs = sp.toString();
   return qs ? `${basePath}?${qs}` : basePath;
 }
@@ -65,7 +76,7 @@ export function FilterGroup({
   active: string | undefined;
   param: string;
   basePath: string;
-  current: Record<string, string | undefined>;
+  current: Record<string, string | string[] | undefined>;
 }) {
   return (
     <div className="space-y-1">
@@ -96,7 +107,7 @@ export function ConditionFilter({
   current,
 }: {
   basePath: string;
-  current: Record<string, string | undefined>;
+  current: Record<string, string | string[] | undefined>;
 }) {
   return (
     <div className="space-y-1">

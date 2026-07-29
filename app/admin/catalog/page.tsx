@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { catalogPageNumbers, getCatalogPage } from "@/lib/catalog";
+import { catalogPageNumbers, getCatalogPage, joinArtistNames } from "@/lib/catalog";
 import { fullDate, relativeDate } from "@/lib/relative-date";
 
 import { DeleteProductButton } from "./DeleteProductButton";
@@ -94,7 +94,9 @@ export default async function CatalogPage({
               {/* Identity: artist — title, then label · genre · condition, then dates */}
               <div className="min-w-0 flex-1 space-y-0.5 text-sm">
                 <p className="truncate">
-                  <span className="font-semibold">{product.artist}</span>
+                  <span className="font-semibold">
+                    {joinArtistNames(product.productArtists)}
+                  </span>
                   <span className="text-admin-ink-muted"> — </span>
                   <span>{product.title}</span>
                 </p>

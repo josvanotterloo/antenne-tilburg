@@ -13,16 +13,23 @@ import {
 import { db } from "@/lib/db";
 
 const OLD = new Date("2026-06-01T10:00:00Z");
-const row = (over: Record<string, unknown>) => ({
-  artist: "Vril",
-  catalogNumber: "ZR-001",
-  quantity: 1,
-  createdAt: OLD,
-  updatedAt: OLD,
-  label: { name: "Zulema Records" },
-  genre: { name: "Techno" },
-  ...over,
-});
+// `artist` is a convenience override: it derives both primaryArtistName (the
+// sort key) and a single-artist productArtists link (the display join).
+const row = (over: Record<string, unknown> = {}) => {
+  const { artist, ...rest } = over as { artist?: string };
+  const name = artist ?? "Vril";
+  return {
+    primaryArtistName: name,
+    productArtists: [{ position: 0, artist: { name } }],
+    catalogNumber: "ZR-001",
+    quantity: 1,
+    createdAt: OLD,
+    updatedAt: OLD,
+    label: { name: "Zulema Records" },
+    genre: { name: "Techno" },
+    ...rest,
+  };
+};
 
 describe("getNewArrivals", () => {
   beforeEach(() => vi.mocked(db.product.findMany).mockResolvedValue([] as never));
@@ -34,8 +41,12 @@ describe("getNewArrivals", () => {
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { inStock: true, createdAt: { gte: start, lt: end } },
-        orderBy: [{ genre: { name: "asc" } }, { artist: "asc" }],
-        include: { label: true, genre: true },
+        orderBy: [{ genre: { name: "asc" } }, { primaryArtistName: "asc" }],
+        include: {
+          label: true,
+          genre: true,
+          productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+        },
       }),
     );
   });
@@ -54,6 +65,20 @@ describe("groupArrivalsByGenre", () => {
       "Aleksi Perälä",
       "Vril",
     ]);
+  });
+
+  it("renders multiple artists joined by \" / \" in genre/sort order by the primary artist", () => {
+    const groups = groupArrivalsByGenre([
+      row({
+        primaryArtistName: "Jeff Mills",
+        productArtists: [
+          { position: 0, artist: { name: "Jeff Mills" } },
+          { position: 1, artist: { name: "Surgeon" } },
+        ],
+      }),
+    ] as never);
+
+    expect(groups[0].items[0].artist).toBe("Jeff Mills / Surgeon");
   });
 
   it("marks restocks (updated >60s after creation, stock remaining)", () => {

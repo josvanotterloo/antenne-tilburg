@@ -21,6 +21,7 @@ import {
   activeLink,
   filterHref,
   idleLink,
+  many,
   one,
   parseCondition,
   resolveFilterId,
@@ -32,8 +33,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Stock" };
 
 const stockHref = (
-  current: Record<string, string | undefined>,
-  patch: Record<string, string | undefined>,
+  current: Record<string, string | string[] | undefined>,
+  patch: Record<string, string | string[] | undefined>,
 ) => filterHref("/stock", current, patch);
 
 const SORTS = [
@@ -51,9 +52,9 @@ export default async function StockPage({
   // Sidebar filters are Genre + Condition only. Artist and label aren't sidebar
   // facets — they arrive via the clickable artist/label links on products (and are
   // shown as removable chips). Product type / just_in params are still ignored.
+  const artistIds = many(sp.artist);
   const p = {
     q: one(sp.q),
-    artist: one(sp.artist),
     genre: one(sp.genre),
     label: one(sp.label),
     condition: parseCondition(one(sp.condition)),
@@ -62,15 +63,25 @@ export default async function StockPage({
     view: one(sp.view) === "grid" ? "grid" : undefined,
     page: one(sp.page),
   } as Record<string, string | undefined>;
+  // Includes the (possibly multi-valued) artist filter, for hrefs that must
+  // preserve it (sort/pagination/search) — `p` itself stays single-valued for
+  // the simple filters and the hidden-input preservation loop below.
+  const current: Record<string, string | string[] | undefined> = {
+    ...p,
+    artist: artistIds.length ? artistIds : undefined,
+  };
 
-  const [genres, labels] = await Promise.all([
+  const [genres, labels, activeArtists] = await Promise.all([
     db.genre.findMany({ orderBy: { name: "asc" } }),
     db.label.findMany({ orderBy: { name: "asc" } }),
+    artistIds.length
+      ? db.artist.findMany({ where: { id: { in: artistIds } } })
+      : Promise.resolve([]),
   ]);
 
   const result = await getCatalogPage({
     q: p.q,
-    artist: p.artist,
+    artistIds,
     genreId: resolveFilterId(genres, p.genre),
     labelId: resolveFilterId(labels, p.label),
     condition: p.condition as "NEW" | "SECONDHAND" | undefined,
@@ -82,28 +93,30 @@ export default async function StockPage({
 
   // Keyed by filter type, not display label: two different filters can share a
   // label (e.g. genre "House" and label "House", or q equal to a filter value),
-  // which would otherwise collide as React keys.
+  // which would otherwise collide as React keys. One chip per active artist id.
   const activeChips = [
-    p.q && { key: "q", label: `“${p.q}”`, href: stockHref(p, { q: undefined }) },
-    p.artist && {
-      key: "artist",
-      label: p.artist,
-      href: stockHref(p, { artist: undefined }),
-    },
+    p.q && { key: "q", label: `“${p.q}”`, href: stockHref(current, { q: undefined }) },
+    ...activeArtists.map((a) => ({
+      key: `artist-${a.id}`,
+      label: a.name,
+      href: stockHref(current, {
+        artist: artistIds.filter((id) => id !== a.id),
+      }),
+    })),
     p.genre && {
       key: "genre",
       label: p.genre,
-      href: stockHref(p, { genre: undefined }),
+      href: stockHref(current, { genre: undefined }),
     },
     p.label && {
       key: "label",
       label: p.label,
-      href: stockHref(p, { label: undefined }),
+      href: stockHref(current, { label: undefined }),
     },
     p.condition && {
       key: "condition",
       label: p.condition,
-      href: stockHref(p, { condition: undefined }),
+      href: stockHref(current, { condition: undefined }),
     },
   ].filter(Boolean) as FilterChip[];
 
@@ -123,9 +136,11 @@ export default async function StockPage({
           className="flex-1 border border-hairline bg-canvas px-3 py-2 font-mono text-sm text-ink placeholder:text-ink-muted focus-visible:border-signal"
         />
         {/* preserve active filters when searching */}
-        {["artist", "genre", "label", "condition", "sort", "order", "view"].map(
-          (k) =>
-            p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
+        {artistIds.map((id) => (
+          <input key={`artist-${id}`} type="hidden" name="artist" value={id} />
+        ))}
+        {["genre", "label", "condition", "sort", "order", "view"].map((k) =>
+          p[k] ? <input key={k} type="hidden" name={k} value={p[k]} /> : null,
         )}
           <button
             type="submit"
@@ -146,9 +161,9 @@ export default async function StockPage({
             active={p.genre}
             param="genre"
             basePath="/stock"
-            current={p}
+            current={current}
           />
-          <ConditionFilter basePath="/stock" current={p} />
+          <ConditionFilter basePath="/stock" current={current} />
         </aside>
 
         <section className="space-y-4">
@@ -165,7 +180,7 @@ export default async function StockPage({
                 return (
                   <Link
                     key={s.key}
-                    href={stockHref(p, { sort: s.key, order: s.order })}
+                    href={stockHref(current, { sort: s.key, order: s.order })}
                     className={active ? activeLink : idleLink}
                   >
                     {s.label}
@@ -174,7 +189,7 @@ export default async function StockPage({
               })}
               <span className="text-hairline">|</span>
               <Link
-                href={stockHref(p, {
+                href={stockHref(current, {
                   view: p.view === "grid" ? undefined : "grid",
                   page: p.page,
                 })}
@@ -210,7 +225,7 @@ export default async function StockPage({
           <Pagination
             page={result.page}
             pageCount={result.pageCount}
-            current={p}
+            current={current}
           />
         </section>
       </div>
@@ -221,12 +236,21 @@ export default async function StockPage({
 function ProductCard({ product }: { product: CatalogProduct }) {
   return (
     <div className="border border-hairline p-3 transition-colors duration-150 ease-out hover:border-signal">
-      <Link
-        href={stockArtistHref(product.artist)}
-        className="block font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
-      >
-        {product.artist}
-      </Link>
+      <div className="font-medium text-ink">
+        {[...product.productArtists]
+          .sort((a, b) => a.position - b.position)
+          .map((pa, i) => (
+            <Fragment key={pa.artistId}>
+              {i > 0 && " / "}
+              <Link
+                href={stockArtistHref(pa.artistId)}
+                className="transition-colors duration-150 ease-out hover:text-signal"
+              >
+                {pa.artist.name}
+              </Link>
+            </Fragment>
+          ))}
+      </div>
       <Link
         href={`/stock/${product.id}`}
         className="block text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
@@ -277,7 +301,7 @@ function Pagination({
 }: {
   page: number;
   pageCount: number;
-  current: Record<string, string | undefined>;
+  current: Record<string, string | string[] | undefined>;
 }) {
   if (pageCount <= 1) return null;
   const pages = catalogPageNumbers(page, pageCount);

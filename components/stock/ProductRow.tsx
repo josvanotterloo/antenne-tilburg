@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 
 import {
@@ -32,12 +33,21 @@ export function ProductRow({
   return (
     <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
       <span className="min-w-0 flex-1">
-        <Link
-          href={stockArtistHref(product.artist)}
-          className="font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
-        >
-          {product.artist}
-        </Link>
+        <span>
+          {[...product.productArtists]
+            .sort((a, b) => a.position - b.position)
+            .map((pa, i) => (
+              <Fragment key={pa.artistId}>
+                {i > 0 && " / "}
+                <Link
+                  href={stockArtistHref(pa.artistId)}
+                  className="font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
+                >
+                  {pa.artist.name}
+                </Link>
+              </Fragment>
+            ))}
+        </span>
         <span className="text-ink-muted"> — </span>
         <Link
           href={`/stock/${product.id}`}

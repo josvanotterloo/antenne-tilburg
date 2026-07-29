@@ -21,7 +21,9 @@ import { notFound } from "next/navigation";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   catalogNumber: "ZR-001",
   price: "24.99",
@@ -62,7 +64,7 @@ describe("/stock/[id] detail", () => {
     render(await call("p1"));
     expect(screen.getAllByRole("link", { name: "Vril" })[0]).toHaveAttribute(
       "href",
-      "/stock?artist=Vril",
+      "/stock?artist=a1",
     );
     expect(
       screen.getAllByRole("link", { name: "Zulema Records" })[0],

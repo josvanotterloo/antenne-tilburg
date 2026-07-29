@@ -25,7 +25,10 @@ describe("GET /api/admin/newsletter/arrivals", () => {
   it("returns grouped arrivals for a valid range", async () => {
     vi.mocked(db.product.findMany).mockResolvedValue([
       {
-        artist: "Vril",
+        primaryArtistName: "Vril",
+        productArtists: [
+          { position: 0, artist: { name: "Vril" } },
+        ],
         catalogNumber: "ZR-001",
         quantity: 1,
         createdAt: new Date("2026-07-14T10:00:00Z"),

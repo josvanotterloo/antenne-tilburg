@@ -15,7 +15,9 @@ const RECENT = new Date("2026-07-10T10:00:00Z"); // well over 60s after OLD
 
 const product = (over: Record<string, unknown> = {}) => ({
   id: "p1",
-  artist: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   price: "24.99",
   condition: "NEW",
@@ -65,5 +67,40 @@ describe("ProductRow — RESTOCK badge", () => {
     );
     expect(screen.getByText(/just in/i)).toBeInTheDocument();
     expect(screen.getByText(/restock/i)).toBeInTheDocument();
+  });
+});
+
+describe("ProductRow — multiple artists", () => {
+  it("renders a single artist as before", () => {
+    render(<ProductRow product={product() as never} />);
+    expect(screen.getByRole("link", { name: "Vril" })).toHaveAttribute(
+      "href",
+      "/stock?artist=a1",
+    );
+  });
+
+  it('renders two artists joined by " / ", each independently clickable', () => {
+    render(
+      <ProductRow
+        product={
+          product({
+            productArtists: [
+              { position: 0, artistId: "a1", artist: { id: "a1", name: "Jeff Mills" } },
+              { position: 1, artistId: "a2", artist: { id: "a2", name: "Surgeon" } },
+            ],
+          }) as never
+        }
+      />,
+    );
+    expect(screen.getByRole("link", { name: "Jeff Mills" })).toHaveAttribute(
+      "href",
+      "/stock?artist=a1",
+    );
+    expect(screen.getByRole("link", { name: "Surgeon" })).toHaveAttribute(
+      "href",
+      "/stock?artist=a2",
+    );
+    const wrapper = screen.getByRole("link", { name: "Jeff Mills" }).parentElement;
+    expect(wrapper).toHaveTextContent("Jeff Mills / Surgeon");
   });
 });

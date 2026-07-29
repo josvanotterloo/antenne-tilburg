@@ -40,10 +40,11 @@ const OPENING_HOURS = [
 ];
 
 // Prices are strings to preserve exact Decimal precision (no float rounding).
+// `artists` is ordered — index 0 is the primary artist (see primaryArtistName).
 const SAMPLE_PRODUCTS = [
   {
     title: "Torus",
-    artist: "Vril",
+    artists: ["Vril"],
     label: "Zulema Records",
     productType: "LP",
     genre: "Techno",
@@ -54,7 +55,7 @@ const SAMPLE_PRODUCTS = [
   },
   {
     title: "Can You Feel It",
-    artist: "Mr. Fingers",
+    artists: ["Mr. Fingers"],
     label: "Up Ya",
     productType: '12"',
     genre: "House",
@@ -65,7 +66,7 @@ const SAMPLE_PRODUCTS = [
   },
   {
     title: "Substrata",
-    artist: "Biosphere",
+    artists: ["Biosphere"],
     label: "Dirty Carpets",
     productType: "Tape",
     genre: "Ambient",
@@ -73,6 +74,19 @@ const SAMPLE_PRODUCTS = [
     price: "12.99",
     quantity: 1,
     description: "Arctic ambient on cassette — new stock.",
+  },
+  {
+    // Deliberate multi-artist ("split") fixture — exercises the "Artist1 /
+    // Artist2" join everywhere it renders (dev/manual verification).
+    title: "Frequencies Split",
+    artists: ["Jeff Mills", "Surgeon"],
+    label: "Warp Records",
+    productType: '12"',
+    genre: "Techno",
+    condition: Condition.NEW,
+    price: "16.99",
+    quantity: 2,
+    description: "Two-track split, one side each — mastered loud.",
   },
 ];
 
@@ -151,18 +165,30 @@ async function main() {
   }
 
   // --- Sample products ---
-  // Product has no natural unique key, so guard on title + artist to stay
-  // idempotent across re-seeds. Labels/types/genres are connected by unique name.
+  // Product has no natural unique key, so guard on title + primary artist to
+  // stay idempotent across re-seeds. Labels/types/genres are connected by
+  // unique name; artists are upserted by name the same way.
   for (const product of SAMPLE_PRODUCTS) {
     const existing = await prisma.product.findFirst({
-      where: { title: product.title, artist: product.artist },
+      where: { title: product.title, primaryArtistName: product.artists[0] },
     });
     if (existing) continue;
+
+    const artistLinks = await Promise.all(
+      product.artists.map(async (name, position) => {
+        const artist = await prisma.artist.upsert({
+          where: { name },
+          update: {},
+          create: { name },
+        });
+        return { artistId: artist.id, position };
+      }),
+    );
 
     await prisma.product.create({
       data: {
         title: product.title,
-        artist: product.artist,
+        primaryArtistName: product.artists[0],
         condition: product.condition,
         price: product.price,
         quantity: product.quantity,
@@ -171,6 +197,7 @@ async function main() {
         label: { connect: { name: product.label } },
         productType: { connect: { name: product.productType } },
         genre: { connect: { name: product.genre } },
+        productArtists: { create: artistLinks },
       },
     });
   }

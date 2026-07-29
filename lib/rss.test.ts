@@ -7,7 +7,7 @@ const base = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
 const PRODUCT: FeedProduct = {
   id: "p1",
-  artist: "Vril",
+  artistDisplay: "Vril",
   title: "Torus",
   price: "24.99",
   label: { name: "Zulema Records" },
@@ -63,7 +63,7 @@ describe("productFeed", () => {
     const second: FeedProduct = {
       ...PRODUCT,
       id: "p2",
-      artist: "Surgeon",
+      artistDisplay: "Surgeon",
       title: "Basictonalvocabulary",
     };
     const { xml } = await xmlOf([PRODUCT, second]);
@@ -76,7 +76,7 @@ describe("productFeed", () => {
   it("escapes XML special characters in title and description text", async () => {
     const hostile: FeedProduct = {
       ...PRODUCT,
-      artist: `A&B <C> "D" 'E'`,
+      artistDisplay: `A&B <C> "D" 'E'`,
       label: { name: `L&B <tag>` },
     };
     const { xml } = await xmlOf([hostile]);

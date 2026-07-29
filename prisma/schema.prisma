@@ -55,35 +55,69 @@ model ProductType {
   updatedAt DateTime  @updatedAt
 }
 
+// Artists are many-to-many with Product (splits, compilations,
+// collaborations) via the explicit ProductArtist join below, which carries
+// a `position` so display/sort order is well-defined — Prisma's implicit
+// m2m can't carry that extra column.
+model Artist {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  productArtists ProductArtist[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model ProductArtist {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  artistId  String
+  artist    Artist  @relation(fields: [artistId], references: [id])
+  // 0 = primary artist. Drives display join order and mirrors into
+  // Product.primaryArtistName for cheap sorting (see below).
+  position  Int     @default(0)
+
+  @@unique([productId, artistId])
+  @@index([productId])
+  @@index([artistId])
+}
+
 // Vinyl / tape records. `price` is present now so online purchasing can be
 // added later without a schema migration. "Just In" is derived from createdAt
 // (< 30 days) — no manual flag.
 model Product {
-  id            String      @id @default(cuid())
-  title         String
-  artist        String
-  catalogNumber String?
-  labelId       String
-  label         Label       @relation(fields: [labelId], references: [id])
-  productTypeId String
-  productType   ProductType @relation(fields: [productTypeId], references: [id])
-  genreId       String
-  genre         Genre       @relation(fields: [genreId], references: [id])
-  condition     Condition
-  price         Decimal     @db.Decimal(10, 2)
-  description   String?
-  coverImage    String?
-  quantity      Int         @default(0)
+  id                String          @id @default(cuid())
+  title             String
+  productArtists    ProductArtist[]
+  // Denormalized copy of the position-0 artist's name — exists purely so
+  // catalog sort and the tsvector don't need a per-row join/aggregate. Kept
+  // in sync on every product write and on artist rename (see lib/product-input.ts
+  // and app/api/admin/artists/[id]/route.ts).
+  primaryArtistName String
+  catalogNumber     String?
+  labelId           String
+  label             Label           @relation(fields: [labelId], references: [id])
+  productTypeId     String
+  productType       ProductType     @relation(fields: [productTypeId], references: [id])
+  genreId           String
+  genre             Genre           @relation(fields: [genreId], references: [id])
+  condition         Condition
+  price             Decimal         @db.Decimal(10, 2)
+  description       String?
+  coverImage        String?
+  quantity          Int             @default(0)
   // Derived from quantity (> 0) and kept in sync on every write; public queries
   // filter on it. See lib/product-input.ts (toProductData) and the sell-one route.
-  inStock       Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  inStock           Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   // Postgres full-text search column — a generated STORED tsvector defined in a
   // manual migration. Declared here as Unsupported so Prisma treats it as
-  // existing (no drift) but does not try to query it directly.
-  searchVector  Unsupported("tsvector")? @map("search_vector")
+  // existing (no drift) but does not try to query it directly. Covers
+  // title + description only — artist matching goes through ProductArtist/
+  // Artist instead (a generated column can't reference a joined table).
+  searchVector Unsupported("tsvector")? @map("search_vector")
 
   @@index([labelId])
   @@index([productTypeId])
@@ -91,6 +125,7 @@ model Product {
   @@index([condition])
   @@index([inStock])
   @@index([createdAt])
+  @@index([primaryArtistName])
 }
 
 // Blog posts (new arrivals, events, restocks). Also feeds SEO via fresh content.

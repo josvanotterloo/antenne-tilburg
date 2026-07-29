@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { joinArtistNames } from "@/lib/catalog";
 import { productFeed } from "@/lib/rss";
 
 export const dynamic = "force-dynamic";
@@ -9,13 +10,21 @@ export async function GET() {
     where: { inStock: true },
     orderBy: { createdAt: "desc" },
     take: 50,
-    include: { label: true, genre: true, productType: true },
+    include: {
+      label: true,
+      genre: true,
+      productType: true,
+      productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+    },
   });
 
   return productFeed({
     title: "Antenne Recordshop — New Arrivals",
     description: "Latest vinyl & tapes at Antenne Recordshop, Tilburg.",
-    products,
+    products: products.map((p) => ({
+      ...p,
+      artistDisplay: joinArtistNames(p.productArtists),
+    })),
     pubDate: (p) => p.createdAt,
   });
 }

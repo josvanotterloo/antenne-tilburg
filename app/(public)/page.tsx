@@ -1,7 +1,12 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-import { getLatestProducts, isJustIn, type CatalogProduct } from "@/lib/catalog";
+import {
+  getLatestProducts,
+  isJustIn,
+  joinArtistNames,
+  type CatalogProduct,
+} from "@/lib/catalog";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
 import { getOpeningHours, toOpeningHoursSpecification } from "@/lib/opening-hours";
 import { localBusinessJsonLd } from "@/lib/structured-data";
@@ -176,7 +181,7 @@ function JustInRow({ product }: { product: CatalogProduct }) {
     >
       <span className="min-w-0 flex-1">
         <span className="font-medium text-ink transition-colors duration-150 ease-out group-hover:text-signal">
-          {product.artist}
+          {joinArtistNames(product.productArtists)}
         </span>
         <span className="text-ink-muted"> — {product.title}</span>
         {isJustIn(product.createdAt) && (

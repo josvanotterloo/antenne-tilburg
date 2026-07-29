@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
+import { MultiCombobox } from "@/components/ui/MultiCombobox";
 import { Field } from "@/components/admin/Field";
 
 export interface ProductFormValues {
   id: string;
-  artist: string;
+  // Ordered — position in this array is the display/sort order (see
+  // lib/catalog.ts's joinArtistNames and Product.primaryArtistName).
+  artists: ComboboxOption[];
   title: string;
   catalogNumber: string | null;
   // Selected reference options carry the name so the combobox can display it —
@@ -32,7 +35,9 @@ interface ProductFormProps {
 export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
 
-  const [artist, setArtist] = useState(product?.artist ?? "");
+  const [artists, setArtists] = useState<ComboboxOption[]>(
+    product?.artists ?? [],
+  );
   const [title, setTitle] = useState(product?.title ?? "");
   const [catalogNumber, setCatalogNumber] = useState(
     product?.catalogNumber ?? "",
@@ -105,7 +110,7 @@ export function ProductForm({ product }: ProductFormProps) {
           method: product ? "PATCH" : "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            artist,
+            artistIds: artists.map((a) => a.id),
             title,
             catalogNumber,
             labelId: label?.id ?? null,
@@ -129,13 +134,14 @@ export function ProductForm({ product }: ProductFormProps) {
       onSubmit={handleSubmit}
       className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
     >
-      <Field label="Artist" htmlFor="artist">
-        <input
-          id="artist"
+      <Field label="Artists" htmlFor="artists">
+        <MultiCombobox
+          id="artists"
+          label="Artists"
+          endpoint="/api/admin/artists"
+          selected={artists}
+          onChange={setArtists}
           required
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-          className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
 

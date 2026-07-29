@@ -48,7 +48,11 @@ export async function GET(req: Request) {
       {
         products: products.map((p) => ({
           id: p.id,
-          artist: p.artist,
+          // Deliberate interface change: ordered artists, not a single string
+          // — a release can have multiple (splits, comps, collaborations).
+          artists: [...p.productArtists]
+            .sort((a, b) => a.position - b.position)
+            .map((pa) => ({ id: pa.artist.id, name: pa.artist.name })),
           title: p.title,
           label: p.label.name,
           catalogNumber: p.catalogNumber,

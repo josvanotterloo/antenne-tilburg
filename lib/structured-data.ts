@@ -1,4 +1,8 @@
-import { composeProductDescription, type CatalogProduct } from "@/lib/catalog";
+import {
+  composeProductDescription,
+  joinArtistNames,
+  type CatalogProduct,
+} from "@/lib/catalog";
 import type { OpeningHoursSpec } from "@/lib/opening-hours";
 
 const STORE_NAME = "Antenne Recordshop";
@@ -10,7 +14,7 @@ export function productJsonLd(product: CatalogProduct) {
   return {
     "@context": "https://schema.org",
     "@type": ["Product", "MusicRecording"],
-    name: `${product.artist} — ${product.title}`,
+    name: `${joinArtistNames(product.productArtists)} — ${product.title}`,
     description: composeProductDescription(product),
     brand: { "@type": "Brand", name: product.label.name },
     ...(product.catalogNumber && { sku: product.catalogNumber }),

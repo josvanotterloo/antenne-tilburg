@@ -13,7 +13,12 @@ export async function GET(_req: Request, ctx: RouteContext) {
   const { id } = await ctx.params;
   const product = await db.product.findUnique({
     where: { id },
-    include: { label: true, genre: true, productType: true },
+    include: {
+      label: true,
+      genre: true,
+      productType: true,
+      productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+    },
   });
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -31,10 +36,23 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
 
+  const primaryArtist = await db.artist.findUnique({
+    where: { id: parsed.data.artistIds[0] },
+  });
+  if (!primaryArtist) {
+    return NextResponse.json(
+      { error: "Selected artist no longer exists" },
+      { status: 400 },
+    );
+  }
+
   try {
     const updated = await db.product.update({
       where: { id },
-      data: toProductData(parsed.data),
+      data: toProductData(parsed.data, {
+        primaryArtistName: primaryArtist.name,
+        mode: "update",
+      }),
     });
     return NextResponse.json(updated);
   } catch (error) {

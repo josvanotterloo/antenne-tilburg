@@ -87,7 +87,10 @@ vi.mock("@/lib/db", () => {
       product: {
         findMany: vi.fn(async () => [
           {
-            artist: "Vril",
+            primaryArtistName: "Vril",
+            productArtists: [
+              { position: 0, artist: { name: "Vril" } },
+            ],
             catalogNumber: "ZR-001",
             quantity: 1,
             createdAt: new Date(),

@@ -1,4 +1,4 @@
-import { getBackInStockProducts } from "@/lib/catalog";
+import { getBackInStockProducts, joinArtistNames } from "@/lib/catalog";
 import { productFeed } from "@/lib/rss";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,10 @@ export async function GET() {
     title: "Antenne Recordshop — Back In Stock",
     description:
       "Restocked vinyl & tapes at Antenne Recordshop, Tilburg — back on the shelf in the last 30 days.",
-    products,
+    products: products.map((p) => ({
+      ...p,
+      artistDisplay: joinArtistNames(p.productArtists),
+    })),
     pubDate: (p) => p.updatedAt,
   });
 }

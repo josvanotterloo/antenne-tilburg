@@ -94,7 +94,10 @@ describe("POST /api/admin/newsletter/send", () => {
   it("assembles all three parts into the sent email", async () => {
     vi.mocked(db.product.findMany).mockResolvedValue([
       {
-        artist: "Vril",
+        primaryArtistName: "Vril",
+        productArtists: [
+          { position: 0, artist: { name: "Vril" } },
+        ],
         catalogNumber: "ZR-001",
         quantity: 1,
         createdAt: new Date("2026-07-14T10:00:00Z"),

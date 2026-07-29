@@ -17,8 +17,30 @@ vi.mock("@/lib/db", () => {
     genre: { id: "g1", name: "Techno" },
     productType: { id: "t1", name: "LP" },
   };
+  const ARTISTS: Record<string, { id: string; name: string }> = {
+    a1: { id: "a1", name: "Vril" },
+  };
+  // Resolves the { create: [{ artistId, position }] } nested write (see
+  // lib/product-input.ts's toProductData) into the shape a real
+  // `include: { productArtists: { include: { artist: true } } }` query would
+  // return — this fake store doesn't run Prisma's own resolution.
+  function resolveProductArtists(data: Record<string, unknown>) {
+    const pa = data.productArtists as
+      | { create?: { artistId: string; position: number }[] }
+      | undefined;
+    return (pa?.create ?? []).map(({ artistId, position }) => ({
+      position,
+      artistId,
+      artist: ARTISTS[artistId],
+    }));
+  }
   return {
     db: {
+      artist: {
+        findUnique: vi.fn(async ({ where }: { where: { id: string } }) =>
+          ARTISTS[where.id] ?? null,
+        ),
+      },
       product: {
         create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
           const now = new Date();
@@ -28,6 +50,9 @@ vi.mock("@/lib/db", () => {
             updatedAt: now,
             ...data,
             ...ROW_RELATIONS,
+            // Overrides the raw { create: [...] } write shape from ...data
+            // with the resolved, include-shaped array.
+            productArtists: resolveProductArtists(data),
           };
           store.set(row.id, row);
           return row;
@@ -61,7 +86,7 @@ import { GET } from "@/app/api/catalog/route";
 const feature = await loadFeature("features/admin-product.feature");
 
 const VALID_PRODUCT = {
-  artist: "Vril",
+  artistIds: ["a1"],
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
@@ -98,7 +123,7 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
       const res = await GET(new Request("http://localhost/api/catalog"));
       const body = await res.json();
       expect(body.products).toHaveLength(1);
-      expect(body.products[0].artist).toBe("Vril");
+      expect(body.products[0].artists).toEqual([{ id: "a1", name: "Vril" }]);
       expect(body.products[0].title).toBe("Torus");
     });
   });

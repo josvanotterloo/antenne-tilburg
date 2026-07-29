@@ -16,7 +16,12 @@ export default async function EditProductPage({
   // options themselves are searched server-side as the user types.
   const product = await db.product.findUnique({
     where: { id },
-    include: { label: true, genre: true, productType: true },
+    include: {
+      label: true,
+      genre: true,
+      productType: true,
+      productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+    },
   });
 
   if (!product) notFound();
@@ -27,7 +32,10 @@ export default async function EditProductPage({
       <ProductForm
         product={{
           id: product.id,
-          artist: product.artist,
+          artists: product.productArtists.map((pa) => ({
+            id: pa.artist.id,
+            name: pa.artist.name,
+          })),
           title: product.title,
           catalogNumber: product.catalogNumber,
           label: { id: product.label.id, name: product.label.name },

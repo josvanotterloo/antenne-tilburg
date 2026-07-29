@@ -15,11 +15,31 @@ const withCount = {
   include: { _count: { select: { products: true } } },
 };
 
+type ArtistWithCount = {
+  id: string;
+  name: string;
+  _count: { productArtists: number };
+};
+
+// Remapped to the same { id, name, productCount } shape as the other lists
+// here — ReferenceSection doesn't need to know Artist's relation is a join
+// table (`productArtists`), not a direct FK count (`products`).
+const toArtistItems = (rows: ArtistWithCount[]): ReferenceItem[] =>
+  rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    productCount: r._count.productArtists,
+  }));
+
 export default async function ReferenceDataPage() {
-  const [labels, genres, productTypes] = await Promise.all([
+  const [labels, genres, productTypes, artists] = await Promise.all([
     db.label.findMany(withCount),
     db.genre.findMany(withCount),
     db.productType.findMany(withCount),
+    db.artist.findMany({
+      orderBy: { name: "asc" },
+      include: { _count: { select: { productArtists: true } } },
+    }),
   ]);
 
   return (
@@ -27,7 +47,7 @@ export default async function ReferenceDataPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Reference data</h1>
         <p className="text-sm text-admin-ink-muted">
-          Labels, genres and product types used across the catalog.
+          Labels, genres, product types and artists used across the catalog.
         </p>
       </div>
 
@@ -46,6 +66,11 @@ export default async function ReferenceDataPage() {
           title="Product Types"
           endpoint="/api/admin/product-types"
           initialItems={toItems(productTypes)}
+        />
+        <ReferenceSection
+          title="Artists"
+          endpoint="/api/admin/artists"
+          initialItems={toArtistItems(artists)}
         />
       </div>
     </div>

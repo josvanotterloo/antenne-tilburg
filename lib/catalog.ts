@@ -13,8 +13,9 @@ export type CatalogSort = "date" | "artist" | "label";
 export type SortOrder = "asc" | "desc";
 
 export interface CatalogFilters {
-  /** Exact artist name (case-insensitive) — powers the clickable artist link. */
-  artist?: string | null;
+  /** Matches if ANY linked artist is in this set — powers the clickable
+   * artist chips (multiple chips active = OR). */
+  artistIds?: string[] | null;
   genreId?: string | null;
   labelId?: string | null;
   productTypeId?: string | null;
@@ -31,7 +32,9 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
   if (f.onlyInStock) where.inStock = true;
   if (f.condition) where.condition = f.condition;
-  if (f.artist) where.artist = { equals: f.artist, mode: "insensitive" };
+  if (f.artistIds?.length) {
+    where.productArtists = { some: { artistId: { in: f.artistIds } } };
+  }
   if (f.genreId) where.genreId = f.genreId;
   if (f.labelId) where.labelId = f.labelId;
   if (f.productTypeId) where.productTypeId = f.productTypeId;
@@ -45,10 +48,22 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   return where;
 }
 
+// Ordered display name for a product's artist(s), joined "Artist1 / Artist2"
+// — shared by every rendering surface (listing rows, detail page, RSS,
+// structured data, newsletter).
+export function joinArtistNames(
+  productArtists: { position: number; artist: { name: string } }[],
+): string {
+  return [...productArtists]
+    .sort((a, b) => a.position - b.position)
+    .map((pa) => pa.artist.name)
+    .join(" / ");
+}
+
 // The product's own description, or a composed fallback — shared by the public
 // detail page's <meta name="description"> and its Product JSON-LD.
 export function composeProductDescription(p: {
-  artist: string;
+  productArtists: { position: number; artist: { name: string } }[];
   title: string;
   description: string | null;
   productType: { name: string };
@@ -56,14 +71,15 @@ export function composeProductDescription(p: {
 }): string {
   return (
     p.description ??
-    `${p.artist} — ${p.title} (${p.productType.name}) on ${p.label.name}.`
+    `${joinArtistNames(p.productArtists)} — ${p.title} (${p.productType.name}) on ${p.label.name}.`
   );
 }
 
-// Fresh /stock URLs filtering by a single artist or label — used by the clickable
-// artist/label links on the listing and detail pages.
-export const stockArtistHref = (artist: string) =>
-  `/stock?artist=${encodeURIComponent(artist)}`;
+// Fresh /stock URLs filtering by a single artist (by id — stable across
+// renames) or label — used by the clickable artist/label links on the
+// listing and detail pages.
+export const stockArtistHref = (artistId: string) =>
+  `/stock?artist=${encodeURIComponent(artistId)}`;
 export const stockLabelHref = (label: string) =>
   `/stock?label=${encodeURIComponent(label)}`;
 
@@ -77,7 +93,7 @@ export function buildCatalogOrderBy(
     order === "asc" ? "asc" : order === "desc" ? "desc" : undefined;
   switch (sort) {
     case "artist":
-      return [{ artist: explicit ?? "asc" }, { title: "asc" }];
+      return [{ primaryArtistName: explicit ?? "asc" }, { title: "asc" }];
     case "label":
       return { label: { name: explicit ?? "asc" } };
     case "date":
@@ -119,11 +135,15 @@ export function isJustIn(
   return now - new Date(createdAt).getTime() < JUST_IN_DAYS * 86_400_000;
 }
 
-// Catalog search: the generated `search_vector` (full-word FTS) OR'd with pg_trgm
-// trigram matching on artist/title — ILIKE for substrings/partials ("bio" and
-// "sphere" both match "Biosphere") and the `%` similarity operator for fuzzy/typo
-// matches. Returns matching product ids to inject into the Prisma where clause.
-// Trigram GIN indexes (migration `catalog_fuzzy_search`) keep it fast.
+// Catalog search: the generated `search_vector` (full-word FTS over title +
+// description) OR'd with pg_trgm trigram matching on title — ILIKE for
+// substrings/partials ("bio" and "sphere" both match "Biosphere") and the `%`
+// similarity operator for fuzzy/typo matches — OR'd with an EXISTS subquery
+// matching any linked artist's name the same way (a GENERATED column can't
+// reference a joined table, so artist matching can't live in search_vector
+// itself). Returns matching product ids to inject into the Prisma where
+// clause. Trigram GIN indexes (migrations `catalog_fuzzy_search` and
+// `finalize_artist_entity`) keep it fast.
 export async function searchProductIds(q: string): Promise<string[]> {
   const term = q.trim();
   if (!term) return [];
@@ -131,12 +151,16 @@ export async function searchProductIds(q: string): Promise<string[]> {
   const like = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
   const rows = await db.$queryRaw<{ id: string }[]>(
     Prisma.sql`
-      SELECT id FROM "Product"
-      WHERE search_vector @@ websearch_to_tsquery('english', ${term})
-         OR artist ILIKE ${like}
-         OR title ILIKE ${like}
-         OR artist % ${term}
-         OR title % ${term}
+      SELECT id FROM "Product" p
+      WHERE p.search_vector @@ websearch_to_tsquery('english', ${term})
+         OR p.title ILIKE ${like}
+         OR p.title % ${term}
+         OR EXISTS (
+           SELECT 1 FROM "ProductArtist" pa
+           JOIN "Artist" a ON a.id = pa."artistId"
+           WHERE pa."productId" = p.id
+             AND (a.name ILIKE ${like} OR a.name % ${term})
+         )
     `,
   );
   return rows.map((r) => r.id);
@@ -146,6 +170,10 @@ export const CATALOG_INCLUDE = {
   label: true,
   genre: true,
   productType: true,
+  productArtists: {
+    include: { artist: true },
+    orderBy: { position: "asc" },
+  },
 } as const;
 
 export type CatalogProduct = Prisma.ProductGetPayload<{
@@ -154,7 +182,7 @@ export type CatalogProduct = Prisma.ProductGetPayload<{
 
 export interface CatalogQuery {
   q?: string;
-  artist?: string | null;
+  artistIds?: string[] | null;
   genreId?: string | null;
   labelId?: string | null;
   productTypeId?: string | null;
@@ -184,7 +212,7 @@ export async function getCatalogPage(
     : undefined;
 
   const where = buildCatalogWhere({
-    artist: query.artist,
+    artistIds: query.artistIds,
     genreId: query.genreId,
     labelId: query.labelId,
     productTypeId: query.productTypeId,

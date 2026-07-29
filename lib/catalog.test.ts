@@ -45,10 +45,14 @@ describe("buildCatalogWhere", () => {
     expect(buildCatalogWhere({})).toEqual({});
   });
 
-  it("filters by artist name, case-insensitively", () => {
-    expect(buildCatalogWhere({ artist: "Vril" })).toEqual({
-      artist: { equals: "Vril", mode: "insensitive" },
+  it("filters by any of the given artist ids", () => {
+    expect(buildCatalogWhere({ artistIds: ["a1", "a2"] })).toEqual({
+      productArtists: { some: { artistId: { in: ["a1", "a2"] } } },
     });
+  });
+
+  it("ignores an empty artistIds array", () => {
+    expect(buildCatalogWhere({ artistIds: [] })).toEqual({});
   });
 
   it("maps scalar filters", () => {
@@ -110,13 +114,13 @@ describe("buildCatalogOrderBy", () => {
     expect(buildCatalogOrderBy("date", "asc")).toEqual({ createdAt: "asc" });
   });
 
-  it("sorts by artist (asc default) with title as tiebreaker", () => {
+  it("sorts by primaryArtistName (asc default) with title as tiebreaker", () => {
     expect(buildCatalogOrderBy("artist")).toEqual([
-      { artist: "asc" },
+      { primaryArtistName: "asc" },
       { title: "asc" },
     ]);
     expect(buildCatalogOrderBy("artist", "desc")).toEqual([
-      { artist: "desc" },
+      { primaryArtistName: "desc" },
       { title: "asc" },
     ]);
   });
@@ -197,7 +201,8 @@ describe("searchProductIds", () => {
     };
     expect(arg.text).toContain("websearch_to_tsquery"); // full-word FTS
     expect(arg.text.toUpperCase()).toContain("ILIKE"); // partial / substring
-    expect(arg.text).toMatch(/artist % \$/); // trigram similarity operator
+    expect(arg.text).toContain("EXISTS"); // artist match via ProductArtist/Artist join
+    expect(arg.text).toMatch(/a\.name % \$/); // trigram similarity on Artist.name
     expect(arg.values).toContain("bio"); // FTS + similarity term
     expect(arg.values).toContain("%bio%"); // ILIKE partial pattern
   });
@@ -536,7 +541,9 @@ describe("isRestock", () => {
 
 describe("composeProductDescription", () => {
   const base = {
-    artist: "Vril",
+    productArtists: [
+      { position: 0, artist: { name: "Vril" } },
+    ],
     title: "Torus",
     productType: { name: "LP" },
     label: { name: "Zulema Records" },
@@ -552,6 +559,19 @@ describe("composeProductDescription", () => {
     expect(composeProductDescription({ ...base, description: null })).toBe(
       "Vril — Torus (LP) on Zulema Records.",
     );
+  });
+
+  it("joins multiple artists in the composed fallback", () => {
+    expect(
+      composeProductDescription({
+        ...base,
+        productArtists: [
+          { position: 0, artist: { name: "Jeff Mills" } },
+          { position: 1, artist: { name: "Surgeon" } },
+        ],
+        description: null,
+      }),
+    ).toBe("Jeff Mills / Surgeon — Torus (LP) on Zulema Records.");
   });
 });
 

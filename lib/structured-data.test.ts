@@ -4,7 +4,9 @@ import { productJsonLd, localBusinessJsonLd } from "@/lib/structured-data";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   catalogNumber: "ZR-001",
   price: "24.99",

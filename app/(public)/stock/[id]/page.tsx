@@ -1,4 +1,4 @@
-import { cache } from "react";
+import { Fragment, cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -10,6 +10,7 @@ import {
   stockArtistHref,
   stockLabelHref,
   composeProductDescription,
+  joinArtistNames,
   CATALOG_INCLUDE,
 } from "@/lib/catalog";
 import { productJsonLd } from "@/lib/structured-data";
@@ -26,6 +27,31 @@ const getProduct = cache((id: string) =>
   }),
 );
 
+// Each linked artist is its own clickable filter link, joined by a plain
+// " / " separator — shared by the header and the <dl> artist row below.
+function ArtistLinks({
+  productArtists,
+  className,
+}: {
+  productArtists: { position: number; artistId: string; artist: { name: string } }[];
+  className: string;
+}) {
+  return (
+    <>
+      {[...productArtists]
+        .sort((a, b) => a.position - b.position)
+        .map((pa, i) => (
+          <Fragment key={pa.artistId}>
+            {i > 0 && " / "}
+            <Link href={stockArtistHref(pa.artistId)} className={className}>
+              {pa.artist.name}
+            </Link>
+          </Fragment>
+        ))}
+    </>
+  );
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -37,7 +63,7 @@ export async function generateMetadata({
     return { title: "Not found" };
   }
   return {
-    title: `${product.artist} — ${product.title}`,
+    title: `${joinArtistNames(product.productArtists)} — ${product.title}`,
     description: composeProductDescription(product),
   };
 }
@@ -73,12 +99,10 @@ export default async function ProductDetailPage({
 
       <header className="space-y-2">
         <h1 className="text-balance text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          <Link
-            href={stockArtistHref(product.artist)}
+          <ArtistLinks
+            productArtists={product.productArtists}
             className="transition-colors duration-150 ease-out hover:text-signal"
-          >
-            {product.artist}
-          </Link>{" "}
+          />{" "}
           — {product.title}
           {justIn && (
             <span className="ml-2 align-middle font-mono text-[0.6875rem] font-bold uppercase tracking-[0.06em] text-signal">
@@ -105,12 +129,10 @@ export default async function ProductDetailPage({
       <dl className="grid grid-cols-[8rem_1fr] border-t border-hairline text-sm">
         <dt className={`${dt} border-b border-hairline py-2`}>Artist</dt>
         <dd className="border-b border-hairline py-2">
-          <Link
-            href={stockArtistHref(product.artist)}
+          <ArtistLinks
+            productArtists={product.productArtists}
             className="text-ink transition-colors duration-150 ease-out hover:text-signal"
-          >
-            {product.artist}
-          </Link>
+          />
         </dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Title</dt>
         <dd className="border-b border-hairline py-2 text-ink">{product.title}</dd>

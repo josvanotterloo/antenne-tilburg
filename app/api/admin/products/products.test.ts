@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    artist: { findUnique: vi.fn() },
   },
 }));
 
@@ -32,11 +33,15 @@ const product = db.product as unknown as {
   update: Mock;
   delete: Mock;
 };
+const artist = db.artist as unknown as { findUnique: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
 
 const ROW = {
   id: "p1",
-  artist: "Vril",
+  primaryArtistName: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   catalogNumber: "ZR-001",
   condition: "NEW",
@@ -49,7 +54,7 @@ const ROW = {
 };
 
 const validBody = {
-  artist: "Vril",
+  artistIds: ["a1"],
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
@@ -75,6 +80,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  artist.findUnique.mockResolvedValue({ id: "a1", name: "Vril" });
 });
 
 describe("GET /api/admin/products", () => {
@@ -85,7 +91,11 @@ describe("GET /api/admin/products", () => {
     expect(await res.json()).toEqual([ROW]);
     expect(product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: { label: true, genre: true, productType: true },
+        include: expect.objectContaining({
+          label: true,
+          genre: true,
+          productType: true,
+        }),
       }),
     );
   });
@@ -98,7 +108,8 @@ describe("POST /api/admin/products", () => {
     expect(res.status).toBe(201);
     expect(product.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        artist: "Vril",
+        primaryArtistName: "Vril",
+        productArtists: { create: [{ artistId: "a1", position: 0 }] },
         title: "Torus",
         condition: "NEW",
         price: "24.99",
@@ -109,6 +120,13 @@ describe("POST /api/admin/products", () => {
         productType: { connect: { id: "t1" } },
       }),
     });
+  });
+
+  it("returns 400 when the primary artist no longer exists", async () => {
+    artist.findUnique.mockResolvedValue(null);
+    const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(400);
+    expect(product.create).not.toHaveBeenCalled();
   });
 
   it("accepts and stores a coverImage URL", async () => {
@@ -123,7 +141,7 @@ describe("POST /api/admin/products", () => {
   });
 
   it("rejects invalid input with 400 and does not write", async () => {
-    const res = await POST(jsonReq("POST", { ...validBody, artist: "" }));
+    const res = await POST(jsonReq("POST", { ...validBody, artistIds: [] }));
     expect(res.status).toBe(400);
     expect(product.create).not.toHaveBeenCalled();
   });
@@ -168,8 +186,22 @@ describe("PATCH /api/admin/products/[id]", () => {
     expect(res.status).toBe(200);
     expect(product.update).toHaveBeenCalledWith({
       where: { id: "p1" },
-      data: expect.objectContaining({ artist: "Vril", price: "24.99" }),
+      data: expect.objectContaining({
+        primaryArtistName: "Vril",
+        productArtists: {
+          deleteMany: {},
+          create: [{ artistId: "a1", position: 0 }],
+        },
+        price: "24.99",
+      }),
     });
+  });
+
+  it("returns 400 when the primary artist no longer exists", async () => {
+    artist.findUnique.mockResolvedValue(null);
+    const res = await PATCH(jsonReq("PATCH", validBody), ctx("p1"));
+    expect(res.status).toBe(400);
+    expect(product.update).not.toHaveBeenCalled();
   });
 
   it("rejects invalid input with 400", async () => {

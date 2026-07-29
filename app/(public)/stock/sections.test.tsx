@@ -40,7 +40,9 @@ import { db } from "@/lib/db";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Vril",
+  productArtists: [
+    { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
+  ],
   title: "Torus",
   price: "24.99",
   condition: "NEW",

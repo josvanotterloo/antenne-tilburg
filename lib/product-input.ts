@@ -2,7 +2,7 @@
 // framework-free so it can be unit-tested and reused by POST and PATCH.
 
 export interface ProductInput {
-  artist: string;
+  artistIds: string[];
   title: string;
   catalogNumber: string | null;
   labelId: string;
@@ -19,12 +19,29 @@ export type ParseResult =
   | { ok: true; data: ProductInput }
   | { ok: false; error: string };
 
+// Non-empty array of non-blank string ids, deduped preserving first-seen
+// order (a client-side bug producing a repeated id isn't malicious input,
+// just redundant — silently normalize rather than reject).
+function parseArtistIds(v: unknown): string[] | null {
+  if (!Array.isArray(v) || v.length === 0) return null;
+  const ids: string[] = [];
+  for (const item of v) {
+    if (typeof item !== "string") return null;
+    const trimmed = item.trim();
+    if (!trimmed) return null;
+    if (!ids.includes(trimmed)) ids.push(trimmed);
+  }
+  return ids;
+}
+
 export function parseProductInput(body: unknown): ParseResult {
   const b = (body ?? {}) as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
-  const artist = str(b.artist);
-  if (!artist) return { ok: false, error: "Artist is required" };
+  const artistIds = parseArtistIds(b.artistIds);
+  if (!artistIds) {
+    return { ok: false, error: "At least one artist is required" };
+  }
 
   const title = str(b.title);
   if (!title) return { ok: false, error: "Title is required" };
@@ -78,7 +95,7 @@ export function parseProductInput(body: unknown): ParseResult {
   return {
     ok: true,
     data: {
-      artist,
+      artistIds,
       title,
       catalogNumber: str(b.catalogNumber) || null,
       labelId,
@@ -93,11 +110,21 @@ export function parseProductInput(body: unknown): ParseResult {
   };
 }
 
-// Maps validated input to the Prisma create/update `data` shape (relations by
-// connect). Shared by POST and PATCH so both stay in sync.
-export function toProductData(data: ProductInput) {
+// Maps validated input to the Prisma create/update `data` shape (single
+// relations by connect; artists as an ordered ProductArtist nested write).
+// Shared by POST and PATCH so both stay in sync. `primaryArtistName` is
+// resolved by the route handler (it needs a `db` lookup on artistIds[0],
+// which by this point already exists — the admin form's Quick Add creates
+// new artists immediately, before the product form ever submits) so this
+// function stays pure. `mode` picks the create-vs-update nested-write shape:
+// `deleteMany` is only valid inside an update (full-set replacement each
+// save, matching how label/genre single-FK replacement already behaves) —
+// Prisma's create-nested-write type doesn't have it at all.
+export function toProductData(
+  data: ProductInput,
+  { primaryArtistName, mode }: { primaryArtistName: string; mode: "create" | "update" },
+) {
   return {
-    artist: data.artist,
     title: data.title,
     catalogNumber: data.catalogNumber,
     condition: data.condition,
@@ -110,5 +137,10 @@ export function toProductData(data: ProductInput) {
     label: { connect: { id: data.labelId } },
     genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },
+    primaryArtistName,
+    productArtists: {
+      ...(mode === "update" ? { deleteMany: {} } : {}),
+      create: data.artistIds.map((artistId, position) => ({ artistId, position })),
+    },
   };
 }

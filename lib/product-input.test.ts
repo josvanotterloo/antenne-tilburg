@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 
 const VALID = {
-  artist: "  Vril  ",
+  artistIds: ["a1"],
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
@@ -22,7 +22,7 @@ describe("parseProductInput", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data).toMatchObject({
-      artist: "Vril", // trimmed
+      artistIds: ["a1"],
       title: "Torus",
       catalogNumber: "ZR-001",
       labelId: "l1",
@@ -88,13 +88,26 @@ describe("parseProductInput", () => {
   });
 
   it.each([
-    ["artist", { ...VALID, artist: "  " }],
     ["title", { ...VALID, title: "" }],
     ["labelId", { ...VALID, labelId: "" }],
     ["genreId", { ...VALID, genreId: "" }],
     ["productTypeId", { ...VALID, productTypeId: "" }],
   ])("rejects missing %s", (_field, body) => {
     expect(parseProductInput(body).ok).toBe(false);
+  });
+
+  it.each([
+    ["empty array", []],
+    ["not an array", "a1"],
+    ["blank entry", ["a1", "   "]],
+    ["non-string entry", ["a1", 2]],
+  ])("rejects artistIds: %s", (_label, artistIds) => {
+    expect(parseProductInput({ ...VALID, artistIds }).ok).toBe(false);
+  });
+
+  it("dedupes repeated artistIds, preserving first-seen order", () => {
+    const result = parseProductInput({ ...VALID, artistIds: ["a1", "a2", "a1"] });
+    expect(result.ok && result.data.artistIds).toEqual(["a1", "a2"]);
   });
 
   it("rejects an invalid condition", () => {
@@ -127,7 +140,7 @@ describe("parseProductInput", () => {
 
 describe("toProductData — derives inStock from quantity", () => {
   const base = {
-    artist: "Vril",
+    artistIds: ["a1", "a2"],
     title: "Torus",
     catalogNumber: null,
     labelId: "l1",
@@ -140,23 +153,56 @@ describe("toProductData — derives inStock from quantity", () => {
   };
 
   it("in stock when quantity > 0", () => {
-    const data = toProductData({ ...base, quantity: 3 });
+    const data = toProductData(
+      { ...base, quantity: 3 },
+      { primaryArtistName: "Vril", mode: "create" },
+    );
     expect(data.quantity).toBe(3);
     expect(data.inStock).toBe(true);
   });
 
   it("passes coverImage through to the stored data", () => {
-    const data = toProductData({
-      ...base,
-      coverImage: "/uploads/cover.webp",
-      quantity: 1,
-    });
+    const data = toProductData(
+      { ...base, coverImage: "/uploads/cover.webp", quantity: 1 },
+      { primaryArtistName: "Vril", mode: "create" },
+    );
     expect(data.coverImage).toBe("/uploads/cover.webp");
   });
 
   it("out of stock when quantity is 0", () => {
-    const data = toProductData({ ...base, quantity: 0 });
+    const data = toProductData(
+      { ...base, quantity: 0 },
+      { primaryArtistName: "Vril", mode: "create" },
+    );
     expect(data.quantity).toBe(0);
     expect(data.inStock).toBe(false);
+  });
+
+  it("sets primaryArtistName and creates ordered ProductArtist links on create (no deleteMany)", () => {
+    const data = toProductData(
+      { ...base, quantity: 1 },
+      { primaryArtistName: "Vril", mode: "create" },
+    );
+    expect(data.primaryArtistName).toBe("Vril");
+    expect(data.productArtists).toEqual({
+      create: [
+        { artistId: "a1", position: 0 },
+        { artistId: "a2", position: 1 },
+      ],
+    });
+  });
+
+  it("replaces the full artist set on update (deleteMany then create)", () => {
+    const data = toProductData(
+      { ...base, quantity: 1 },
+      { primaryArtistName: "Vril", mode: "update" },
+    );
+    expect(data.productArtists).toEqual({
+      deleteMany: {},
+      create: [
+        { artistId: "a1", position: 0 },
+        { artistId: "a2", position: 1 },
+      ],
+    });
   });
 });

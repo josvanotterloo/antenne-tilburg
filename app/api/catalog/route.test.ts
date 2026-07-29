@@ -10,7 +10,9 @@ import { db } from "@/lib/db";
 
 const PRODUCT = {
   id: "p1",
-  artist: "Biosphere",
+  productArtists: [
+    { position: 0, artist: { id: "a1", name: "Biosphere" } },
+  ],
   title: "Substrata",
   catalogNumber: "DC001",
   price: "12.99",
@@ -48,7 +50,7 @@ describe("GET /api/catalog", () => {
     expect(body.total).toBe(1);
     expect(body.products[0]).toMatchObject({
       id: "p1",
-      artist: "Biosphere",
+      artists: [{ id: "a1", name: "Biosphere" }],
       title: "Substrata",
       label: "Dirty Carpets",
       catalogNumber: "DC001",

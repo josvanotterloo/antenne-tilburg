@@ -9,8 +9,13 @@ export async function GET() {
   if (denied) return denied;
 
   const products = await db.product.findMany({
-    orderBy: [{ artist: "asc" }, { title: "asc" }],
-    include: { label: true, genre: true, productType: true },
+    orderBy: [{ primaryArtistName: "asc" }, { title: "asc" }],
+    include: {
+      label: true,
+      genre: true,
+      productType: true,
+      productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+    },
   });
   return NextResponse.json(products);
 }
@@ -25,7 +30,24 @@ export async function POST(req: Request) {
   }
 
   try {
-    const created = await db.product.create({ data: toProductData(parsed.data) });
+    // artistIds[0] must already exist: the admin form's Quick Add creates a
+    // new artist immediately (before the product form ever submits), same as
+    // label/genre/productType.
+    const primaryArtist = await db.artist.findUnique({
+      where: { id: parsed.data.artistIds[0] },
+    });
+    if (!primaryArtist) {
+      return NextResponse.json(
+        { error: "Selected artist no longer exists" },
+        { status: 400 },
+      );
+    }
+    const created = await db.product.create({
+      data: toProductData(parsed.data, {
+        primaryArtistName: primaryArtist.name,
+        mode: "create",
+      }),
+    });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
     // A labelId/genreId/productTypeId that doesn't exist (e.g. deleted by the
