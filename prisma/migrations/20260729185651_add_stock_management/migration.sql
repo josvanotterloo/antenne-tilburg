@@ -4,15 +4,6 @@ CREATE TYPE "SupplyOrderStatus" AS ENUM ('PENDING', 'PARTIAL', 'RECEIVED');
 -- CreateEnum
 CREATE TYPE "StockTransactionType" AS ENUM ('IN', 'OUT', 'ADJUSTMENT');
 
--- DropIndex
-DROP INDEX "artist_name_trgm_idx";
-
--- DropIndex
-DROP INDEX "product_search_idx";
-
--- DropIndex
-DROP INDEX "product_title_trgm_idx";
-
 -- AlterTable
 ALTER TABLE "Product" ALTER COLUMN "inStock" SET DEFAULT false;
 
