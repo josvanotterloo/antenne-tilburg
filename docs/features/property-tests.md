@@ -23,9 +23,11 @@ Both properties, as originally worded, are provably false against the real
 implementations — verified by tracing the code, not assumed:
 
 - **`buildCatalogOrderBy` does not always return an array.** Only
-  `sort === "artist"` does (`lib/catalog.ts:79-81`); `"label"`, `"date"`,
-  and any unrecognized sort value return a single plain object. The real
-  property: the result is always a non-empty array *or* non-empty object.
+  `sort === "artist"` does (`lib/catalog.ts:95-96` — sorts by
+  `primaryArtistName` since the artist-entity migration, not a scalar
+  `artist` column); `"label"`, `"date"`, and any unrecognized sort value
+  return a single plain object. The real property: the result is always a
+  non-empty array *or* non-empty object.
 - **`markdownToHtml` does not always return a non-empty string.**
   Blank/whitespace-only input (`""`, `"   "`) legitimately produces `""` —
   the block-parsing loop skips blank lines and pushes nothing. The real
