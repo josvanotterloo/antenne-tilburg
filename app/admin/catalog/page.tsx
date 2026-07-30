@@ -42,10 +42,7 @@ export default async function CatalogPage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Catalog</h1>
           <p className="text-sm text-admin-ink-muted">
-            {result.total} product{result.total === 1 ? "" : "s"} ·{" "}
-            <Link href="/admin/catalog/reference" className="underline">
-              Reference data
-            </Link>
+            {result.total} product{result.total === 1 ? "" : "s"}
           </p>
         </div>
         <Link
