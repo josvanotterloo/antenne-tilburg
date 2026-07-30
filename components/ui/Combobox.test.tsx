@@ -159,4 +159,18 @@ describe("Combobox (server typeahead)", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("listbox")).toBeNull();
   });
+
+  it("hides the quick-add option when allowCreate is false", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+
+    render(
+      <Combobox label="Product" endpoint="/api/admin/products/search" value={null} onChange={vi.fn()} allowCreate={false} />,
+    );
+    await user.click(screen.getByRole("combobox"));
+    await user.type(screen.getByRole("combobox"), "Nonexistent Record");
+
+    await screen.findByRole("combobox");
+    expect(screen.queryByText(/\+ add/i)).toBeNull();
+  });
 });

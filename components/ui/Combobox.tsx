@@ -19,6 +19,10 @@ export interface ComboboxProps {
   // Set on the input so an external <label htmlFor> can associate with it.
   id?: string;
   required?: boolean;
+  // Hides the "+ Add …" quick-create option. Default true (existing
+  // behavior) — set false for pickers over entities that can't be
+  // meaningfully created from just a name (e.g. Product).
+  allowCreate?: boolean;
 }
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -33,6 +37,7 @@ export function Combobox({
   onChange,
   id,
   required,
+  allowCreate = true,
 }: ComboboxProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -73,7 +78,7 @@ export function Combobox({
   }, [open, query, endpoint]);
 
   const hasExact = items.some((o) => o.name.toLowerCase() === filter);
-  const showQuickAdd = filter.length > 0 && !hasExact;
+  const showQuickAdd = allowCreate && filter.length > 0 && !hasExact;
   const itemCount = items.length + (showQuickAdd ? 1 : 0);
 
   function close() {
