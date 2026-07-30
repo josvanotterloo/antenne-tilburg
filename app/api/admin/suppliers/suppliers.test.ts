@@ -71,6 +71,18 @@ describe("PATCH /api/admin/suppliers/[id]", () => {
     const res = await PATCH(req("PATCH", "http://t/x", { name: "Y", contact: "ask Jules" }), ctx("s1"));
     expect(res.status).toBe(200);
   });
+
+  it("409s a duplicate name on update", async () => {
+    supplier.update.mockRejectedValue({ code: "P2002" });
+    const res = await PATCH(req("PATCH", "http://t/x", { name: "Y" }), ctx("s1"));
+    expect(res.status).toBe(409);
+  });
+
+  it("404s an unknown supplier on update", async () => {
+    supplier.update.mockRejectedValue({ code: "P2025" });
+    const res = await PATCH(req("PATCH", "http://t/x", { name: "Y" }), ctx("missing"));
+    expect(res.status).toBe(404);
+  });
 });
 
 describe("DELETE /api/admin/suppliers/[id]", () => {
