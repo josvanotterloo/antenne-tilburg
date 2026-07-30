@@ -10,9 +10,9 @@ export interface StockHistoryEntry extends StockHistoryRow {
   runningBalance: number;
 }
 
-// `rows` must already be ordered oldest-first. The last entry's
-// runningBalance equals Product.quantity by construction (see lib/stock.ts) —
-// useful as a direct assertion of that invariant in integration tests.
+// `rows` must already be ordered oldest-first. Returns newest-first (reversed).
+// The first entry's runningBalance equals Product.quantity by construction
+// (see lib/stock.ts) — useful as a direct assertion of that invariant in integration tests.
 export function computeRunningBalance(rows: StockHistoryRow[]): StockHistoryEntry[] {
   let balance = 0;
   const withBalance = rows.map((row) => {

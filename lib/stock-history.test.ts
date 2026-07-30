@@ -12,7 +12,7 @@ const row = (over: Partial<Parameters<typeof computeRunningBalance>[0][number]>)
 });
 
 describe("computeRunningBalance", () => {
-  it("accumulates oldest-first, returns newest-first, last entry equals the final balance", () => {
+  it("accumulates oldest-first, returns newest-first, first entry equals the final balance", () => {
     const result = computeRunningBalance([
       row({ id: "t1", quantity: 5, createdAt: new Date("2026-01-01") }),
       row({ id: "t2", quantity: -2, createdAt: new Date("2026-01-02") }),

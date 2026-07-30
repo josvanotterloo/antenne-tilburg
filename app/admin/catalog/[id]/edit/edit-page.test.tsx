@@ -45,8 +45,13 @@ describe("/admin/catalog/[id]/edit", () => {
 
     expect(screen.getByText("Opening balance")).toBeInTheDocument();
     expect(screen.getByText("OUT")).toBeInTheDocument();
-    // Last transaction's running balance (4) matches Product.quantity.
-    expect(screen.getAllByText("4").length).toBeGreaterThan(0);
+    // Verify row order: history is newest-first, so first data row (index 1)
+    // has current balance (4), last data row has opening balance (5).
+    const rows = screen.getAllByRole("row");
+    const firstDataRow = rows[1]; // index 0 is header
+    const lastDataRow = rows[rows.length - 1];
+    expect(firstDataRow.textContent).toContain("4"); // Current balance
+    expect(lastDataRow.textContent).toContain("5"); // Opening balance
   });
 
   it("shows a placeholder when there's no history yet", async () => {
