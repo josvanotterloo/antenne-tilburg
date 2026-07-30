@@ -20,10 +20,6 @@ vi.mock("@/lib/db", () => {
   const ARTISTS: Record<string, { id: string; name: string }> = {
     a1: { id: "a1", name: "Vril" },
   };
-  // Resolves the { create: [{ artistId, position }] } nested write (see
-  // lib/product-input.ts's toProductData) into the shape a real
-  // `include: { productArtists: { include: { artist: true } } }` query would
-  // return — this fake store doesn't run Prisma's own resolution.
   function resolveProductArtists(data: Record<string, unknown>) {
     const pa = data.productArtists as
       | { create?: { artistId: string; position: number }[] }
@@ -51,16 +47,11 @@ vi.mock("@/lib/db", () => {
             updatedAt: now,
             ...data,
             ...ROW_RELATIONS,
-            // Overrides the raw { create: [...] } write shape from ...data
-            // with the resolved, include-shaped array.
             productArtists: resolveProductArtists(data),
           };
           store.set(row.id, row);
           return row;
         }),
-        // Filters by where.inStock like real Prisma would — so a regression
-        // in toProductData's inStock derivation makes the created row
-        // disappear from the public catalog query, same as production.
         findMany: vi.fn(
           async ({ where }: { where?: { inStock?: boolean } } = {}) => {
             const rows = [...store.values()];
@@ -76,12 +67,38 @@ vi.mock("@/lib/db", () => {
           },
         ),
       },
+      $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn({})),
     },
   };
 });
 
+vi.mock("@/lib/stock", () => ({
+  // Route-level fake, not a re-implementation of the real ledger engine —
+  // that has its own full unit coverage in lib/stock.test.ts (Task 2). This
+  // mutates the same in-memory `store` the catalog query reads from, so this
+  // scenario proves the adjust route's wiring end-to-end (auth -> parse ->
+  // engine call -> catalog visibility) without re-testing floor/clamp math.
+  applyStockTransaction: vi.fn(
+    async (_tx: unknown, input: { productId: string; requestedQuantity: number }) => {
+      const row = store.get(input.productId);
+      if (!row) return { ok: false, error: "Product not found" };
+      const previousQuantity = (row.quantity as number) ?? 0;
+      const newQuantity = Math.max(0, previousQuantity + input.requestedQuantity);
+      row.quantity = newQuantity;
+      row.inStock = newQuantity > 0;
+      return {
+        ok: true,
+        transaction: { id: "t1" },
+        quantity: newQuantity,
+        appliedQuantity: newQuantity - previousQuantity,
+      };
+    },
+  ),
+}));
+
 import { requireAdmin } from "@/lib/api-auth";
 import { POST } from "@/app/api/admin/products/route";
+import { POST as adjustProduct } from "@/app/api/admin/products/[id]/adjust/route";
 import { GET } from "@/app/api/catalog/route";
 
 const feature = await loadFeature("features/admin-product.feature");
@@ -123,6 +140,45 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
       const res = await GET(new Request("http://localhost/api/catalog"));
       const body = await res.json();
       expect(body.products).toHaveLength(0);
+    });
+  });
+
+  Scenario("Adding stock makes a new product visible", ({ Given, When, Then }) => {
+    let productId = "";
+
+    Given("an admin is logged in", async () => {
+      expect(await requireAdmin()).toBeNull();
+    });
+
+    When("they submit a new product form with valid data", async () => {
+      const res = await POST(
+        new Request("http://localhost/api/admin/products", {
+          method: "POST",
+          body: JSON.stringify(VALID_PRODUCT),
+        }),
+      );
+      expect(res.status).toBe(201);
+      const body = await res.json();
+      productId = body.id;
+    });
+
+    When("they adjust its stock upward", async () => {
+      const res = await adjustProduct(
+        new Request(`http://localhost/api/admin/products/${productId}/adjust`, {
+          method: "POST",
+          body: JSON.stringify({ delta: 2, note: "opening stock" }),
+        }),
+        { params: Promise.resolve({ id: productId }) },
+      );
+      expect(res.status).toBe(200);
+    });
+
+    Then("the product appears in the public catalog", async () => {
+      const res = await GET(new Request("http://localhost/api/catalog"));
+      const body = await res.json();
+      expect(body.products).toHaveLength(1);
+      expect(body.products[0].artists).toEqual([{ id: "a1", name: "Vril" }]);
+      expect(body.products[0].title).toBe("Torus");
     });
   });
 });
