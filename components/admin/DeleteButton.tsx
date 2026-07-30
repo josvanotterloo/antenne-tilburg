@@ -6,15 +6,21 @@ import { useRouter } from "next/navigation";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 
-// Reusable two-click delete for an admin list row. DELETEs `endpoint` then
-// refreshes; a failed delete (e.g. a delete-guard 409, or the network) shows a
-// visible message instead of silently doing nothing.
+// Reusable two-click delete for an admin list row or detail page. DELETEs
+// `endpoint` then either refreshes (default, correct for a list row — the
+// row just disappears) or, when `redirectTo` is given, navigates there
+// instead (needed on a detail page, where refreshing would re-fetch the
+// now-deleted record and hit notFound()). A failed delete (e.g. a
+// delete-guard 409, or the network) shows a visible message instead of
+// silently doing nothing.
 export function DeleteButton({
   endpoint,
   label = "Delete",
+  redirectTo,
 }: {
   endpoint: string;
   label?: string;
+  redirectTo?: string;
 }) {
   const router = useRouter();
   const { pending, error, run } = useAsyncAction();
@@ -23,7 +29,11 @@ export function DeleteButton({
   function remove() {
     run(async () => {
       await apiSend(endpoint, { method: "DELETE" });
-      router.refresh();
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        router.refresh();
+      }
     });
   }
 

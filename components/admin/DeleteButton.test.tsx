@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 const refresh = vi.fn();
+const push = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh, push: vi.fn() }),
+  useRouter: () => ({ refresh, push }),
 }));
 
 import { DeleteButton } from "@/components/admin/DeleteButton";
@@ -11,6 +12,7 @@ import { DeleteButton } from "@/components/admin/DeleteButton";
 beforeEach(() => {
   vi.restoreAllMocks();
   refresh.mockClear();
+  push.mockClear();
 });
 
 const confirmDelete = () => {
@@ -57,5 +59,36 @@ describe("DeleteButton", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /reach the server/i,
     );
+  });
+
+  it("pushes to redirectTo (and does not refresh) when set and the delete succeeds", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
+    );
+    render(
+      <DeleteButton
+        endpoint="/api/admin/orders/o1"
+        redirectTo="/admin/catalog/orders"
+      />,
+    );
+    confirmDelete();
+
+    await vi.waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/admin/catalog/orders"),
+    );
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("refreshes (and does not push) when redirectTo is not set", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
+    );
+    render(<DeleteButton endpoint="/api/admin/notices/n1" />);
+    confirmDelete();
+
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(push).not.toHaveBeenCalled();
   });
 });

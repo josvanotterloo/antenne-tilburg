@@ -36,7 +36,10 @@ export default async function OrderDetailPage({
             <Link href={`/admin/catalog/orders/${order.id}/edit`} className="hover:underline">
               Edit
             </Link>
-            <DeleteButton endpoint={`/api/admin/orders/${order.id}`} />
+            <DeleteButton
+              endpoint={`/api/admin/orders/${order.id}`}
+              redirectTo="/admin/catalog/orders"
+            />
           </div>
         )}
       </div>

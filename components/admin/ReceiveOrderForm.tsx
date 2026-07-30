@@ -55,7 +55,7 @@ export function ReceiveOrderForm({ orderId, lines }: { orderId: string; lines: R
               step="1"
               aria-label={`Receive now for ${line.productTitle}`}
               placeholder="0"
-              disabled={remaining === 0}
+              disabled={remaining <= 0}
               value={receiveNow[line.id] ?? ""}
               onChange={(e) => setReceiveNow((prev) => ({ ...prev, [line.id]: e.target.value }))}
               className="w-20 rounded border border-admin-hairline px-2 py-1 text-sm disabled:opacity-40"
