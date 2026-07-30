@@ -1,31 +1,26 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { applyStockTransaction } from "@/lib/stock";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-// Sell one unit. A single atomic UPDATE floors quantity at 0 and keeps inStock in
-// sync, so concurrent clicks can't lose a decrement (each statement sees the
-// committed row) and there's no read-then-write race. Single click, no confirm.
+// Sell one unit — always an OUT transaction of -1. Floors at zero and 400s
+// if there's nothing left to sell (button is disabled client-side at 0; this
+// is the server-side backstop for a race between two rapid clicks).
 export async function POST(_req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
   const { id } = await ctx.params;
-  const rows = await db.$queryRaw<
-    { id: string; quantity: number; inStock: boolean }[]
-  >(Prisma.sql`
-    UPDATE "Product"
-    SET "quantity" = GREATEST(0, "quantity" - 1),
-        "inStock"  = GREATEST(0, "quantity" - 1) > 0
-    WHERE "id" = ${id}
-    RETURNING "id", "quantity", "inStock"
-  `);
+  const result = await db.$transaction((tx) =>
+    applyStockTransaction(tx, { productId: id, type: "OUT", requestedQuantity: -1 }),
+  );
 
-  if (rows.length === 0) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!result.ok) {
+    const status = result.error === "Product not found" ? 404 : 400;
+    return NextResponse.json({ error: result.error }, { status });
   }
-  return NextResponse.json(rows[0]);
+  return NextResponse.json({ id, quantity: result.quantity, inStock: result.quantity > 0 });
 }
