@@ -6,8 +6,7 @@ vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null)
 vi.mock("@/lib/stock", () => ({ applyStockTransaction: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
-    supplyOrder: { findUnique: vi.fn(), update: vi.fn() },
-    supplyOrderLine: { update: vi.fn(), findMany: vi.fn() },
+    supplyOrder: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -17,8 +16,7 @@ import { applyStockTransaction } from "@/lib/stock";
 import { POST } from "@/app/api/admin/orders/[id]/receive/route";
 import { requireAdmin } from "@/lib/api-auth";
 
-const supplyOrder = db.supplyOrder as unknown as { findUnique: Mock; update: Mock };
-const supplyOrderLine = db.supplyOrderLine as unknown as { update: Mock; findMany: Mock };
+const supplyOrder = db.supplyOrder as unknown as { findUnique: Mock };
 const mockTransaction = db.$transaction as unknown as Mock;
 const mockApply = applyStockTransaction as unknown as Mock;
 const mockRequireAdmin = vi.mocked(requireAdmin);
@@ -32,50 +30,100 @@ const req = (body: unknown) =>
 
 const LINE = { id: "l1", productId: "p1", quantityOrdered: 5, quantityReceived: 0 };
 
+// A distinct double, separate from `db` — if the route ever swaps a
+// `tx.supplyOrderLine.update` call for `db.supplyOrderLine.update` (breaking
+// the transaction's atomicity), these assertions must fail. Reusing `db`
+// itself as `tx` would make that regression invisible, since both would
+// resolve to the same mock.
+const tx = {
+  supplyOrderLine: { update: vi.fn(), findMany: vi.fn() },
+  supplyOrder: { update: vi.fn() },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
-  // Pass `db` itself as `tx` — a real Prisma transaction client exposes the
-  // same model delegates as the top-level client. `fn({})` (an empty stub)
-  // would make `tx.supplyOrderLine.update`/`tx.supplyOrder.update` throw,
-  // which masks the route's actual atomicity guarantee rather than testing it.
-  mockTransaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(db));
+  mockTransaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(tx));
 });
 
 describe("POST /api/admin/orders/[id]/receive", () => {
   it("applies an IN transaction per received line and sets status PARTIAL when under-received", async () => {
     supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PENDING", lines: [LINE] });
     mockApply.mockResolvedValue({ ok: true, quantity: 3, appliedQuantity: 3 });
-    supplyOrderLine.update.mockResolvedValue({});
-    supplyOrderLine.findMany.mockResolvedValue([{ ...LINE, quantityReceived: 3 }]);
-    supplyOrder.update.mockResolvedValue({ id: "o1", status: "PARTIAL" });
+    tx.supplyOrderLine.update.mockResolvedValue({});
+    tx.supplyOrderLine.findMany.mockResolvedValue([{ ...LINE, quantityReceived: 3 }]);
+    tx.supplyOrder.update.mockResolvedValue({ id: "o1", status: "PARTIAL" });
 
     const res = await POST(req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 3 }] }), ctx("o1"));
 
     expect(res.status).toBe(200);
-    expect(mockApply).toHaveBeenCalledWith(expect.anything(), {
+    expect(mockApply).toHaveBeenCalledWith(tx, {
       productId: "p1",
       type: "IN",
       requestedQuantity: 3,
       note: "Received from supply order",
       supplyOrderLineId: "l1",
     });
-    expect(supplyOrder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "PARTIAL" }) }),
+    expect(tx.supplyOrderLine.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { quantityReceived: { increment: 3 } },
+    });
+    expect(tx.supplyOrder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "PARTIAL", receivedAt: expect.any(Date) }),
+      }),
     );
   });
 
   it("sets status RECEIVED once every line is fully received", async () => {
     supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PARTIAL", lines: [LINE] });
     mockApply.mockResolvedValue({ ok: true, quantity: 5, appliedQuantity: 5 });
-    supplyOrderLine.update.mockResolvedValue({});
-    supplyOrderLine.findMany.mockResolvedValue([{ ...LINE, quantityReceived: 5 }]);
-    supplyOrder.update.mockResolvedValue({ id: "o1", status: "RECEIVED" });
+    tx.supplyOrderLine.update.mockResolvedValue({});
+    tx.supplyOrderLine.findMany.mockResolvedValue([{ ...LINE, quantityReceived: 5 }]);
+    tx.supplyOrder.update.mockResolvedValue({ id: "o1", status: "RECEIVED" });
 
     const res = await POST(req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 5 }] }), ctx("o1"));
 
     expect(res.status).toBe(200);
-    expect(supplyOrder.update).toHaveBeenCalledWith(
+    expect(tx.supplyOrder.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "RECEIVED", receivedAt: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it("re-receives a PARTIAL line for the remainder: over-shoot 400s, exact remainder 200s with RECEIVED", async () => {
+    const partialLine = { ...LINE, quantityReceived: 3, quantityOrdered: 5 };
+
+    // (a) Trying to receive 3 more on top of the 3 already received would
+    // exceed the 5 ordered — must 400 before applying anything.
+    supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PARTIAL", lines: [partialLine] });
+    const overshoot = await POST(
+      req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 3 }] }),
+      ctx("o1"),
+    );
+    expect(overshoot.status).toBe(400);
+    expect(mockApply).not.toHaveBeenCalled();
+
+    // (b) Receiving exactly the remainder (2) succeeds and completes the line.
+    vi.clearAllMocks();
+    mockTransaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(tx));
+    supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PARTIAL", lines: [partialLine] });
+    mockApply.mockResolvedValue({ ok: true, quantity: 5, appliedQuantity: 2 });
+    tx.supplyOrderLine.update.mockResolvedValue({});
+    tx.supplyOrderLine.findMany.mockResolvedValue([{ ...partialLine, quantityReceived: 5 }]);
+    tx.supplyOrder.update.mockResolvedValue({ id: "o1", status: "RECEIVED" });
+
+    const remainder = await POST(
+      req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 2 }] }),
+      ctx("o1"),
+    );
+    expect(remainder.status).toBe(200);
+    expect(tx.supplyOrderLine.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { quantityReceived: { increment: 2 } },
+    });
+    expect(tx.supplyOrder.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "RECEIVED" }) }),
     );
   });
@@ -83,6 +131,24 @@ describe("POST /api/admin/orders/[id]/receive", () => {
   it("400s receiving more than was ordered", async () => {
     supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PENDING", lines: [LINE] });
     const res = await POST(req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 6 }] }), ctx("o1"));
+    expect(res.status).toBe(400);
+    expect(mockApply).not.toHaveBeenCalled();
+  });
+
+  it("400s the whole batch, calling applyStockTransaction for neither line, when one of several lines would over-receive", async () => {
+    const line2 = { id: "l2", productId: "p2", quantityOrdered: 2, quantityReceived: 0 };
+    supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PENDING", lines: [LINE, line2] });
+
+    const res = await POST(
+      req({
+        lines: [
+          { supplyOrderLineId: "l1", receiveNow: 2 }, // valid on its own
+          { supplyOrderLineId: "l2", receiveNow: 3 }, // exceeds quantityOrdered: 2
+        ],
+      }),
+      ctx("o1"),
+    );
+
     expect(res.status).toBe(400);
     expect(mockApply).not.toHaveBeenCalled();
   });
@@ -103,5 +169,16 @@ describe("POST /api/admin/orders/[id]/receive", () => {
     supplyOrder.findUnique.mockResolvedValue(null);
     const res = await POST(req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 1 }] }), ctx("missing"));
     expect(res.status).toBe(404);
+  });
+
+  it("returns a clean 400, not a 500, when applyStockTransaction fails inside the transaction", async () => {
+    supplyOrder.findUnique.mockResolvedValue({ id: "o1", status: "PENDING", lines: [LINE] });
+    mockApply.mockResolvedValue({ ok: false, error: "Product not found" });
+
+    const res = await POST(req({ lines: [{ supplyOrderLineId: "l1", receiveNow: 3 }] }), ctx("o1"));
+
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe("Product not found");
   });
 });

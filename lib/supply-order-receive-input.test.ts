@@ -29,4 +29,14 @@ describe("parseReceiveInput", () => {
   it("rejects a missing supplyOrderLineId", () => {
     expect(parseReceiveInput({ lines: [{ receiveNow: 1 }] }).ok).toBe(false);
   });
+
+  it("rejects a duplicate supplyOrderLineId across lines", () => {
+    const result = parseReceiveInput({
+      lines: [
+        { supplyOrderLineId: "l1", receiveNow: 3 },
+        { supplyOrderLineId: "l1", receiveNow: 3 },
+      ],
+    });
+    expect(result.ok).toBe(false);
+  });
 });
