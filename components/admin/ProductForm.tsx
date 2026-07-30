@@ -8,6 +8,7 @@ import { useAsyncAction } from "@/lib/use-async-action";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
 import { Field } from "@/components/admin/Field";
+import { AdjustStockForm } from "@/components/admin/AdjustStockForm";
 
 export interface ProductFormValues {
   id: string;
@@ -57,10 +58,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [price, setPrice] = useState(product?.price ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [coverImage, setCoverImage] = useState(product?.coverImage ?? "");
-  // New products default to 1 (in stock); existing keep their quantity.
-  const [quantity, setQuantity] = useState(
-    product?.quantity != null ? String(product.quantity) : "1",
-  );
+  const [quantity, setQuantity] = useState(product?.quantity ?? 0);
 
   // Independent actions: saving the product and the quick "sell one" each track
   // their own pending/error so neither disables the other's button.
@@ -97,7 +95,7 @@ export function ProductForm({ product }: ProductFormProps) {
         `/api/admin/products/${product.id}/sell-one`,
         { method: "POST" },
       );
-      setQuantity(String(updated.quantity));
+      setQuantity(updated.quantity);
     });
   }
 
@@ -120,7 +118,6 @@ export function ProductForm({ product }: ProductFormProps) {
             price,
             description,
             coverImage,
-            quantity,
           }),
         },
       );
@@ -220,31 +217,25 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Quantity in stock" htmlFor="quantity">
-        <input
-          id="quantity"
-          type="number"
-          min="0"
-          step="1"
-          required
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          className="w-32 rounded border border-admin-hairline px-2 py-1 text-sm"
-        />
-        <p className="text-xs text-admin-ink-muted">
-          Sets availability automatically — 0 hides the product from the shop.
-        </p>
-        {product && (
-          <button
-            type="button"
-            onClick={handleSellOne}
-            disabled={selling || Number(quantity) <= 0}
-            className="mt-1 rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
-          >
-            {selling ? "…" : "Sell one"}
-          </button>
-        )}
-      </Field>
+      {product && (
+        <Field label="Quantity in stock">
+          <p className="text-lg font-semibold tabular-nums">{quantity}</p>
+          <p className="text-xs text-admin-ink-muted">
+            Derived from stock transactions — 0 hides the product from the shop.
+          </p>
+          <div className="mt-1 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSellOne}
+              disabled={selling || quantity <= 0}
+              className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
+            >
+              {selling ? "…" : "Sell one"}
+            </button>
+            <AdjustStockForm productId={product.id} onAdjusted={setQuantity} />
+          </div>
+        </Field>
+      )}
 
       <Field label="Catalog number" htmlFor="catalog-number">
         <input

@@ -56,9 +56,6 @@ describe("ProductForm", () => {
       screen.getByRole("spinbutton", { name: /price/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("spinbutton", { name: /quantity/i }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("textbox", { name: /description/i }),
     ).toBeInTheDocument();
     expect(
@@ -86,6 +83,17 @@ describe("ProductForm", () => {
 
     render(<ProductForm />);
     expect(screen.queryByRole("button", { name: /sell one/i })).toBeNull();
+  });
+
+  it("shows quantity as read-only text with Adjust stock, only when editing", () => {
+    const { unmount } = render(<ProductForm product={PRODUCT} />);
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: /quantity/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /adjust stock/i })).toBeInTheDocument();
+    unmount();
+
+    render(<ProductForm />);
+    expect(screen.queryByRole("button", { name: /adjust stock/i })).toBeNull();
   });
 
   it("renders a cover image upload field, without a preview on a new product", () => {
