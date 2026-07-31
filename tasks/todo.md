@@ -20,6 +20,12 @@ IA: Content = {posts, newsletter}; Settings = {hours, notices, subscribers, user
 subscribers, users). Remaining admin sections: none — all managed entities have
 real admin UIs.
 
+### Stock management
+- [x] Suppliers, supply orders (create/edit/receive, re-receiving a PARTIAL
+      order), and a `StockTransaction` ledger replacing the old hand-edited
+      `Product.quantity` — `docs/features/stock-management.md` (supersedes
+      `docs/features/stock-quantity.md`)
+
 ## Backlog
 
 ### Admin CRUD

@@ -1,5 +1,10 @@
 # Stock quantity tracking
 
+**Superseded** by `docs/features/stock-management.md` (2026-07-31) — `quantity`
+is no longer hand-edited or decremented by a standalone `sellOne()` helper;
+it's a cache derived from an append-only `StockTransaction` ledger. Kept here
+for history.
+
 **Status:** branch `feature/stock-quantity` — merged to `master` (2026-07-08).
 
 ## Summary
