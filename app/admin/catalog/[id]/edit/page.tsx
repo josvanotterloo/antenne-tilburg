@@ -29,7 +29,7 @@ export default async function EditProductPage({
 
   const transactions = await db.stockTransaction.findMany({
     where: { productId: id },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { id: true, type: true, quantity: true, note: true, createdAt: true },
   });
   const history = computeRunningBalance(transactions);

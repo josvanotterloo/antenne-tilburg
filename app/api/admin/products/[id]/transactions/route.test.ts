@@ -29,7 +29,10 @@ describe("GET /api/admin/products/[id]/transactions", () => {
     expect(body.map((r: { id: string }) => r.id)).toEqual(["t2", "t1"]);
     expect(body[0].runningBalance).toBe(4);
     expect(db.stockTransaction.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: "p1" }, orderBy: { createdAt: "asc" } }),
+      expect.objectContaining({
+        where: { productId: "p1" },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      }),
     );
   });
 

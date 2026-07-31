@@ -251,4 +251,10 @@ describe("DELETE /api/admin/products/[id]", () => {
     const res = await DELETE(jsonReq("DELETE", null), ctx("missing"));
     expect(res.status).toBe(404);
   });
+
+  it("409s (not an unhandled 500) when the product has stock history (P2003)", async () => {
+    product.delete.mockRejectedValue({ code: "P2003" });
+    const res = await DELETE(jsonReq("DELETE", null), ctx("p1"));
+    expect(res.status).toBe(409);
+  });
 });

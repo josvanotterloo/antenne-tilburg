@@ -13,7 +13,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
   const { id } = await ctx.params;
   const rows = await db.stockTransaction.findMany({
     where: { productId: id },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { id: true, type: true, quantity: true, note: true, createdAt: true },
   });
   return NextResponse.json(computeRunningBalance(rows));

@@ -70,14 +70,23 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
   if (denied) return denied;
 
-  // Products are leaf entities — no dependents, so no delete guard.
   const { id } = await ctx.params;
   try {
     await db.product.delete({ where: { id } });
   } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
     // Prisma "record not found" (e.g. already deleted by another admin).
-    if ((error as { code?: string } | null)?.code === "P2025") {
+    if (code === "P2025") {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    // Restricted by StockTransaction/SupplyOrderLine FKs once a product has
+    // any stock history (a sale, adjustment, receive, or the opening-balance
+    // backfill) — surfaced as a clean guard, not an unhandled 500.
+    if (code === "P2003") {
+      return NextResponse.json(
+        { error: "Cannot delete a product with stock history" },
+        { status: 409 },
+      );
     }
     throw error;
   }

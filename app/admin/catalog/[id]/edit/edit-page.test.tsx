@@ -54,6 +54,20 @@ describe("/admin/catalog/[id]/edit", () => {
     expect(lastDataRow.textContent).toContain("5"); // Opening balance
   });
 
+  it("orders transactions by createdAt then id, so same-timestamp rows sort deterministically", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    vi.mocked(db.stockTransaction.findMany).mockResolvedValue([] as never);
+
+    await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
+
+    expect(db.stockTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { productId: "p1" },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      }),
+    );
+  });
+
   it("shows a placeholder when there's no history yet", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
     vi.mocked(db.stockTransaction.findMany).mockResolvedValue([] as never);
