@@ -96,6 +96,19 @@ describe("ProductForm", () => {
     expect(screen.queryByRole("button", { name: /adjust stock/i })).toBeNull();
   });
 
+  // Regression: AdjustStockForm previously rendered its own <form>, nested
+  // inside this component's <form> — invalid HTML that real browsers
+  // silently refuse to submit (jsdom doesn't reproduce the bug, which is why
+  // it shipped undetected). Asserting a single <form> in the tree, even
+  // after expanding the adjust-stock UI, keeps that regression from
+  // returning unnoticed.
+  it("never nests a second <form> inside itself, even with Adjust stock expanded", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ProductForm product={PRODUCT} />);
+    await user.click(screen.getByRole("button", { name: /adjust stock/i }));
+    expect(container.querySelectorAll("form")).toHaveLength(1);
+  });
+
   it("renders a cover image upload field, without a preview on a new product", () => {
     render(<ProductForm />);
     expect(screen.getByLabelText(/cover image/i)).toBeInTheDocument();

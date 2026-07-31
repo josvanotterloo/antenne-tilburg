@@ -19,8 +19,7 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
   const [note, setNote] = useState("");
   const { pending, error, run } = useAsyncAction();
 
-  function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  function handleSubmit() {
     run(async () => {
       const result = await apiSend<{ quantity: number }>(
         `/api/admin/products/${productId}/adjust`,
@@ -50,12 +49,19 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded border border-admin-hairline p-2">
+    // A <div>, not a <form>: this renders inside ProductForm's own <form>
+    // (the quantity/adjust section sits between other product fields), and
+    // nested <form> elements are invalid HTML — real browsers silently fail
+    // to fire the inner submit button's click in that case (jsdom doesn't
+    // reproduce this, which is why it slipped past the test suite). The
+    // trade-off is that the inputs' `required` attributes no longer block
+    // submission natively; an empty delta/note still 400s via the server's
+    // existing validation instead of a browser tooltip.
+    <div className="space-y-2 rounded border border-admin-hairline p-2">
       <div className="flex gap-2">
         <input
           type="number"
           step="1"
-          required
           aria-label="Quantity delta"
           placeholder="e.g. -2 or 5"
           value={delta}
@@ -64,7 +70,6 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
         />
         <input
           type="text"
-          required
           aria-label="Reason"
           placeholder="Reason"
           value={note}
@@ -74,7 +79,8 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
       </div>
       <div className="flex gap-2">
         <button
-          type="submit"
+          type="button"
+          onClick={handleSubmit}
           disabled={pending}
           className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
         >
@@ -93,6 +99,6 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
           {error}
         </p>
       )}
-    </form>
+    </div>
   );
 }
