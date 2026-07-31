@@ -45,6 +45,18 @@
   (holding `NEXTAUTH_SECRET`) — login failed with a `MissingSecret` auth
   error until both were sorted out. Neither was a code defect; both cost
   real back-and-forth during the manual verification step.
+- A third environment gap surfaced only at the very last step — verifying
+  the merged result on `master` per `finishing-a-development-branch`: Vitest
+  and ESLint both discovered/ran the nested `.worktrees/feature-stock-management/`
+  copy of the repo when invoked from the main checkout (neither tool's
+  default ignores cover a nested worktree), loading a second copy of React
+  into the test process and producing ~190 unrelated test failures and
+  ~9000 bogus lint errors. A stale, never-regenerated Prisma Client in the
+  main checkout (schema changes had only ever been `prisma generate`'d
+  inside the worktree) caused a further ~10 real `tsc` errors on top of that.
+  All three were config/environment issues, not code defects, but all three
+  would have blocked or badly confused a push had the "verify on the merged
+  result" step been skipped.
 
 ## Signal (what should change in a shared artifact)
 - [ ] Context:
@@ -54,6 +66,10 @@
       2026-07-31.
 - [x] Failure: a full green test suite does not prove a nested `<form>`
       submits in a real browser — see `tasks/lessons.md` 2026-07-31b.
+- [x] Workflow: `vitest.config.ts` and the ESLint flat config both need
+      `.worktrees/**` excluded, and `prisma generate` needs a re-run in any
+      checkout that merges in schema changes — see `tasks/lessons.md`
+      2026-07-31c.
 - [ ] None
 
 ## Friction points
@@ -69,10 +85,16 @@
 ## Updates made
 - `docs/features/stock-management.md` (new)
 - `docs/features/stock-quantity.md` (superseded-by pointer added)
-- `tasks/lessons.md` (+2 rows: worktree `.env*` copying, nested-form/jsdom gap)
+- `tasks/lessons.md` (+3 rows: worktree `.env*` copying, nested-form/jsdom
+  gap, worktree-vs-Vitest/ESLint/stale-Prisma-Client gap)
 - `tasks/todo.md` (moved to done)
+- `vitest.config.ts` / `eslint.config.mjs` (exclude `.worktrees/`)
 
 ## Code review
-- Code review: pending — mandatory per `CLAUDE.md` (new data model,
-  architectural change, >5 files). Requested from the user; merge blocked
-  until Medium+ findings are resolved.
+- Code review: run via `/code-review`. 9 findings; 3 real bugs fixed in one
+  wave (Product delete FK-restriction 500, sub-nav highlighting nothing on
+  unlisted sub-paths, non-deterministic running-balance order for
+  same-timestamp transactions) and independently re-verified after the
+  scoped re-review subagent hit a spend limit mid-run. The other 6 findings
+  were parked: one already-documented accepted limitation, one verified
+  false positive, four discretionary/cosmetic DRY notes.
