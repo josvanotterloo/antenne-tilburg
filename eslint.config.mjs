@@ -12,7 +12,12 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...tseslint.configs.recommended,
   {
-    ignores: [".next/**", "node_modules/**"],
+    // Also exclude a nested git worktree (e.g. .worktrees/<name>/) — ESLint's
+    // own default ignores don't cover it, so without this, linting from the
+    // main checkout also lints every file inside any worktree living under
+    // the repo root. See vitest.config.ts's matching `exclude` for the same
+    // gap on the test side.
+    ignores: [".next/**", "node_modules/**", ".worktrees/**", "worktrees/**"],
   },
 ];
 
