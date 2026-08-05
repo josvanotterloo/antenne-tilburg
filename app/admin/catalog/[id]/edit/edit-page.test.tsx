@@ -77,4 +77,32 @@ describe("/admin/catalog/[id]/edit", () => {
 
     expect(screen.getByText(/no stock transactions yet/i)).toBeInTheDocument();
   });
+
+  it("shows a Print label link with the correct href for a complete product", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    vi.mocked(db.stockTransaction.findMany).mockResolvedValue([] as never);
+
+    const ui = await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
+    render(ui);
+
+    expect(
+      screen.getByRole("link", { name: /print label/i }),
+    ).toHaveAttribute("href", "/api/admin/label/p1");
+  });
+
+  it("shows a missing-fields note instead of the print link when required fields are absent", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue({
+      ...PRODUCT,
+      productArtists: [],
+    } as never);
+    vi.mocked(db.stockTransaction.findMany).mockResolvedValue([] as never);
+
+    const ui = await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
+    render(ui);
+
+    expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
+    const note = screen.getByText(/print label unavailable/i);
+    expect(note).toBeInTheDocument();
+    expect(note).toHaveTextContent(/artist/i);
+  });
 });

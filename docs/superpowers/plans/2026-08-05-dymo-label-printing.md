@@ -621,10 +621,18 @@ Add to `app/admin/catalog/[id]/edit/edit-page.test.tsx` (after the existing `PRO
     render(ui);
 
     expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
-    expect(screen.getByText(/print label unavailable/i)).toBeInTheDocument();
-    expect(screen.getByText(/artist/i)).toBeInTheDocument();
+    const note = screen.getByText(/print label unavailable/i);
+    expect(note).toBeInTheDocument();
+    expect(note).toHaveTextContent(/artist/i);
   });
 ```
+
+**Note (corrected during Task 3 implementation):** the original assertion
+`screen.getByText(/artist/i)` was ambiguous — `ProductForm`'s "Artists"
+combobox label is still rendered alongside the missing-fields note (the
+note doesn't replace the form), so a bare document-wide text query matches
+both. Scoping the assertion to the note element itself (`toHaveTextContent`)
+resolves it.
 
 - [ ] **Step 2: Run the test to verify it fails**
 

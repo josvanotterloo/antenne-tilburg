@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { db } from "@/lib/db";
 import { computeRunningBalance } from "@/lib/stock-history";
+import { missingLabelFields } from "@/lib/dymo-label";
 import { ProductForm } from "@/components/admin/ProductForm";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +35,25 @@ export default async function EditProductPage({
   });
   const history = computeRunningBalance(transactions);
 
+  const missingFields = missingLabelFields(product);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Edit product</h1>
+      {missingFields.length === 0 ? (
+        <a
+          href={`/api/admin/label/${product.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised"
+        >
+          Print label
+        </a>
+      ) : (
+        <p className="text-sm text-admin-ink-muted">
+          Print label unavailable — missing: {missingFields.join(", ")}.
+        </p>
+      )}
       <ProductForm
         product={{
           id: product.id,
