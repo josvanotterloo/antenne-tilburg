@@ -103,4 +103,11 @@ describe("/stock page", () => {
       "/stock/p1",
     );
   });
+
+  it("shows an empty-state message and no list when there are no arrivals", async () => {
+    vi.mocked(getLatestProducts).mockResolvedValue([] as never);
+    render(await StockPage());
+    expect(screen.getByText(/nothing here yet/i)).toBeInTheDocument();
+    expect(screen.queryByRole("list")).toBeNull();
+  });
 });
