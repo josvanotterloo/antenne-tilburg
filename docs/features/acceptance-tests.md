@@ -20,7 +20,14 @@ get `vi.mock` for free and match every existing test in the repo. As a
 result, the acceptance suite is automatically swept into `npm test` / CI's
 full test run — no separate CI wiring needed.
 
-## The 5 journeys
+## The 4 journeys
+
+> **Updated (2026-08-05):** `features/restock-detection.feature` was
+> deleted in the New Arrivals overhaul — it tested `getBackInStockProducts()`
+> directly, which was removed along with the Back In Stock section (see
+> `docs/features/new-arrivals-overhaul.md`). The RESTOCK badge predicate
+> (`isRestock`) it also touched on is unaffected and keeps its coverage in
+> `lib/catalog.test.ts`.
 
 - `features/newsletter-signup.feature` — double opt-in signup → confirm →
   shows as `CONFIRMED` in the admin subscriber listing.
@@ -28,8 +35,6 @@ full test run — no separate CI wiring needed.
 - `features/catalog-filter.feature` — filtering stock by genre.
 - `features/admin-product.feature` — an admin creates a product and it
   appears in the public catalog.
-- `features/restock-detection.feature` — a quantity-0 product is excluded
-  from Back In Stock; once its quantity is updated it appears.
 
 ## What each step definition calls
 
@@ -42,19 +47,16 @@ automation, no HTTP server:
   rendering — asserting on it directly avoids pulling React Server
   Component rendering into a node-environment acceptance test).
 - **stock-search** / **catalog-filter**: `getCatalogPage()` from
-  `lib/catalog.ts` directly. The public `/api/catalog` JSON feed has no `q`
-  search parameter today — only the `/stock` page does, via this same lib
-  function — so calling the lib function directly is the faithful
-  "existing code" path for search specifically.
+  `lib/catalog.ts` directly. As of the New Arrivals overhaul, the public
+  `/stock` page has no search or filter UI at all — `getCatalogPage`'s
+  search/filter params are exercised only by `/admin/catalog`'s search box
+  and this test now, so calling the lib function directly is the faithful
+  "existing code" path rather than a stand-in for a public UI that no
+  longer exists.
 - **admin-product**: `POST /api/admin/products` (with `requireAdmin`
   mocked to resolve `null`, the same pattern every existing admin route
   test in this repo already uses), then the real, unauthenticated `GET
   /api/catalog`.
-- **restock-detection**: `getBackInStockProducts()` from `lib/catalog.ts`
-  directly, called once against a quantity-0 fixture (asserting exclusion)
-  and again after the mock is updated to quantity > 0 (asserting
-  inclusion) — both halves of the transition are exercised, not just the
-  end state.
 
 ## Fakes reflect real filtering behavior, not just canned data
 

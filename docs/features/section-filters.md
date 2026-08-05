@@ -1,5 +1,9 @@
 # Genre/condition filters on the stock section pages
 
+> **Superseded (2026-08-05):** the /stock filter sidebar, chips, and the
+> section pages themselves were removed in the New Arrivals overhaul — see
+> `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 The /stock sidebar (Genre + Condition) and removable filter chips now render
 on /stock/this-week, /stock/last-week and /stock/back-in-stock. Filter
 clicks stay on the section's own path (`/stock/this-week?genre=Techno`

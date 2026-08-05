@@ -1,5 +1,10 @@
 # Persistent stock navigation
 
+> **Superseded (2026-08-05):** `StockNav` and the sections it linked to
+> (`/stock/this-week`, `/stock/last-week`, `/stock/back-in-stock`) were
+> deleted in the New Arrivals overhaul — see
+> `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 `components/stock/StockNav.tsx` — one nav bar across all stock surfaces:
 ALL STOCK · THIS WEEK · LAST WEEK · BACK IN STOCK, mono uppercase labels per
 DESIGN.md. The active section carries `aria-current="page"` and the signal

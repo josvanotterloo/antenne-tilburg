@@ -1,5 +1,11 @@
 # RESTOCK badge on public stock pages
 
+> **Updated (2026-08-05):** the badge itself and `isRestock` are unchanged,
+> but `/stock` lost its grid view and the three section pages below were
+> deleted in the New Arrivals overhaul — see
+> `docs/features/new-arrivals-overhaul.md`. The badge now only appears via
+> `ProductRow` on `/stock` (list only) and `/stock/[id]`.
+
 A RESTOCK badge, styled identically to the existing JUST IN badge, appears
 on every public product listing that shows a `CatalogProduct`:
 

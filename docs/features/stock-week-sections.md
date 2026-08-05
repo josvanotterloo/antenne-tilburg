@@ -1,5 +1,9 @@
 # Stock sections: This Week, Last Week, Back In Stock
 
+> **Superseded (2026-08-05):** all three section pages (and the
+> back-in-stock RSS feed) were deleted in the New Arrivals overhaul — see
+> `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 Three public pages surfacing arrivals and restocks, driven entirely by the
 existing `createdAt` / `updatedAt` / `quantity` fields — no schema changes.
 

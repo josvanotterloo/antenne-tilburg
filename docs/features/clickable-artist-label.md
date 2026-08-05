@@ -1,5 +1,9 @@
 # Clickable artist + label
 
+> **Superseded (2026-08-05):** artist and label are now plain text on all
+> public pages, and the `?artist=`/`?label=` filter params are gone — see
+> `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 **Status:** branch `feature/clickable-artist-label` — merged to `master` (2026-07-06).
 
 ## Summary

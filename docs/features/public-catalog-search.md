@@ -1,5 +1,12 @@
 # Public catalog & search
 
+> **Largely superseded (2026-08-05):** the public `/stock` search, filters,
+> sort, pagination, and grid view described below were removed in the New
+> Arrivals overhaul — `/stock` is now a plain last-100 list. The shared
+> query logic (`getCatalogPage`, `buildCatalogWhere`, full-text search) is
+> unchanged and still powers `/admin/catalog` and the public `/api/catalog`
+> feed. See `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 **Status:** Merged to `master` (2026-07-03) · branch
 `feature/public-catalog-search` (commits `966e7f2`, `fb1a541`, `123a611`,
 `e658e7e`, `22d4c3a`, `f79545a`, `2486761`, `8a51c1c`, `60606cb`)

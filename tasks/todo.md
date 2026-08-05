@@ -38,6 +38,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       ("The Pirate Signal") — `docs/features/public-blog.md`
 - [x] Stock listing — filterable by the managed lists + "Just In" (createdAt < 30d)
       — `docs/features/public-catalog-search.md`
+- [x] New Arrivals overhaul (2026-08-05) — renamed "Stock" → "New Arrivals" in
+      nav/copy; `/stock` simplified to the last 100 in-stock arrivals, no
+      filters/search/sort/pagination/grid; removed price and clickable
+      artist/label links from every public surface (incl. JSON-LD, RSS,
+      `/api/catalog`); deleted the This Week/Last Week/Back In Stock sections
+      — `docs/features/new-arrivals-overhaul.md`
 - [x] Home "Just In" (100 latest) + blog teaser + visit teaser — `docs/features/public-home.md`
 - [x] Blog index + `[slug]` post pages — `docs/features/public-blog.md`
 - [x] ~~Events~~ — dropped from public (2026-07-04, `docs/features/public-surface-trim.md`),
@@ -115,10 +121,14 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 681 tests cover managed-list
-delete guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
-markdown rendering, sitemap, the public catalog API, Schema.org structured data,
-and the public/admin flows.
+Done — Vitest runner + `run-tests` skill in place; 739 tests (as of the New
+Arrivals overhaul, 2026-08-05) cover managed-list delete guards, `authorize()`,
+notice active-window logic, fuzzy search, uploads, markdown rendering, sitemap,
+the public catalog API, Schema.org structured data, and the public/admin flows.
+(Count dropped from 781 in this branch — expected: the This Week/Last Week/Back
+In Stock sections, their filter/search/pagination UI, and the now-impossible
+`restock-detection.feature` scenario were deleted along with the features they
+tested, not a coverage regression.)
 
 ## Done
 

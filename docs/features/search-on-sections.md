@@ -1,5 +1,9 @@
 # Search bar on all stock pages
 
+> **Superseded (2026-08-05):** the public search bar and `StockNav` were
+> removed in the New Arrivals overhaul — see
+> `docs/features/new-arrivals-overhaul.md`. Kept for history.
+
 The StockNav search slot now always renders:
 
 - `/stock` passes its own filter-preserving form as the slot's children —
