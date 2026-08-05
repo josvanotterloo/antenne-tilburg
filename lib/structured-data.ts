@@ -21,8 +21,6 @@ export function productJsonLd(product: CatalogProduct) {
     category: product.genre.name,
     offers: {
       "@type": "Offer",
-      price: Number(product.price).toFixed(2),
-      priceCurrency: "EUR",
       availability: product.inStock
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",

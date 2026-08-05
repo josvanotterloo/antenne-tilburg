@@ -19,7 +19,7 @@ const PRODUCT = {
 };
 
 describe("productJsonLd", () => {
-  it("builds a Product + MusicRecording block with the correct price and InStock availability", () => {
+  it("builds a Product + MusicRecording block with InStock availability and no price", () => {
     const ld = productJsonLd(PRODUCT as never);
     expect(ld["@type"]).toEqual(["Product", "MusicRecording"]);
     expect(ld.name).toBe("Vril — Torus");
@@ -29,8 +29,6 @@ describe("productJsonLd", () => {
     expect(ld.category).toBe("Techno");
     expect(ld.offers).toMatchObject({
       "@type": "Offer",
-      price: "24.99",
-      priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
       seller: {
         "@type": "MusicStore",
@@ -38,6 +36,8 @@ describe("productJsonLd", () => {
         url: "https://antenne-tilburg.nl",
       },
     });
+    expect(ld.offers).not.toHaveProperty("price");
+    expect(ld.offers).not.toHaveProperty("priceCurrency");
   });
 
   it("renders OutOfStock availability when the product is not in stock", () => {

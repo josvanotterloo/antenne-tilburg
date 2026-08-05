@@ -103,7 +103,7 @@ describe("/stock/[id] detail", () => {
     expect(notFound).toHaveBeenCalled();
   });
 
-  it("emits Product + MusicRecording structured data with the correct price and availability", async () => {
+  it("emits Product + MusicRecording structured data with availability and no price", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
     const { container } = render(await call("p1"));
     const ld = container.querySelector('script[type="application/ld+json"]');
@@ -111,7 +111,7 @@ describe("/stock/[id] detail", () => {
     const data = JSON.parse(ld?.textContent ?? "{}");
     expect(data["@type"]).toEqual(["Product", "MusicRecording"]);
     expect(data.name).toBe("Vril — Torus");
-    expect(data.offers.price).toBe("24.99");
     expect(data.offers.availability).toBe("https://schema.org/InStock");
+    expect(data.offers).not.toHaveProperty("price");
   });
 });
