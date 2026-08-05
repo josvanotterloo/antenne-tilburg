@@ -75,14 +75,6 @@ export function composeProductDescription(p: {
   );
 }
 
-// Fresh /stock URLs filtering by a single artist (by id — stable across
-// renames) or label — used by the clickable artist/label links on the
-// listing and detail pages.
-export const stockArtistHref = (artistId: string) =>
-  `/stock?artist=${encodeURIComponent(artistId)}`;
-export const stockLabelHref = (label: string) =>
-  `/stock?label=${encodeURIComponent(label)}`;
-
 export function buildCatalogOrderBy(
   sort?: string,
   order?: string,
@@ -253,13 +245,10 @@ export function getLatestProducts(limit = 100): Promise<CatalogProduct[]> {
   });
 }
 
-// ——— Weekly sections (This Week / Last Week / Back In Stock) ———
-
 // The shop week runs Monday 00:00 – Sunday 24:00 in the shop's timezone, so
 // week boundaries land where a Tilburg crate-digger expects them regardless
 // of the server's clock.
 export const SHOP_TZ = "Europe/Amsterdam";
-export const BACK_IN_STOCK_DAYS = 30;
 
 // On create, createdAt (DB clock) and updatedAt (Prisma client clock) differ
 // by milliseconds; a real restock is minutes-to-days later. One minute cleanly
@@ -326,22 +315,6 @@ export function weekRange(
   return { start: toMidnight(monday), end: toMidnight(nextMonday) };
 }
 
-// Same filter semantics as getCatalogPage, narrowed to what the section
-// pages' sidebar offers. `now` stays injectable for deterministic tests.
-export interface SectionFilters {
-  genreId?: string | null;
-  condition?: "NEW" | "SECONDHAND" | null;
-  now?: Date;
-}
-
-function sectionWhere(f: SectionFilters): Prisma.ProductWhereInput {
-  return buildCatalogWhere({
-    genreId: f.genreId,
-    condition: f.condition,
-    onlyInStock: true,
-  });
-}
-
 // Inclusive shop-local calendar-date range [from 00:00, day-after-to 00:00),
 // as UTC instants. Returns null on malformed dates or a reversed range.
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -391,53 +364,4 @@ export function isRestock(p: {
     new Date(p.updatedAt).getTime() - new Date(p.createdAt).getTime() >
       RESTOCK_EPSILON_MS
   );
-}
-
-function weekProducts(
-  offsetWeeks: number,
-  filters: SectionFilters,
-): Promise<CatalogProduct[]> {
-  const { start, end } = weekRange(offsetWeeks, filters.now ?? new Date());
-  return db.product.findMany({
-    where: { ...sectionWhere(filters), createdAt: { gte: start, lt: end } },
-    orderBy: { createdAt: "desc" },
-    include: CATALOG_INCLUDE,
-  });
-}
-
-// In-stock products added in the current shop week.
-export function getThisWeekProducts(
-  filters: SectionFilters = {},
-): Promise<CatalogProduct[]> {
-  return weekProducts(0, filters);
-}
-
-// In-stock products added in the previous shop week.
-export function getLastWeekProducts(
-  filters: SectionFilters = {},
-): Promise<CatalogProduct[]> {
-  return weekProducts(-1, filters);
-}
-
-// In-stock products touched within the last BACK_IN_STOCK_DAYS whose
-// updatedAt is meaningfully later than createdAt — i.e. changed since they
-// arrived (a restock, a quantity edit, a sale that left stock remaining),
-// not a brand-new arrival. Most recently updated first.
-export async function getBackInStockProducts(
-  filters: SectionFilters = {},
-): Promise<CatalogProduct[]> {
-  const now = filters.now ?? new Date();
-  const rows = await db.product.findMany({
-    where: {
-      ...sectionWhere(filters),
-      quantity: { gt: 0 },
-      updatedAt: {
-        gte: new Date(now.getTime() - BACK_IN_STOCK_DAYS * 86_400_000),
-      },
-    },
-    orderBy: { updatedAt: "desc" },
-    take: 100,
-    include: CATALOG_INCLUDE,
-  });
-  return rows.filter(isRestock);
 }
