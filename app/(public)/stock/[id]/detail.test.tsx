@@ -59,16 +59,20 @@ describe("/stock/[id] detail", () => {
     expect(screen.getByText("Hypnotic dub-techno LP.")).toBeInTheDocument();
   });
 
-  it("links artist and label to filtered stock views", async () => {
+  it("renders artist and label as plain text, not links", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
     render(await call("p1"));
-    expect(screen.getAllByRole("link", { name: "Vril" })[0]).toHaveAttribute(
-      "href",
-      "/stock?artist=a1",
-    );
-    expect(
-      screen.getAllByRole("link", { name: "Zulema Records" })[0],
-    ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
+    expect(screen.getAllByText("Vril").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Vril" })).toBeNull();
+    expect(screen.getAllByText("Zulema Records").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
+  });
+
+  it("does not render a price", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    render(await call("p1"));
+    expect(screen.queryByText(/€/)).toBeNull();
+    expect(screen.queryByRole("term", { name: /price/i })).toBeNull();
   });
 
   it("shows the RESTOCK badge when the product is a restock", async () => {
@@ -103,7 +107,7 @@ describe("/stock/[id] detail", () => {
     expect(notFound).toHaveBeenCalled();
   });
 
-  it("emits Product + MusicRecording structured data with availability and no price", async () => {
+  it("emits Product + MusicRecording structured data without price, with availability", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
     const { container } = render(await call("p1"));
     const ld = container.querySelector('script[type="application/ld+json"]');
@@ -111,7 +115,7 @@ describe("/stock/[id] detail", () => {
     const data = JSON.parse(ld?.textContent ?? "{}");
     expect(data["@type"]).toEqual(["Product", "MusicRecording"]);
     expect(data.name).toBe("Vril — Torus");
+    expect(data.offers.price).toBeUndefined();
     expect(data.offers.availability).toBe("https://schema.org/InStock");
-    expect(data.offers).not.toHaveProperty("price");
   });
 });
