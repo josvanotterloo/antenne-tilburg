@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { catalogPageNumbers, getCatalogPage, joinArtistNames } from "@/lib/catalog";
 import { fullDate, relativeDate } from "@/lib/relative-date";
+import { missingLabelFields } from "@/lib/dymo-label";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 import { SellOneButton } from "./SellOneButton";
@@ -139,6 +140,18 @@ export default async function CatalogPage({
                 </span>
                 <div className="flex items-center gap-3">
                   <SellOneButton id={product.id} quantity={product.quantity} />
+                  {missingLabelFields(product).length === 0 && (
+                    <a
+                      href={`/api/admin/label/${product.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Print label"
+                      title="Print label"
+                      className="text-admin-ink hover:underline"
+                    >
+                      🖨️
+                    </a>
+                  )}
                   <Link
                     href={`/admin/catalog/${product.id}/edit`}
                     className="text-admin-ink hover:underline"

@@ -93,4 +93,24 @@ describe("/admin/catalog", () => {
       expect.objectContaining({ q: "vril", onlyInStock: false }),
     );
   });
+
+  it("shows a print icon link with the correct href for a complete product", async () => {
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(
+      screen.getByRole("link", { name: /print label/i }),
+    ).toHaveAttribute("href", "/api/admin/label/p1");
+  });
+
+  it("hides the print icon for a product missing required fields", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [{ ...PRODUCT, productArtists: [] }] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
+  });
 });
