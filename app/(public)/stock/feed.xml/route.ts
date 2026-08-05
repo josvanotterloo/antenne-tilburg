@@ -1,22 +1,11 @@
-import { db } from "@/lib/db";
-import { joinArtistNames } from "@/lib/catalog";
+import { getLatestProducts, joinArtistNames } from "@/lib/catalog";
 import { productFeed } from "@/lib/rss";
 
 export const dynamic = "force-dynamic";
 
-// RSS feed of the last 50 new arrivals (in-stock, newest first).
+// RSS feed of the last 100 new arrivals (in-stock, newest first) — mirrors /stock.
 export async function GET() {
-  const products = await db.product.findMany({
-    where: { inStock: true },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      label: true,
-      genre: true,
-      productType: true,
-      productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
-    },
-  });
+  const products = await getLatestProducts();
 
   return productFeed({
     title: "Antenne Recordshop — New Arrivals",

@@ -11,7 +11,6 @@ export interface FeedProduct {
   // ProductArtist relation shape.
   artistDisplay: string;
   title: string;
-  price: unknown;
   label: { name: string };
   genre: { name: string };
   productType: { name: string };
@@ -37,7 +36,7 @@ export function productFeed<T extends FeedProduct>(options: {
       const link = `${BASE}/stock/${p.id}`;
       const title = escapeXml(`${p.artistDisplay} — ${p.title}`);
       const desc = escapeXml(
-        `${p.label.name} · ${p.genre.name} · ${p.productType.name} · €${Number(p.price).toFixed(2)}`,
+        `${p.label.name} · ${p.genre.name} · ${p.productType.name}`,
       );
       return `    <item>
       <title>${title}</title>

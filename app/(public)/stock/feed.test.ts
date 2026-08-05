@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/db", () => ({
-  db: { product: { findMany: vi.fn() } },
-}));
+vi.mock("@/lib/catalog", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/catalog")>();
+  return { ...actual, getLatestProducts: vi.fn() };
+});
 
 import { GET } from "@/app/(public)/stock/feed.xml/route";
-import { db } from "@/lib/db";
+import { getLatestProducts } from "@/lib/catalog";
 
 const PRODUCT = {
   id: "p1",
@@ -14,7 +15,6 @@ const PRODUCT = {
     { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
   ],
   title: "Torus",
-  price: "24.99",
   createdAt: new Date("2026-07-01T00:00:00Z"),
   label: { name: "Zulema Records" },
   genre: { name: "Techno" },
@@ -24,8 +24,8 @@ const PRODUCT = {
 describe("/stock/feed.xml", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns an RSS document of recent in-stock arrivals", async () => {
-    vi.mocked(db.product.findMany).mockResolvedValue([PRODUCT] as never);
+  it("returns an RSS document of the last 100 in-stock arrivals, no price", async () => {
+    vi.mocked(getLatestProducts).mockResolvedValue([PRODUCT] as never);
 
     const res = await GET();
     const body = await res.text();
@@ -36,21 +36,15 @@ describe("/stock/feed.xml", () => {
     expect(body).toContain("Vril — Torus");
     expect(body).toContain("/stock/p1");
     expect(body).toContain("Zulema Records");
-    expect(body).toContain("24.99");
+    expect(body).not.toContain("€");
 
-    // last 50, newest first, in-stock only
-    const args = vi.mocked(db.product.findMany).mock.calls[0][0] as {
-      take: number;
-      where: { inStock: boolean };
-      orderBy: { createdAt: string };
-    };
-    expect(args.take).toBe(50);
-    expect(args.where).toEqual({ inStock: true });
-    expect(args.orderBy).toEqual({ createdAt: "desc" });
+    // getLatestProducts() with no args uses its default limit of 100 —
+    // mirrors the /stock page exactly.
+    expect(getLatestProducts).toHaveBeenCalledWith();
   });
 
   it("escapes XML-special characters", async () => {
-    vi.mocked(db.product.findMany).mockResolvedValue([
+    vi.mocked(getLatestProducts).mockResolvedValue([
       { ...PRODUCT, title: "Rock & Roll <mix>" },
     ] as never);
 

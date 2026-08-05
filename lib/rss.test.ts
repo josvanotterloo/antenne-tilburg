@@ -9,7 +9,6 @@ const PRODUCT: FeedProduct = {
   id: "p1",
   artistDisplay: "Vril",
   title: "Torus",
-  price: "24.99",
   label: { name: "Zulema Records" },
   genre: { name: "Techno" },
   productType: { name: "LP" },
@@ -46,7 +45,7 @@ describe("productFeed", () => {
     expect(xml).toContain(`<link>${base}/stock/p1</link>`);
     expect(xml).toContain(`<guid>${base}/stock/p1</guid>`);
     expect(xml).toContain(
-      "<description>Zulema Records · Techno · LP · €24.99</description>",
+      "<description>Zulema Records · Techno · LP</description>",
     );
     expect(xml).toContain(
       `<pubDate>${new Date("2026-07-01T10:00:00Z").toUTCString()}</pubDate>`,
@@ -84,10 +83,5 @@ describe("productFeed", () => {
     expect(xml).not.toContain(`"D"`);
     expect(xml).toContain("A&amp;B &lt;C&gt; &quot;D&quot; &apos;E&apos;");
     expect(xml).toContain("L&amp;B &lt;tag&gt;");
-  });
-
-  it("formats the price to two decimals regardless of input precision", async () => {
-    const { xml } = await xmlOf([{ ...PRODUCT, price: "24.9" }]);
-    expect(xml).toContain("€24.90");
   });
 });
