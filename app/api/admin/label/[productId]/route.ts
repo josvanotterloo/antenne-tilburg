@@ -67,7 +67,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   return new Response(xml, {
     headers: {
-      "content-type": "text/xml",
+      "content-type": "text/xml; charset=utf-8",
       "content-disposition": "inline",
     },
   });

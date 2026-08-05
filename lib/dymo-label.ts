@@ -1,4 +1,4 @@
-import type { CatalogProduct } from "@/lib/catalog";
+import { type CatalogProduct, joinArtistNames } from "@/lib/catalog";
 
 // DYMO Connect Framework XML for the 89x36mm label (part 99012), built as
 // plain string templates — no DYMO SDK dependency. Visual fidelity is
@@ -21,13 +21,6 @@ const CONDITION_LABEL: Record<CatalogProduct["condition"], string> = {
   NEW: "Nieuw",
   SECONDHAND: "Tweedehands",
 };
-
-function joinedArtistNames(product: CatalogProduct): string {
-  return [...product.productArtists]
-    .sort((a, b) => a.position - b.position)
-    .map((pa) => pa.artist.name)
-    .join(" / ");
-}
 
 interface TextSpec {
   name: string;
@@ -76,7 +69,7 @@ function textObject(spec: TextSpec): string {
 // Row layout (twips), landscape 5040x2040 canvas — sums exactly:
 // 60 (top margin) + 640 + 560 + 380 + 340 + 60 (bottom margin) = 2040.
 export function generateLabelXml(product: CatalogProduct): string {
-  const artistLine = joinedArtistNames(product).toUpperCase();
+  const artistLine = joinArtistNames(product.productArtists).toUpperCase();
   const conditionLabel = CONDITION_LABEL[product.condition];
   const line3Right = [product.catalogNumber, product.productType.name, conditionLabel]
     .filter((v): v is string => Boolean(v))
@@ -94,15 +87,15 @@ export function generateLabelXml(product: CatalogProduct): string {
     }),
     textObject({
       name: "LABEL", x: 80, y: 1260, width: 2400, height: 380,
-      align: "Left", fontSize: 9, bold: false, text: product.label.name,
+      align: "Left", fontSize: 9, bold: false, text: product.label.name, shrinkToFit: true,
     }),
     textObject({
       name: "CATINFO", x: 2560, y: 1260, width: 2400, height: 380,
-      align: "Right", fontSize: 9, bold: false, text: line3Right,
+      align: "Right", fontSize: 9, bold: false, text: line3Right, shrinkToFit: true,
     }),
     textObject({
       name: "GENRE", x: 80, y: 1640, width: 1600, height: 340,
-      align: "Left", fontSize: 9, bold: false, text: product.genre.name,
+      align: "Left", fontSize: 9, bold: false, text: product.genre.name, shrinkToFit: true,
     }),
     textObject({
       name: "BRAND", x: 1680, y: 1640, width: 1680, height: 340,

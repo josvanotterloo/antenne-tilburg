@@ -136,4 +136,22 @@ describe("GET /api/admin/label/[productId]", () => {
     const body = await res.json();
     expect(body.error).toMatch(/Dymo Connect/i);
   });
+
+  it("returns 502 with response detail when Dymo Connect responds with a non-2xx status", async () => {
+    process.env.DYMO_MODE = "print";
+    process.env.DYMO_PRINTER_NAME = "DYMO LabelWriter 450";
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("bad printer name", { status: 500 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await call("p1");
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toBe("Dymo Connect print failed");
+    expect(body.detail).toContain("bad printer name");
+  });
 });
