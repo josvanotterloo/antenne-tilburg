@@ -12,6 +12,12 @@ export const PAGE_SIZE = 50;
 export type CatalogSort = "date" | "artist" | "label";
 export type SortOrder = "asc" | "desc";
 
+// artistIds/labelId/productTypeId/justIn below, and the "artist"/"label" sort
+// orders in buildCatalogOrderBy, are general-purpose filtering capability for
+// admin/API consumers — no production caller currently exercises all of them
+// (admin's catalog page only uses q/onlyInStock/sort:date/page as of the New
+// Arrivals overhaul), but they remain part of this module's public contract;
+// verify real callers before deleting rather than assuming dead code.
 export interface CatalogFilters {
   /** Matches if ANY linked artist is in this set — powers the clickable
    * artist chips (multiple chips active = OR). */

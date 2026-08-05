@@ -16,13 +16,7 @@ export function RestockBadge() {
 
 // The /stock list row. Artist, title and label are plain text/detail links —
 // no price, no artist/label filter links (removed with the public filter UI).
-export function ProductRow({
-  product,
-  showCondition,
-}: {
-  product: CatalogProduct;
-  showCondition?: boolean;
-}) {
+export function ProductRow({ product }: { product: CatalogProduct }) {
   return (
     <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
       <span className="min-w-0 flex-1">
@@ -51,12 +45,6 @@ export function ProductRow({
           {product.genre.name}
           {" · "}
           {product.productType.name}
-          {showCondition && (
-            <>
-              {" · "}
-              {product.condition}
-            </>
-          )}
         </span>
       </span>
     </div>
