@@ -34,8 +34,6 @@ No authentication required.
       "genre": "Ambient",
       "productType": "LP",
       "condition": "NEW",
-      "price": "12.99",
-      "currency": "EUR",
       "inStock": true,
       "isRestock": false,
       "url": "https://antenne-tilburg.nl/stock/[id]",

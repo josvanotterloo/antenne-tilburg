@@ -59,8 +59,6 @@ export async function GET(req: Request) {
           genre: p.genre.name,
           productType: p.productType.name,
           condition: p.condition,
-          price: Number(p.price).toFixed(2),
-          currency: "EUR",
           inStock: p.inStock,
           isRestock: isRestock(p),
           url: `${baseUrl}/stock/${p.id}`,

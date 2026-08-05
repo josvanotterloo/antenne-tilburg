@@ -1,6 +1,6 @@
-// Shared RSS 2.0 rendering for the product feeds (/stock/feed.xml and
-// /stock/back-in-stock/feed.xml). Pure string building — the routes supply
-// the products and which timestamp dates each item.
+// Shared RSS 2.0 rendering for the product feed (/stock/feed.xml). Pure
+// string building — the route supplies the products and which timestamp
+// dates each item.
 
 const BASE = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 

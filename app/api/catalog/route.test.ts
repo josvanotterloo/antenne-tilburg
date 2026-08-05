@@ -57,12 +57,12 @@ describe("GET /api/catalog", () => {
       genre: "Ambient",
       productType: "LP",
       condition: "NEW",
-      price: "12.99",
-      currency: "EUR",
       inStock: true,
       isRestock: false,
       url: `${base}/stock/p1`,
     });
+    expect(body.products[0]).not.toHaveProperty("price");
+    expect(body.products[0]).not.toHaveProperty("currency");
     expect(typeof body.generatedAt).toBe("string");
   });
 
