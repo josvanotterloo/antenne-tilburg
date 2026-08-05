@@ -42,11 +42,19 @@ export async function GET(_req: Request, ctx: RouteContext) {
       );
     }
     const body = new URLSearchParams({ printerName, labelXml: xml });
-    const res = await fetch(DYMO_PRINT_URL, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body,
-    });
+    let res: Response;
+    try {
+      res = await fetch(DYMO_PRINT_URL, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body,
+      });
+    } catch {
+      return NextResponse.json(
+        { error: "Could not reach Dymo Connect — is it running?" },
+        { status: 502 },
+      );
+    }
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       return NextResponse.json(

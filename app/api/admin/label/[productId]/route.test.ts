@@ -121,4 +121,19 @@ describe("GET /api/admin/label/[productId]", () => {
     const body = await res.json();
     expect(body.error).toMatch(/DYMO_PRINTER_NAME/);
   });
+
+  it("returns a clear error when Dymo Connect is unreachable in print mode", async () => {
+    process.env.DYMO_MODE = "print";
+    process.env.DYMO_PRINTER_NAME = "DYMO LabelWriter 450";
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+
+    const fetchMock = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await call("p1");
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.error).toMatch(/Dymo Connect/i);
+  });
 });
