@@ -30,7 +30,7 @@ describe("SiteFooter", () => {
   it("links to the five main pages", () => {
     render(<SiteFooter />);
     const nav: [string, string][] = [
-      ["Stock", "/stock"],
+      ["New Arrivals", "/stock"],
       ["Blog", "/blog"],
       ["Visit", "/visit"],
       ["About", "/about"],

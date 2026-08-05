@@ -23,4 +23,11 @@ describe("SiteHeader", () => {
     const logo = screen.getByRole("img", { name: /antenne/i });
     expect(logo).toHaveAttribute("src", "/logo.png");
   });
+
+  it("labels the stock nav link New Arrivals", () => {
+    render(<SiteHeader />);
+    expect(
+      screen.getByRole("link", { name: "New Arrivals" }),
+    ).toHaveAttribute("href", "/stock");
+  });
 });

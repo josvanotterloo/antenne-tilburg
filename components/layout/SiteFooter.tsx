@@ -5,7 +5,7 @@ import NewsletterForm from "@/components/NewsletterForm";
 import SocialLinks from "@/components/SocialLinks";
 
 const NAV = [
-  { href: "/stock", label: "Stock" },
+  { href: "/stock", label: "New Arrivals" },
   { href: "/blog", label: "Blog" },
   { href: "/visit", label: "Visit" },
   { href: "/about", label: "About" },
