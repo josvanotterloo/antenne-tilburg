@@ -72,7 +72,7 @@ export default async function HomePage() {
               href="/stock"
               className="border border-ink bg-ink px-5 py-2 font-mono text-xs font-medium uppercase tracking-[0.06em] text-canvas transition-colors duration-150 ease-out hover:border-signal hover:bg-signal"
             >
-              Browse stock
+              Browse new arrivals
             </Link>
             <Link
               href="/visit"
@@ -92,14 +92,14 @@ export default async function HomePage() {
             href="/stock"
             className="font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
           >
-            All stock →
+            New arrivals →
           </Link>
         </div>
         {products.length === 0 ? (
           <p className="font-mono text-sm text-ink-muted">
             New arrivals will appear here.{" "}
             <Link href="/stock" className="text-ink hover:text-signal">
-              Browse the full stock
+              Browse new arrivals
             </Link>
             .
           </p>
@@ -192,9 +192,6 @@ function JustInRow({ product }: { product: CatalogProduct }) {
         <span className="block truncate font-mono text-xs text-ink-muted">
           {product.label.name} · {product.genre.name}
         </span>
-      </span>
-      <span className="shrink-0 font-mono text-sm tabular-nums text-ink">
-        €{Number(product.price).toFixed(2)}
       </span>
     </Link>
   );

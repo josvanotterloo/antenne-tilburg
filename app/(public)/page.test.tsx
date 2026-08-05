@@ -78,6 +78,23 @@ describe("home page", () => {
     expect(link).toHaveAttribute("href", "/stock/p1");
   });
 
+  it("does not render a price in the Just In section", async () => {
+    render(await HomePage());
+    expect(screen.queryByText(/€/)).toBeNull();
+  });
+
+  it("uses New Arrivals copy for the stock CTAs", async () => {
+    render(await HomePage());
+    expect(screen.getByRole("link", { name: /browse new arrivals/i })).toHaveAttribute(
+      "href",
+      "/stock",
+    );
+    expect(screen.getByRole("link", { name: /new arrivals →/i })).toHaveAttribute(
+      "href",
+      "/stock",
+    );
+  });
+
   it("requests the 100 latest arrivals", async () => {
     await HomePage();
     expect(getLatestProducts).toHaveBeenCalledWith(100);
