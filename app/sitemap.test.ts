@@ -28,6 +28,13 @@ describe("sitemap", () => {
     }
   });
 
+  it("no longer lists the removed weekly stock sections", async () => {
+    const urls = (await sitemap()).map((e) => e.url);
+    for (const path of ["/stock/this-week", "/stock/last-week", "/stock/back-in-stock"]) {
+      expect(urls).not.toContain(`${base}${path}`);
+    }
+  });
+
   it("includes a URL for each published post and in-stock product", async () => {
     const urls = (await sitemap()).map((e) => e.url);
     expect(urls).toContain(`${base}/blog/hello-world`);
