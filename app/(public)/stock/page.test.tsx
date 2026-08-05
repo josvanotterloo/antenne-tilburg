@@ -210,15 +210,12 @@ describe("/stock public filter restrictions", () => {
     expect(arg.justIn).toBeFalsy();
   });
 
-  it("links each product's artist and label to a filtered view", async () => {
+  it("displays artist and label as plain text (not links)", async () => {
     render(await StockPage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByRole("link", { name: "Vril" })).toHaveAttribute(
-      "href",
-      "/stock?artist=a1",
-    );
-    expect(
-      screen.getByRole("link", { name: "Zulema Records" }),
-    ).toHaveAttribute("href", "/stock?label=Zulema%20Records");
+    expect(screen.getByText("Vril")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Vril" })).toBeNull();
+    expect(screen.getByText("Zulema Records")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
   });
 
   it("renders one removable chip per active artist filter", async () => {

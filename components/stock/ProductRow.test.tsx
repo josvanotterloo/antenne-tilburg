@@ -70,16 +70,14 @@ describe("ProductRow — RESTOCK badge", () => {
   });
 });
 
-describe("ProductRow — multiple artists", () => {
-  it("renders a single artist as before", () => {
+describe("ProductRow — artist and label as plain text", () => {
+  it("renders a single artist as plain text, not a link", () => {
     render(<ProductRow product={product() as never} />);
-    expect(screen.getByRole("link", { name: "Vril" })).toHaveAttribute(
-      "href",
-      "/stock?artist=a1",
-    );
+    expect(screen.getByText("Vril")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Vril" })).toBeNull();
   });
 
-  it('renders two artists joined by " / ", each independently clickable', () => {
+  it('renders two artists joined by " / ", both as plain text', () => {
     render(
       <ProductRow
         product={
@@ -92,15 +90,21 @@ describe("ProductRow — multiple artists", () => {
         }
       />,
     );
-    expect(screen.getByRole("link", { name: "Jeff Mills" })).toHaveAttribute(
-      "href",
-      "/stock?artist=a1",
-    );
-    expect(screen.getByRole("link", { name: "Surgeon" })).toHaveAttribute(
-      "href",
-      "/stock?artist=a2",
-    );
-    const wrapper = screen.getByRole("link", { name: "Jeff Mills" }).parentElement;
-    expect(wrapper).toHaveTextContent("Jeff Mills / Surgeon");
+    expect(screen.getByText(/Jeff Mills \/ Surgeon/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Jeff Mills" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Surgeon" })).toBeNull();
+  });
+
+  it("renders the label as plain text, not a link", () => {
+    render(<ProductRow product={product() as never} />);
+    expect(screen.getByText("Zulema Records")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
+  });
+});
+
+describe("ProductRow — no price", () => {
+  it("does not render a price", () => {
+    render(<ProductRow product={product() as never} />);
+    expect(screen.queryByText(/€/)).toBeNull();
   });
 });

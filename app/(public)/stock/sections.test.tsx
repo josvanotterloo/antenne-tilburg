@@ -97,10 +97,9 @@ describe.each(PAGES)("/stock/$name", ({ Page, query, heading, basePath }) => {
     expect(screen.getByText("Torus")).toBeInTheDocument();
     // Genre/condition also appear as sidebar filter links now, so assert
     // them inside the product row's meta line specifically.
-    const meta = screen.getByText("Zulema Records").closest("span");
+    const meta = screen.getByText("Zulema Records").parentElement?.parentElement;
     expect(meta).toHaveTextContent(/Techno/);
     expect(meta).toHaveTextContent(/NEW/);
-    expect(screen.getByText(/€24\.99/)).toBeInTheDocument();
   });
 
   it("shows the RESTOCK badge when the product is a restock (e.g. new this week AND restocked)", async () => {

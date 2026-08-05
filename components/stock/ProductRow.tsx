@@ -1,13 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import {
-  isJustIn,
-  isRestock,
-  stockArtistHref,
-  stockLabelHref,
-  type CatalogProduct,
-} from "@/lib/catalog";
+import { isJustIn, isRestock, type CatalogProduct } from "@/lib/catalog";
 
 const badgeClass =
   "ml-2 align-middle font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal";
@@ -20,9 +14,8 @@ export function RestockBadge() {
   return <span className={badgeClass}>Restock</span>;
 }
 
-// The /stock list row, shared with the weekly section pages. Rows carry three
-// distinct links (artist → filter, title/price → detail, label → filter)
-// rather than one wrapping anchor, so no anchors are nested.
+// The /stock list row. Artist, title and label are plain text/detail links —
+// no price, no artist/label filter links (removed with the public filter UI).
 export function ProductRow({
   product,
   showCondition,
@@ -33,18 +26,13 @@ export function ProductRow({
   return (
     <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
       <span className="min-w-0 flex-1">
-        <span>
+        <span className="font-medium text-ink">
           {[...product.productArtists]
             .sort((a, b) => a.position - b.position)
             .map((pa, i) => (
               <Fragment key={pa.artistId}>
                 {i > 0 && " / "}
-                <Link
-                  href={stockArtistHref(pa.artistId)}
-                  className="font-medium text-ink transition-colors duration-150 ease-out hover:text-signal"
-                >
-                  {pa.artist.name}
-                </Link>
+                {pa.artist.name}
               </Fragment>
             ))}
         </span>
@@ -58,12 +46,7 @@ export function ProductRow({
         {isJustIn(product.createdAt) && <JustInBadge />}
         {isRestock(product) && <RestockBadge />}
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
-          <Link
-            href={stockLabelHref(product.label.name)}
-            className="transition-colors duration-150 ease-out hover:text-signal"
-          >
-            {product.label.name}
-          </Link>
+          <span>{product.label.name}</span>
           {" · "}
           {product.genre.name}
           {" · "}
@@ -76,12 +59,6 @@ export function ProductRow({
           )}
         </span>
       </span>
-      <Link
-        href={`/stock/${product.id}`}
-        className="shrink-0 font-mono text-sm tabular-nums text-ink transition-colors duration-150 ease-out hover:text-signal"
-      >
-        €{Number(product.price).toFixed(2)}
-      </Link>
     </div>
   );
 }
