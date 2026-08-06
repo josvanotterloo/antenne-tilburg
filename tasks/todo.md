@@ -33,6 +33,15 @@ real admin UIs.
       Dymo Connect service. Physical-printer verification (paper `<Id>`,
       row 3/4 text fitting, print-success response shape) still pending —
       `docs/features/dymo-label-printing.md`
+- [x] Reference page typeahead (2026-08-06) — `/admin/catalog/reference`
+      (labels/genres/product-types/artists) upgraded from an unbounded flat
+      list to server-side search, reusing the existing `?q=` typeahead
+      endpoints. Fixes the actual scale bug (the page's own SSR fetch
+      loaded every row, no limit) at production scale (55k+ artists,
+      10k+ labels). Deferred: `Combobox`'s `_count` join now runs on every
+      typeahead caller including the product-form combobox (bounded cost,
+      not a shared hook with `ReferenceSection`'s debounce by deliberate
+      design) — `docs/features/reference-page-typeahead.md`
 
 ## Backlog
 
@@ -129,13 +138,14 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 769 tests (as of Dymo label
-printing, 2026-08-06) cover managed-list delete guards, `authorize()`, notice
-active-window logic, fuzzy search, uploads, markdown rendering, sitemap, the
-public catalog API, Schema.org structured data, Dymo label XML generation, and
+Done — Vitest runner + `run-tests` skill in place; 789 tests (as of the
+reference page typeahead, 2026-08-06) cover managed-list delete guards,
+`authorize()`, notice active-window logic, fuzzy search, uploads, markdown
+rendering, sitemap, the public catalog API, Schema.org structured data, Dymo
+label XML generation, reference-data typeahead search, and
 the public/admin flows. (739 as of the New Arrivals overhaul, 2026-08-05, down
-from 781 — expected, see that entry's history; +30 since for Dymo label
-printing.)
+from 781 — expected, see that entry's history; +30 for Dymo label printing,
++20 for the reference page typeahead.)
 
 ## Done
 
