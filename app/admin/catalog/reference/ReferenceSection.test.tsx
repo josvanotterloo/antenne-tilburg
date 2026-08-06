@@ -34,6 +34,17 @@ function mockFetch(overrides: { post?: ReferenceItem } = {}) {
   }) as unknown as ReturnType<typeof vi.fn>;
 }
 
+// Same shape as Combobox.test.tsx's helper of the same name — extracts the
+// ?q= search terms actually sent to the server, GET requests only, so tests
+// can assert on debounce coalescing (how many requests, for which queries)
+// instead of only the eventual DOM state.
+function requestedQueries(fetchMock: ReturnType<typeof vi.fn>): string[] {
+  return fetchMock.mock.calls
+    .filter(([, init]) => !init || !init.method || init.method === "GET")
+    .map(([url]) => new URL(String(url), "http://test").searchParams.get("q"))
+    .filter((q): q is string => q !== null);
+}
+
 function setup(overrides: Partial<Parameters<typeof ReferenceSection>[0]> = {}) {
   render(
     <ReferenceSection
@@ -47,8 +58,10 @@ function setup(overrides: Partial<Parameters<typeof ReferenceSection>[0]> = {}) 
 }
 
 describe("ReferenceSection", () => {
+  let fetchMock: ReturnType<typeof mockFetch>;
+
   beforeEach(() => {
-    mockFetch();
+    fetchMock = mockFetch();
   });
   afterEach(() => vi.restoreAllMocks());
 
@@ -64,6 +77,16 @@ describe("ReferenceSection", () => {
     expect(screen.getByText(/90 genres/i)).toBeInTheDocument();
   });
 
+  it("does not refetch on initial mount — initialItems already reflect the empty-query search", async () => {
+    setup();
+    // Wait past ReferenceSection's 200ms search debounce: a fetch fired by
+    // a mount-triggered effect run would still be pending immediately after
+    // render (it's behind that timer), so asserting synchronously here
+    // wouldn't actually exercise the mount-skip guard.
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("updates results as the user types, debounced", async () => {
     const user = userEvent.setup();
     setup();
@@ -77,6 +100,13 @@ describe("ReferenceSection", () => {
 
     expect(await screen.findByText("Techno")).toBeInTheDocument();
     expect(screen.queryByText("Ambient")).toBeNull();
+
+    // Debounce coalescing: intermediate keystrokes ("t", "te") never reach
+    // the server, and the settled query is only requested once.
+    const queries = requestedQueries(fetchMock);
+    expect(queries.filter((q) => q === "tec")).toHaveLength(1);
+    expect(queries).not.toContain("t");
+    expect(queries).not.toContain("te");
   });
 
   it("increments the total and shows a newly-added item that matches the empty query", async () => {
@@ -144,5 +174,58 @@ describe("ReferenceSection", () => {
 
     expect(await screen.findByText(/89 genres/i)).toBeInTheDocument();
     expect(screen.queryByText("Ambient")).toBeNull();
+  });
+
+  it("ignores a slow, stale search response that resolves after a newer one (out-of-order request guard)", async () => {
+    const user = userEvent.setup();
+
+    // Replaces the shared beforeEach mock with one whose GET responses never
+    // resolve on their own — each is held open until the test explicitly
+    // resolves it, in whichever order the test chooses. This is what lets
+    // us simulate a real out-of-order network response: the older request
+    // ("tec") is made first but resolves *last*.
+    type Resolver = (items: ReferenceItem[]) => void;
+    const resolvers: Resolver[] = [];
+    const fetchOrder: string[] = [];
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const q = new URL(String(url), "http://test").searchParams.get("q") ?? "";
+      fetchOrder.push(q);
+      return new Promise<Response>((resolve) => {
+        resolvers.push((items) =>
+          resolve(new Response(JSON.stringify(items), { status: 200 })),
+        );
+      });
+    });
+
+    setup();
+    const searchbox = screen.getByRole("searchbox", { name: /search genres/i });
+
+    // First search settles and its (still-unresolved) request goes out.
+    await user.type(searchbox, "tec");
+    await waitFor(() => expect(fetchOrder).toContain("tec"));
+
+    // Second, different search settles too — its request also goes out
+    // while "tec"'s response is still pending.
+    await user.clear(searchbox);
+    await user.type(searchbox, "hou");
+    await waitFor(() => expect(fetchOrder).toContain("hou"));
+
+    expect(fetchOrder).toEqual(["tec", "hou"]);
+    expect(resolvers).toHaveLength(2);
+
+    // Resolve the newer request ("hou") first, then the older, slower one
+    // ("tec") last — the guard should make the component keep "hou"'s
+    // results and ignore "tec"'s late, stale arrival.
+    resolvers[1]([{ id: "2", name: "House", productCount: 3 }]);
+    expect(await screen.findByText("House")).toBeInTheDocument();
+
+    resolvers[0]([{ id: "3", name: "Techno", productCount: 5 }]);
+    // Let the now-resolving "tec" response's promise chain run to
+    // completion (await fetch -> await res.json() -> state check) before
+    // asserting it had no effect.
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(screen.getByText("House")).toBeInTheDocument();
+    expect(screen.queryByText("Techno")).toBeNull();
   });
 });
