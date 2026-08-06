@@ -89,6 +89,12 @@ export function ReferenceSection({
       const matchesQuery =
         trimmedQuery === "" ||
         created.name.toLowerCase().includes(trimmedQuery.toLowerCase());
+      // Invalidate any search response still in flight from before this
+      // mutation — same seq-guard the search effect already uses to drop
+      // out-of-order responses. Bump unconditionally: even when the add
+      // doesn't change the visible list, a stale response could still land
+      // and clobber `items` with pre-mutation results.
+      searchSeq.current++;
       if (matchesQuery) {
         setItems((prev) =>
           [...prev, { ...created, productCount: 0 }].sort((a, b) =>
@@ -112,6 +118,9 @@ export function ReferenceSection({
       // Stays visible even if the rename no longer matches the active
       // search query — an admin editing an item shouldn't see it vanish
       // out from under them mid-edit.
+      // Invalidate any search response still in flight from before this
+      // mutation — see the matching comment in handleAdd.
+      searchSeq.current++;
       setItems((prev) =>
         prev
           .map((item) => (item.id === id ? { ...item, name } : item))
@@ -124,6 +133,9 @@ export function ReferenceSection({
   function handleDelete(id: string) {
     run(async () => {
       await apiSend(`${endpoint}/${id}`, { method: "DELETE" });
+      // Invalidate any search response still in flight from before this
+      // mutation — see the matching comment in handleAdd.
+      searchSeq.current++;
       setItems((prev) => prev.filter((item) => item.id !== id));
       setTotalCount((n) => n - 1);
     });

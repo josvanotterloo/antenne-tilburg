@@ -229,6 +229,62 @@ describe("ReferenceSection", () => {
     expect(screen.queryByText("Techno")).toBeNull();
   });
 
+  it("does not let a stale search response clobber an optimistically-added item (search-vs-mutation race)", async () => {
+    const user = userEvent.setup();
+
+    // Same manually-controlled-resolver technique as the search-vs-search
+    // race above, but this time the race is between an in-flight search and
+    // a mutation: GET ("search") responses are held open until the test
+    // explicitly resolves them; POST ("add") resolves immediately, so the
+    // optimistic add can land *before* the stale search response does.
+    type Resolver = (items: ReferenceItem[]) => void;
+    const resolvers: Resolver[] = [];
+    const fetchOrder: string[] = [];
+    const created = { id: "9", name: "Technics" };
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+      const method = init?.method ?? "GET";
+      if (method === "POST") {
+        return new Response(JSON.stringify(created), { status: 201 });
+      }
+      const q = new URL(String(url), "http://test").searchParams.get("q") ?? "";
+      fetchOrder.push(q);
+      return new Promise<Response>((resolve) => {
+        resolvers.push((items) =>
+          resolve(new Response(JSON.stringify(items), { status: 200 })),
+        );
+      });
+    });
+
+    setup();
+    const searchbox = screen.getByRole("searchbox", { name: /search genres/i });
+
+    // Search settles and its request goes out, but is held open — it's
+    // still in flight when the mutation below happens.
+    await user.type(searchbox, "tec");
+    await waitFor(() => expect(fetchOrder).toContain("tec"));
+    expect(resolvers).toHaveLength(1);
+
+    // While the search is still pending, add a new item that matches the
+    // active query ("Technics" matches "tec") — its POST resolves
+    // immediately, so the optimistic setItems runs before the stale search
+    // response below does.
+    await user.type(
+      screen.getByRole("textbox", { name: /new genres name/i }),
+      "Technics",
+    );
+    await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+    expect(await screen.findByText("Technics")).toBeInTheDocument();
+
+    // Now the earlier, now-stale "tec" search response finally resolves,
+    // with results computed from before the mutation happened server-side.
+    // It must not clobber the optimistic add.
+    resolvers[0]([{ id: "3", name: "Techno", productCount: 5 }]);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(screen.getByText("Technics")).toBeInTheDocument();
+  });
+
   it("shows an empty-state message when a search matches nothing", async () => {
     const user = userEvent.setup();
     setup();
