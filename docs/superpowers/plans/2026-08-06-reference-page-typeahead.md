@@ -203,8 +203,8 @@ git commit -m "feat: add product count to reference typeahead GET responses"
 
 **Files:**
 - Modify: `app/api/admin/artists/route.ts`
-- Modify: `app/api/admin/reference-routes.test.ts`
 - Create: `app/api/admin/artists/route.test.ts`
+- (`app/api/admin/reference-routes.test.ts` — already updated in Task 1, see Step 4 below)
 
 **Interfaces:**
 - Consumes: `collectionHandlers` with its new `options` param from Task 1.
@@ -294,41 +294,12 @@ describe("POST /api/admin/artists", () => {
 Run: `npx vitest run app/api/admin/artists/route.test.ts`
 Expected: FAIL until Step 1's edit lands — if you do Step 1 before writing the test, run this only to confirm the test itself is meaningful (temporarily revert the `countField` option and confirm the first test fails on `productArtists: 12` vs `products` mismatch, then restore). If Step 1 is already applied, this step should PASS immediately — in that case, temporarily change `countField` to `"products"` in `artists/route.ts`, confirm the first test fails, then restore it to `"productArtists"` and confirm it passes again. Either way you must observe a real failure before the real pass.
 
-- [ ] **Step 4: Update `reference-routes.test.ts` for the same contract change (labels/genres/product-types)**
-
-Edit `app/api/admin/reference-routes.test.ts` — replace the two GET tests inside the `describe.each(RESOURCES)` block:
-
-```ts
-    it("GET without q returns the first 20 alphabetically, with product counts", async () => {
-      model.findMany.mockResolvedValue([
-        { id: "1", name: "X", _count: { products: 0 } },
-      ]);
-      const res = await col.GET(new Request("http://test/api"));
-      expect(await res.json()).toEqual([{ id: "1", name: "X", productCount: 0 }]);
-      expect(model.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ orderBy: { name: "asc" }, take: 20 }),
-      );
-      const args = model.findMany.mock.calls[0][0];
-      expect(args.where).toBeUndefined();
-      expect(args.include).toEqual({ _count: { select: { products: true } } });
-    });
-
-    it("GET with ?q= filters by name, case-insensitive, capped at 20", async () => {
-      model.findMany.mockResolvedValue([
-        { id: "2", name: "Tresor", _count: { products: 5 } },
-      ]);
-      const res = await col.GET(new Request("http://test/api?q=tre"));
-      expect(await res.json()).toEqual([{ id: "2", name: "Tresor", productCount: 5 }]);
-      expect(model.findMany).toHaveBeenCalledWith({
-        where: { name: { contains: "tre", mode: "insensitive" } },
-        orderBy: { name: "asc" },
-        take: 20,
-        include: { _count: { select: { products: true } } },
-      });
-    });
-```
-
-The `"DELETE enforces the in-use guard on this model"` test in the same file is unaffected (exercises `findUnique`, not `findMany`) — leave it as-is.
+- [x] **Step 4 (already done — moved into Task 1):** `app/api/admin/reference-routes.test.ts`'s
+GET-contract tests were updated as part of Task 1's own commit (`10da3be`),
+not this task. Task 1's implementer correctly caught that its interface
+change broke this file too — leaving it for Task 2 would have meant Task
+1's commit landed with the suite red, violating "each commit leaves the
+codebase passing." Nothing left to do here; skip straight to Step 5.
 
 - [ ] **Step 5: Run both test files to verify they pass**
 
@@ -338,7 +309,7 @@ Expected: PASS
 - [ ] **Step 6: Commit**
 
 ```bash
-git add app/api/admin/artists/route.ts app/api/admin/artists/route.test.ts app/api/admin/reference-routes.test.ts
+git add app/api/admin/artists/route.ts app/api/admin/artists/route.test.ts
 git commit -m "feat: source artist typeahead product counts from productArtists"
 ```
 
