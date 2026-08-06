@@ -317,6 +317,24 @@ git commit -m "feat: source artist typeahead product counts from productArtists"
 
 ### Task 3: `page.tsx` — bounded initial fetch + grand totals
 
+> **Execution note:** Tasks 3 and 4 landed as ONE combined commit
+> (`3e10ac9`), not two separate ones as originally planned. `page.tsx`'s new
+> `initialTotal` prop is a required prop `ReferenceSection` doesn't accept
+> until Task 4's changes — committing Task 3 alone would leave `tsc
+> --noEmit` red between commits, violating "each commit leaves the codebase
+> passing." The implementer correctly caught this via the pre-commit hook
+> and escalated rather than using `--no-verify`; the controller resolved it
+> by merging the two tasks into one commit. Two more real bugs were found
+> and fixed along the way (both approved by the controller, not unilateral
+> test-weakening): a race condition in one of Task 4's tests (`findByText`
+> resolved before the debounced search actually ran, since the item was
+> already present from the initial render) fixed with a `waitFor` on
+> different evidence; and an environment-locale-dependent test assertion
+> (`toLocaleString()` with no pinned locale — consistent with 6 other
+> existing admin call sites, so the component was correctly left as
+> planned) fixed with a locale-tolerant regex instead of pinning a locale
+> nothing else in the codebase pins.
+
 **Files:**
 - Modify: `app/admin/catalog/reference/page.tsx`
 - Create: `app/admin/catalog/reference/page.test.tsx`
