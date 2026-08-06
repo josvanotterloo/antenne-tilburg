@@ -25,6 +25,14 @@ real admin UIs.
       order), and a `StockTransaction` ledger replacing the old hand-edited
       `Product.quantity` — `docs/features/stock-management.md` (supersedes
       `docs/features/stock-quantity.md`)
+- [x] Dymo label printing (2026-08-06) — `GET /api/admin/label/[productId]`
+      generates DYMO Connect XML for a 89×36mm label (part 99012); Print
+      label button on the edit page and a print icon on the catalog list,
+      both gated on a required-fields guard. `DYMO_MODE=preview` (default)
+      serves the XML for manual verification; `print` POSTs it to the local
+      Dymo Connect service. Physical-printer verification (paper `<Id>`,
+      row 3/4 text fitting, print-success response shape) still pending —
+      `docs/features/dymo-label-printing.md`
 
 ## Backlog
 
@@ -121,14 +129,13 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 739 tests (as of the New
-Arrivals overhaul, 2026-08-05) cover managed-list delete guards, `authorize()`,
-notice active-window logic, fuzzy search, uploads, markdown rendering, sitemap,
-the public catalog API, Schema.org structured data, and the public/admin flows.
-(Count dropped from 781 in this branch — expected: the This Week/Last Week/Back
-In Stock sections, their filter/search/pagination UI, and the now-impossible
-`restock-detection.feature` scenario were deleted along with the features they
-tested, not a coverage regression.)
+Done — Vitest runner + `run-tests` skill in place; 769 tests (as of Dymo label
+printing, 2026-08-06) cover managed-list delete guards, `authorize()`, notice
+active-window logic, fuzzy search, uploads, markdown rendering, sitemap, the
+public catalog API, Schema.org structured data, Dymo label XML generation, and
+the public/admin flows. (739 as of the New Arrivals overhaul, 2026-08-05, down
+from 781 — expected, see that entry's history; +30 since for Dymo label
+printing.)
 
 ## Done
 
