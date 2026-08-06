@@ -40,36 +40,58 @@ describe("collectionHandlers", () => {
     mockRequireAdmin.mockResolvedValue(null); // allowed by default
   });
 
-  // Contract changed deliberately (typeahead): GET reads ?q= and caps results.
-  it("GET returns the first page ordered by name", async () => {
+  it("GET returns the first page ordered by name, with each item's product count", async () => {
     const { fns, delegate } = makeDelegate();
-    fns.findMany.mockResolvedValue([{ id: "1", name: "Techno" }]);
+    fns.findMany.mockResolvedValue([
+      { id: "1", name: "Techno", _count: { products: 3 } },
+    ]);
     const { GET } = collectionHandlers(delegate);
 
     const res = await GET(new Request("http://test/api"));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual([{ id: "1", name: "Techno" }]);
+    expect(await res.json()).toEqual([{ id: "1", name: "Techno", productCount: 3 }]);
     expect(fns.findMany).toHaveBeenCalledWith({
       where: undefined,
       orderBy: { name: "asc" },
       take: 20,
+      include: { _count: { select: { products: true } } },
     });
   });
 
   it("GET filters by ?q= case-insensitively", async () => {
     const { fns, delegate } = makeDelegate();
-    fns.findMany.mockResolvedValue([{ id: "2", name: "Tresor" }]);
+    fns.findMany.mockResolvedValue([
+      { id: "2", name: "Tresor", _count: { products: 0 } },
+    ]);
     const { GET } = collectionHandlers(delegate);
 
     const res = await GET(new Request("http://test/api?q=tre"));
 
-    expect(await res.json()).toEqual([{ id: "2", name: "Tresor" }]);
+    expect(await res.json()).toEqual([{ id: "2", name: "Tresor", productCount: 0 }]);
     expect(fns.findMany).toHaveBeenCalledWith({
       where: { name: { contains: "tre", mode: "insensitive" } },
       orderBy: { name: "asc" },
       take: 20,
+      include: { _count: { select: { products: true } } },
     });
+  });
+
+  it("GET maps a custom countField into productCount", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findMany.mockResolvedValue([
+      { id: "3", name: "Vril", _count: { productArtists: 7 } },
+    ]);
+    const { GET } = collectionHandlers(delegate, { countField: "productArtists" });
+
+    const res = await GET(new Request("http://test/api"));
+
+    expect(await res.json()).toEqual([{ id: "3", name: "Vril", productCount: 7 }]);
+    expect(fns.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: { _count: { select: { productArtists: true } } },
+      }),
+    );
   });
 
   it("GET returns the 401 from requireAdmin without hitting the db", async () => {

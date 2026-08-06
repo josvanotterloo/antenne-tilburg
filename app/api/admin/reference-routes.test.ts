@@ -67,25 +67,31 @@ describe.each(RESOURCES)(
     // GET is a typeahead endpoint: ?q= filters case-insensitively, results are
     // alphabetical and capped at 20. (Deliberate contract change from
     // "return all rows" — the combobox now searches server-side.)
-    it("GET without q returns the first 20 alphabetically", async () => {
-      model.findMany.mockResolvedValue([{ id: "1", name: "X" }]);
+    it("GET without q returns the first 20 alphabetically, with product counts", async () => {
+      model.findMany.mockResolvedValue([
+        { id: "1", name: "X", _count: { products: 0 } },
+      ]);
       const res = await col.GET(new Request("http://test/api"));
-      expect(await res.json()).toEqual([{ id: "1", name: "X" }]);
+      expect(await res.json()).toEqual([{ id: "1", name: "X", productCount: 0 }]);
       expect(model.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ orderBy: { name: "asc" }, take: 20 }),
       );
       const args = model.findMany.mock.calls[0][0];
       expect(args.where).toBeUndefined();
+      expect(args.include).toEqual({ _count: { select: { products: true } } });
     });
 
     it("GET with ?q= filters by name, case-insensitive, capped at 20", async () => {
-      model.findMany.mockResolvedValue([{ id: "2", name: "Tresor" }]);
+      model.findMany.mockResolvedValue([
+        { id: "2", name: "Tresor", _count: { products: 5 } },
+      ]);
       const res = await col.GET(new Request("http://test/api?q=tre"));
-      expect(await res.json()).toEqual([{ id: "2", name: "Tresor" }]);
+      expect(await res.json()).toEqual([{ id: "2", name: "Tresor", productCount: 5 }]);
       expect(model.findMany).toHaveBeenCalledWith({
         where: { name: { contains: "tre", mode: "insensitive" } },
         orderBy: { name: "asc" },
         take: 20,
+        include: { _count: { select: { products: true } } },
       });
     });
 

@@ -20,7 +20,8 @@ export interface ReferenceDelegate {
     where?: { name: { contains: string; mode: "insensitive" } };
     orderBy: { name: "asc" };
     take: number;
-  }): Promise<ReferenceRecord[]>;
+    include: { _count: { select: Record<string, true> } };
+  }): Promise<(ReferenceRecord & { _count: Record<string, number> })[]>;
   create(args: { data: { name: string } }): Promise<ReferenceRecord>;
   findUnique(args: {
     where: { id: string };
@@ -47,18 +48,30 @@ function isUniqueViolation(error: unknown): boolean {
 // thousands of rows.
 const SEARCH_LIMIT = 20;
 
-export function collectionHandlers(delegate: ReferenceDelegate) {
+export function collectionHandlers(
+  delegate: ReferenceDelegate,
+  options: { countField?: string } = {},
+) {
+  const countField = options.countField ?? "products";
+
   // Typeahead search: ?q= filters by name (case-insensitive substring);
-  // results are alphabetical, capped at SEARCH_LIMIT. No q → first page.
+  // results are alphabetical, capped at SEARCH_LIMIT, each carrying the
+  // product count for the caller's delete-guard UX. No q → first page.
   async function GET(req: Request) {
     const denied = await requireAdmin();
     if (denied) return denied;
     const q = new URL(req.url).searchParams.get("q")?.trim() ?? "";
-    const items = await delegate.findMany({
+    const rows = await delegate.findMany({
       where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
       orderBy: { name: "asc" },
       take: SEARCH_LIMIT,
+      include: { _count: { select: { [countField]: true } } },
     });
+    const items = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      productCount: r._count[countField],
+    }));
     return NextResponse.json(items);
   }
 
