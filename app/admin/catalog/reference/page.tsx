@@ -5,13 +5,19 @@ import { ReferenceSection, type ReferenceItem } from "./ReferenceSection";
 // Reads live reference data; never prerender at build time.
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 20;
+
 type WithCount = { id: string; name: string; _count: { products: number } };
 
 const toItems = (rows: WithCount[]): ReferenceItem[] =>
   rows.map((r) => ({ id: r.id, name: r.name, productCount: r._count.products }));
 
-const withCount = {
+// First page only — these tables can hold tens of thousands of rows
+// (55k+ artists in production), so an unbounded findMany here would defeat
+// the point of the typeahead search this page hands off to on the client.
+const firstPage = {
   orderBy: { name: "asc" as const },
+  take: PAGE_SIZE,
   include: { _count: { select: { products: true } } },
 };
 
@@ -32,14 +38,28 @@ const toArtistItems = (rows: ArtistWithCount[]): ReferenceItem[] =>
   }));
 
 export default async function ReferenceDataPage() {
-  const [labels, genres, productTypes, artists] = await Promise.all([
-    db.label.findMany(withCount),
-    db.genre.findMany(withCount),
-    db.productType.findMany(withCount),
+  const [
+    labels,
+    labelTotal,
+    genres,
+    genreTotal,
+    productTypes,
+    productTypeTotal,
+    artists,
+    artistTotal,
+  ] = await Promise.all([
+    db.label.findMany(firstPage),
+    db.label.count(),
+    db.genre.findMany(firstPage),
+    db.genre.count(),
+    db.productType.findMany(firstPage),
+    db.productType.count(),
     db.artist.findMany({
       orderBy: { name: "asc" },
+      take: PAGE_SIZE,
       include: { _count: { select: { productArtists: true } } },
     }),
+    db.artist.count(),
   ]);
 
   return (
@@ -56,21 +76,25 @@ export default async function ReferenceDataPage() {
           title="Labels"
           endpoint="/api/admin/labels"
           initialItems={toItems(labels)}
+          initialTotal={labelTotal}
         />
         <ReferenceSection
           title="Genres"
           endpoint="/api/admin/genres"
           initialItems={toItems(genres)}
+          initialTotal={genreTotal}
         />
         <ReferenceSection
           title="Product Types"
           endpoint="/api/admin/product-types"
           initialItems={toItems(productTypes)}
+          initialTotal={productTypeTotal}
         />
         <ReferenceSection
           title="Artists"
           endpoint="/api/admin/artists"
           initialItems={toArtistItems(artists)}
+          initialTotal={artistTotal}
         />
       </div>
     </div>
