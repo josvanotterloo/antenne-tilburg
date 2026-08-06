@@ -22,6 +22,7 @@ enum PostStatus {
 
 enum SupplyOrderStatus {
   PENDING
+  SENT
   PARTIAL
   RECEIVED
 }
@@ -44,11 +45,15 @@ model User {
 // --- Managed reference lists (each has its own admin CRUD) ---
 
 model Label {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  name       String    @unique
+  products   Product[]
+  supplierId String?
+  supplier   Supplier? @relation(fields: [supplierId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([supplierId])
 }
 
 model Genre {
@@ -116,6 +121,8 @@ model Product {
   catalogNumber     String?
   labelId           String
   label             Label           @relation(fields: [labelId], references: [id])
+  supplierId        String?
+  supplier          Supplier?       @relation(fields: [supplierId], references: [id])
   productTypeId     String
   productType       ProductType     @relation(fields: [productTypeId], references: [id])
   genreId           String
@@ -140,6 +147,7 @@ model Product {
   searchVector Unsupported("tsvector")? @map("search_vector")
 
   @@index([labelId])
+  @@index([supplierId])
   @@index([productTypeId])
   @@index([genreId])
   @@index([condition])
@@ -153,6 +161,8 @@ model Supplier {
   name         String        @unique
   contact      String?
   supplyOrders SupplyOrder[]
+  products     Product[]
+  labels       Label[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
