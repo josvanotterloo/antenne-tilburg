@@ -50,7 +50,7 @@ const SEARCH_LIMIT = 20;
 
 export function collectionHandlers(
   delegate: ReferenceDelegate,
-  options: { countField?: string } = {},
+  options: { countField?: "products" | "productArtists" } = {},
 ) {
   const countField = options.countField ?? "products";
 

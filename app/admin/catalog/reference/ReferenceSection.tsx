@@ -13,6 +13,11 @@ export interface ReferenceItem {
 
 const SEARCH_DEBOUNCE_MS = 200;
 
+// Matches the reference API's SEARCH_LIMIT (lib/reference-crud.ts) — when a
+// result set is exactly this size, it may have been truncated server-side,
+// so we hint at that rather than let it read as "that's everything."
+const SEARCH_RESULT_CAP = 20;
+
 export function ReferenceSection({
   title,
   endpoint,
@@ -166,66 +171,78 @@ export function ReferenceSection({
         </p>
       )}
 
-      <ul className="mt-3 divide-y divide-admin-hairline">
-        {items.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-center justify-between gap-2 py-2 text-sm"
-          >
-            {editingId === item.id ? (
-              <>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  aria-label={`Edit ${item.name}`}
-                  className="flex-1 rounded border border-admin-hairline px-2 py-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSaveEdit(item.id)}
-                  className="text-admin-ink hover:underline"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingId(null)}
-                  className="text-admin-ink-muted hover:underline"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <span className="flex-1">{item.name}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(item.id);
-                    setEditName(item.name);
-                  }}
-                  className="text-admin-ink hover:underline"
-                >
-                  Edit
-                </button>
-                {item.productCount > 0 ? (
-                  <span className="text-admin-ink-muted">
-                    In use by {item.productCount} products
-                  </span>
+      {items.length === 0 ? (
+        <p className="mt-3 text-sm text-admin-ink-muted">No matches.</p>
+      ) : (
+        <>
+          <ul className="mt-3 divide-y divide-admin-hairline">
+            {items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center justify-between gap-2 py-2 text-sm"
+              >
+                {editingId === item.id ? (
+                  <>
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      aria-label={`Edit ${item.name}`}
+                      className="flex-1 rounded border border-admin-hairline px-2 py-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleSaveEdit(item.id)}
+                      className="text-admin-ink hover:underline"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="text-admin-ink-muted hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(item.id)}
-                    className="text-red-400 hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <>
+                    <span className="flex-1">{item.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingId(item.id);
+                        setEditName(item.name);
+                      }}
+                      className="text-admin-ink hover:underline"
+                    >
+                      Edit
+                    </button>
+                    {item.productCount > 0 ? (
+                      <span className="text-admin-ink-muted">
+                        In use by {item.productCount} products
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-red-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
+              </li>
+            ))}
+          </ul>
+          {items.length === SEARCH_RESULT_CAP && (
+            <p className="mt-2 text-sm text-admin-ink-muted">
+              Showing the first {SEARCH_RESULT_CAP} — refine your search to
+              narrow further.
+            </p>
+          )}
+        </>
+      )}
     </section>
   );
 }

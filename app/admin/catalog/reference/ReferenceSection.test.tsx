@@ -228,4 +228,50 @@ describe("ReferenceSection", () => {
     expect(screen.getByText("House")).toBeInTheDocument();
     expect(screen.queryByText("Techno")).toBeNull();
   });
+
+  it("shows an empty-state message when a search matches nothing", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search genres/i }),
+      "zzznomatch",
+    );
+
+    expect(await screen.findByText(/no matches/i)).toBeInTheDocument();
+    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+  });
+
+  it("hints that results are truncated when the 20-result cap is hit", async () => {
+    const user = userEvent.setup();
+    const twenty: ReferenceItem[] = Array.from({ length: 20 }, (_, i) => ({
+      id: String(i),
+      name: `Item ${i}`,
+      productCount: 0,
+    }));
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+      return new Response(JSON.stringify(twenty), { status: 200 });
+    });
+
+    setup();
+    await user.type(
+      screen.getByRole("searchbox", { name: /search genres/i }),
+      "a",
+    );
+
+    expect(await screen.findByText(/showing the first 20/i)).toBeInTheDocument();
+  });
+
+  it("does not show the truncation hint when results are under the cap", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.type(
+      screen.getByRole("searchbox", { name: /search genres/i }),
+      "tec",
+    );
+
+    await screen.findByText("Techno");
+    expect(screen.queryByText(/showing the first 20/i)).toBeNull();
+  });
 });
