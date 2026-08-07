@@ -1,80 +1,125 @@
 import Link from "next/link";
 
-import { db } from "@/lib/db";
+import { getOpenOrderLines, type GroupBy, type OpenOrderLine } from "@/lib/order-overview";
+import { joinArtistNames } from "@/lib/catalog";
+import { AutoPrintToggle } from "@/components/admin/AutoPrintToggle";
+import { SupplierOrderGroup } from "@/components/admin/SupplierOrderGroup";
+import { OrderLinesTable } from "@/components/admin/OrderLinesTable";
+import type { OrderLineRowData } from "@/components/admin/OrderLineRow";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_STYLE: Record<string, string> = {
-  PENDING: "bg-admin-raised text-admin-ink",
-  PARTIAL: "bg-amber-500/15 text-amber-400",
-  RECEIVED: "bg-green-500/15 text-green-400",
-};
+const GROUP_TABS: { value: GroupBy; label: string }[] = [
+  { value: "supplier", label: "By supplier" },
+  { value: "date", label: "By date ordered" },
+  { value: "flat", label: "Flat list" },
+];
 
-export default async function OrdersPage() {
-  const orders = await db.supplyOrder.findMany({
-    orderBy: { orderedAt: "desc" },
-    include: { supplier: true, lines: true },
-  });
+function toRowData(line: OpenOrderLine): OrderLineRowData {
+  return {
+    id: line.id,
+    productId: line.product.id,
+    quantityOrdered: line.quantityOrdered,
+    quantityReceived: line.quantityReceived,
+    createdAt: line.createdAt.toISOString(),
+    title: line.product.title,
+    catalogNumber: line.product.catalogNumber,
+    labelName: line.product.label.name,
+    productTypeName: line.product.productType.name,
+    artistNames: joinArtistNames(line.product.productArtists),
+  };
+}
+
+export default async function OrdersOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string }>;
+}) {
+  const sp = await searchParams;
+  const groupBy: GroupBy = sp.group === "date" || sp.group === "flat" ? sp.group : "supplier";
+  const result = await getOpenOrderLines(groupBy);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Supply orders</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
           <p className="text-sm text-admin-ink-muted">
-            {orders.length} order{orders.length === 1 ? "" : "s"}
+            Products ordered from suppliers, awaiting delivery.
           </p>
         </div>
-        <Link
-          href="/admin/catalog/orders/new"
-          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
-        >
-          New order
-        </Link>
+        <AutoPrintToggle />
       </div>
 
-      {orders.length === 0 ? (
-        <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-          No supply orders yet.
-        </p>
-      ) : (
-        <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
-              <tr>
-                <th className="px-3 py-2 font-medium">Supplier</th>
-                <th className="px-3 py-2 font-medium">Reference</th>
-                <th className="px-3 py-2 font-medium">Status</th>
-                <th className="px-3 py-2 font-medium">Items</th>
-                <th className="px-3 py-2 font-medium">Ordered</th>
-                <th className="px-3 py-2 font-medium">Received</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-admin-hairline">
-              {orders.map((order) => (
-                <tr key={order.id}>
-                  <td className="px-3 py-2">
-                    <Link href={`/admin/catalog/orders/${order.id}`} className="hover:underline">
-                      {order.supplier.name}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2 text-admin-ink-muted">{order.reference ?? "—"}</td>
-                  <td className="px-3 py-2">
-                    <span className={`rounded px-1.5 py-0.5 text-xs ${STATUS_STYLE[order.status]}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">{order.lines.length}</td>
-                  <td className="px-3 py-2 text-admin-ink-muted">{order.orderedAt.toLocaleDateString()}</td>
-                  <td className="px-3 py-2 text-admin-ink-muted">
-                    {order.receivedAt ? order.receivedAt.toLocaleDateString() : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <nav className="flex gap-4 border-b border-admin-hairline text-sm">
+        {GROUP_TABS.map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.value === "supplier" ? "/admin/catalog/orders" : `/admin/catalog/orders?group=${tab.value}`}
+            aria-current={groupBy === tab.value ? "page" : undefined}
+            className={`-mb-px border-b-2 pb-2 ${
+              groupBy === tab.value
+                ? "border-admin-ink font-medium"
+                : "border-transparent text-admin-ink-muted hover:text-admin-ink"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
+
+      {result.groupBy === "supplier" &&
+        (result.groups.length === 0 ? (
+          <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
+            No open orders. Use &quot;Order&quot; on a catalog or transactions row to start one.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {result.groups.map((group) => (
+              <SupplierOrderGroup
+                key={group.supplier.id}
+                supplierName={group.supplier.name}
+                orderId={group.order.id}
+                orderStatus={group.order.status}
+                lines={group.lines.map(toRowData)}
+              />
+            ))}
+          </div>
+        ))}
+
+      {result.groupBy === "date" &&
+        (result.groups.length === 0 ? (
+          <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
+            No open orders yet — nothing has been ordered this week.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {result.groups.map((group) => (
+              <section
+                key={group.weekStart.toISOString()}
+                className="rounded border border-admin-hairline bg-admin-surface"
+              >
+                <h2 className="border-b border-admin-hairline px-4 py-3 font-semibold">
+                  Week of {group.weekStart.toLocaleDateString()}
+                </h2>
+                <OrderLinesTable lines={group.lines.map(toRowData)} />
+              </section>
+            ))}
+          </div>
+        ))}
+
+      {result.groupBy === "flat" &&
+        (result.lines.length === 0 ? (
+          <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
+            No open orders yet.
+          </p>
+          // Flat list keeps this shorter form; the date-grouped view above
+          // has its own wording so the two empty states read distinctly.
+        ) : (
+          <div className="rounded border border-admin-hairline bg-admin-surface">
+            <OrderLinesTable lines={result.lines.map(toRowData)} />
+          </div>
+        ))}
     </div>
   );
 }
