@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 export const AUTO_PRINT_STORAGE_KEY = "antenne-tilburg:auto-print-on-receive";
 
@@ -10,9 +10,7 @@ export const AUTO_PRINT_STORAGE_KEY = "antenne-tilburg:auto-print-on-receive";
 export function AutoPrintToggle() {
   const [checked, setChecked] = useState(false);
 
-  useLayoutEffect(() => {
-    // Synchronizing localStorage state on mount (before paint) to prevent hydration mismatch.
-    // Initial render shows unchecked; useLayoutEffect syncs the actual value from storage.
+  useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChecked(localStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true");
   }, []);
