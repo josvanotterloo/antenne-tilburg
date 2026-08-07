@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     // 500 leaking Prisma internals.
     if ((error as { code?: string } | null)?.code === "P2025") {
       return NextResponse.json(
-        { error: "Selected label, genre or product type no longer exists" },
+        { error: "Selected label, genre, product type, or supplier no longer exists" },
         { status: 400 },
       );
     }

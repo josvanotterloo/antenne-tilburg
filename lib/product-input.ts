@@ -8,6 +8,7 @@ export interface ProductInput {
   labelId: string;
   genreId: string;
   productTypeId: string;
+  supplierId: string | null;
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
@@ -83,6 +84,7 @@ export function parseProductInput(body: unknown): ParseResult {
       labelId,
       genreId,
       productTypeId,
+      supplierId: str(b.supplierId) || null,
       condition: b.condition,
       price: String(price),
       description: str(b.description) || null,
@@ -115,6 +117,11 @@ export function toProductData(
     label: { connect: { id: data.labelId } },
     genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },
+    ...(data.supplierId
+      ? { supplier: { connect: { id: data.supplierId } } }
+      : mode === "update"
+        ? { supplier: { disconnect: true } }
+        : {}),
     primaryArtistName,
     productArtists: {
       ...(mode === "update" ? { deleteMany: {} } : {}),

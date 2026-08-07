@@ -13,6 +13,7 @@ const VALID = {
   condition: "NEW",
   price: "24.99",
   description: "  hypnotic  ",
+  supplierId: null,
 };
 
 describe("parseProductInput", () => {
@@ -110,6 +111,16 @@ describe("parseProductInput", () => {
     const result = parseProductInput({ ...VALID, price: 8.5 });
     expect(result.ok && result.data.price).toBe("8.5");
   });
+
+  it("accepts an optional supplierId and nullifies it when absent", () => {
+    const withSupplier = parseProductInput({ ...VALID, supplierId: "s1" });
+    expect(withSupplier.ok).toBe(true);
+    if (withSupplier.ok) expect(withSupplier.data.supplierId).toBe("s1");
+
+    const without = parseProductInput(VALID);
+    expect(without.ok).toBe(true);
+    if (without.ok) expect(without.data.supplierId).toBeNull();
+  });
 });
 
 describe("toProductData — no longer touches quantity/inStock", () => {
@@ -120,6 +131,7 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     labelId: "l1",
     genreId: "g1",
     productTypeId: "t1",
+    supplierId: null,
     condition: "NEW" as const,
     price: "10",
     description: null,
@@ -166,5 +178,26 @@ describe("toProductData — no longer touches quantity/inStock", () => {
         { artistId: "a2", position: 1 },
       ],
     });
+  });
+
+  it("connects supplier when supplierId is set", () => {
+    const parsed = parseProductInput({ ...VALID, supplierId: "s1" });
+    if (!parsed.ok) throw new Error("expected ok");
+    const data = toProductData(parsed.data, { primaryArtistName: "Vril", mode: "create" });
+    expect((data as Record<string, unknown>).supplier).toEqual({ connect: { id: "s1" } });
+  });
+
+  it("omits supplier on create when supplierId is null", () => {
+    const parsed = parseProductInput(VALID);
+    if (!parsed.ok) throw new Error("expected ok");
+    const data = toProductData(parsed.data, { primaryArtistName: "Vril", mode: "create" });
+    expect(data).not.toHaveProperty("supplier");
+  });
+
+  it("disconnects supplier on update when supplierId is null", () => {
+    const parsed = parseProductInput(VALID);
+    if (!parsed.ok) throw new Error("expected ok");
+    const data = toProductData(parsed.data, { primaryArtistName: "Vril", mode: "update" });
+    expect((data as Record<string, unknown>).supplier).toEqual({ disconnect: true });
   });
 });
