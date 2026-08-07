@@ -35,6 +35,14 @@ describe("PATCH /api/admin/orders/[id]", () => {
     expect(order.update).toHaveBeenCalledWith({ where: { id: "o1" }, data: { status: "SENT" } });
   });
 
+  it("marks a PARTIAL order as SENT", async () => {
+    order.findUnique.mockResolvedValue({ id: "o1", status: "PARTIAL" });
+    order.update.mockResolvedValue({ id: "o1", status: "SENT" });
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("o1"));
+    expect(res.status).toBe(200);
+    expect(order.update).toHaveBeenCalledWith({ where: { id: "o1" }, data: { status: "SENT" } });
+  });
+
   it("is a no-op success on an already-SENT order", async () => {
     order.findUnique.mockResolvedValue({ id: "o1", status: "SENT" });
     order.update.mockResolvedValue({ id: "o1", status: "SENT" });
