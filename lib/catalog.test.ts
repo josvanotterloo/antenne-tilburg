@@ -25,6 +25,9 @@ import {
   weekRange,
   shopDayRange,
   shopDateISO,
+  shopMonthRange,
+  shopMonthISO,
+  shiftMonth,
   isRestock,
   composeProductDescription,
 } from "@/lib/catalog";
@@ -367,6 +370,47 @@ describe("shopDateISO", () => {
     // 22:30Z on 12 July is already 13 July in Amsterdam (CEST).
     expect(shopDateISO(new Date("2026-07-12T22:30:00Z"))).toBe("2026-07-13");
     expect(shopDateISO(new Date("2026-01-11T23:30:00Z"))).toBe("2026-01-12");
+  });
+});
+
+describe("shopMonthRange", () => {
+  it("returns the shop-local midnight boundaries of the given month", () => {
+    const range = shopMonthRange("2026-08");
+    expect(range).not.toBeNull();
+    // Aug 1 2026 00:00 Europe/Amsterdam (CEST, UTC+2) = 2026-07-31T22:00:00Z
+    expect(range?.start.toISOString()).toBe("2026-07-31T22:00:00.000Z");
+    // Sep 1 2026 00:00 CEST = 2026-08-31T22:00:00Z
+    expect(range?.end.toISOString()).toBe("2026-08-31T22:00:00.000Z");
+  });
+
+  it("rolls over into January of the next year", () => {
+    const range = shopMonthRange("2026-12");
+    expect(range).not.toBeNull();
+    expect(range?.end.toISOString()).toBe("2026-12-31T23:00:00.000Z"); // Jan 1 2027 CET (UTC+1)
+  });
+
+  it("returns null for a malformed month", () => {
+    expect(shopMonthRange("2026-8")).toBeNull();
+    expect(shopMonthRange("not-a-month")).toBeNull();
+    expect(shopMonthRange("2026-13")).toBeNull();
+  });
+});
+
+describe("shopMonthISO", () => {
+  it("formats a date as its shop-local YYYY-MM", () => {
+    expect(shopMonthISO(new Date("2026-08-03T10:00:00Z"))).toBe("2026-08");
+  });
+});
+
+describe("shiftMonth", () => {
+  it("moves forward and backward within a year", () => {
+    expect(shiftMonth("2026-08", 1)).toBe("2026-09");
+    expect(shiftMonth("2026-08", -1)).toBe("2026-07");
+  });
+
+  it("rolls over a year boundary in both directions", () => {
+    expect(shiftMonth("2026-12", 1)).toBe("2027-01");
+    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
   });
 });
 

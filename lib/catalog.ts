@@ -358,6 +358,40 @@ export function shopDateISO(date: Date): string {
   return SHOP_DATE.format(date);
 }
 
+// [start, end) of the given shop-local calendar month, as UTC instants.
+// Returns null on malformed input (untrusted — comes from a URL query param).
+const ISO_MONTH = /^(\d{4})-(\d{2})$/;
+
+export function shopMonthRange(
+  month: string,
+): { start: Date; end: Date } | null {
+  const m = ISO_MONTH.exec(month);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const mo = Number(m[2]);
+  if (mo < 1 || mo > 12) return null;
+  const start = shopMidnightUTC(year, mo, 1);
+  const next = mo === 12 ? { y: year + 1, m: 1 } : { y: year, m: mo + 1 };
+  const end = shopMidnightUTC(next.y, next.m, 1);
+  return { start, end };
+}
+
+// An instant's shop-local calendar month, as YYYY-MM.
+export function shopMonthISO(date: Date): string {
+  return shopDateISO(date).slice(0, 7);
+}
+
+// month +/- delta whole months, wrapping across year boundaries. Assumes an
+// already-valid "YYYY-MM" (page nav only — the untrusted-input path is
+// shopMonthRange above).
+export function shiftMonth(month: string, delta: number): string {
+  const [year, mo] = month.split("-").map(Number);
+  const total = year * 12 + (mo - 1) + delta;
+  const newYear = Math.floor(total / 12);
+  const newMonth = (total % 12) + 1;
+  return `${newYear}-${String(newMonth).padStart(2, "0")}`;
+}
+
 // A restock: touched meaningfully after creation (see RESTOCK_EPSILON_MS)
 // with stock remaining. Shared by Back In Stock and the newsletter arrivals.
 export function isRestock(p: {
