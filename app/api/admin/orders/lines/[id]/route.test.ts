@@ -68,4 +68,25 @@ describe("PATCH /api/admin/orders/lines/[id]", () => {
     expect(res.status).toBe(409);
     expect(line.update).not.toHaveBeenCalled();
   });
+
+  it("accepts quantity equal to quantityReceived (floor boundary) on open orders", async () => {
+    line.findUnique.mockResolvedValue({
+      id: "l1",
+      quantityReceived: 5,
+      supplyOrder: { status: "PARTIAL" },
+    });
+    line.update.mockResolvedValue({ id: "l1", quantityOrdered: 5 });
+    const res = await PATCH(req({ quantityOrdered: 5 }), ctx("l1"));
+    expect(res.status).toBe(200);
+    expect(line.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { quantityOrdered: 5 },
+    });
+  });
+
+  it("400s invalid body without querying the database", async () => {
+    const res = await PATCH(req({ quantityOrdered: -1 }), ctx("l1"));
+    expect(res.status).toBe(400);
+    expect(line.findUnique).not.toHaveBeenCalled();
+  });
 });
