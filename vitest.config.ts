@@ -9,6 +9,11 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        localStorage: true,
+      },
+    },
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
     // Vitest's defaults exclude node_modules/dist/.git/etc. but not a nested
