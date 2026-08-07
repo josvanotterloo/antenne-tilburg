@@ -27,24 +27,22 @@ function model() {
 }
 
 vi.mock("@/lib/db", () => ({
-  db: { label: model(), genre: model(), productType: model() },
+  db: { genre: model(), productType: model() },
 }));
 
 import { db } from "@/lib/db";
-import * as labelsCol from "@/app/api/admin/labels/route";
-import * as labelsItem from "@/app/api/admin/labels/[id]/route";
 import * as genresCol from "@/app/api/admin/genres/route";
 import * as genresItem from "@/app/api/admin/genres/[id]/route";
 import * as typesCol from "@/app/api/admin/product-types/route";
 import * as typesItem from "@/app/api/admin/product-types/[id]/route";
 
+// Label used to run on this same generic lib/reference-crud.ts factory and
+// was covered here too, but it now carries an optional supplierId the
+// factory can't express (see app/api/admin/labels/route.ts) — it has its
+// own bespoke routes and its own test files
+// (app/api/admin/labels/route.test.ts, app/api/admin/labels/[id]/route.test.ts)
+// covering the equivalent GET/POST/PATCH/DELETE contract.
 const RESOURCES = [
-  {
-    name: "labels",
-    model: db.label as unknown as MockModel,
-    col: labelsCol,
-    item: labelsItem,
-  },
   {
     name: "genres",
     model: db.genre as unknown as MockModel,

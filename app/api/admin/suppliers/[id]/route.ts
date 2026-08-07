@@ -32,8 +32,8 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   }
 }
 
-// Guarded like Label/Genre/ProductType/Artist: a supplier with any supply
-// orders (any status — history shouldn't dangle a deleted supplier) can't be
+// Guarded like Label/Genre/ProductType/Artist: a supplier still referenced
+// by any supply order, product, or label (any status/relation) can't be
 // deleted.
 export async function DELETE(_req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
@@ -41,14 +41,18 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   const { id } = await ctx.params;
   const supplier = await db.supplier.findUnique({
     where: { id },
-    include: { _count: { select: { supplyOrders: true } } },
+    include: { _count: { select: { supplyOrders: true, products: true, labels: true } } },
   });
   if (!supplier) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (supplier._count.supplyOrders > 0) {
+  const inUseCount =
+    (supplier._count.supplyOrders ?? 0) +
+    (supplier._count.products ?? 0) +
+    (supplier._count.labels ?? 0);
+  if (inUseCount > 0) {
     return NextResponse.json(
-      { error: `In use by ${supplier._count.supplyOrders} supply order(s)`, count: supplier._count.supplyOrders },
+      { error: `In use by ${inUseCount} record(s)`, count: inUseCount },
       { status: 409 },
     );
   }

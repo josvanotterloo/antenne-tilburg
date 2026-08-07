@@ -106,4 +106,14 @@ describe("DELETE /api/admin/suppliers/[id]", () => {
     expect(res.status).toBe(200);
     expect(supplier.delete).toHaveBeenCalledWith({ where: { id: "s1" } });
   });
+
+  it("409s a supplier still linked to products or labels, not just supply orders", async () => {
+    supplier.findUnique.mockResolvedValue({
+      id: "s1",
+      _count: { supplyOrders: 0, products: 2, labels: 1 },
+    });
+    const res = await DELETE(req("DELETE", "http://t/x"), ctx("s1"));
+    expect(res.status).toBe(409);
+    expect(supplier.delete).not.toHaveBeenCalled();
+  });
 });
