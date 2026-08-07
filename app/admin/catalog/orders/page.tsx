@@ -90,7 +90,7 @@ export default async function OrdersOverviewPage({
       {result.groupBy === "date" &&
         (result.groups.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-            No open orders yet — nothing has been ordered this week.
+            No open orders yet — nothing is currently on order.
           </p>
         ) : (
           <div className="space-y-4">
@@ -108,13 +108,12 @@ export default async function OrdersOverviewPage({
           </div>
         ))}
 
+      {/* Flat list keeps its empty state short; the supplier/date groupings above use their own wording so all three read distinctly. */}
       {result.groupBy === "flat" &&
         (result.lines.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
             No open orders yet.
           </p>
-          // Flat list keeps this shorter form; the date-grouped view above
-          // has its own wording so the two empty states read distinctly.
         ) : (
           <div className="rounded border border-admin-hairline bg-admin-surface">
             <OrderLinesTable lines={result.lines.map(toRowData)} />
