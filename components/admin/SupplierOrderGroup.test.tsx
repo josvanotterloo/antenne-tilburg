@@ -1,0 +1,71 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+
+import { SupplierOrderGroup } from "@/components/admin/SupplierOrderGroup";
+import type { OrderLineRowData } from "@/components/admin/OrderLineRow";
+
+const LINE: OrderLineRowData = {
+  id: "l1",
+  productId: "p1",
+  quantityOrdered: 5,
+  quantityReceived: 0,
+  createdAt: "2026-08-03T10:00:00.000Z",
+  title: "Torus",
+  catalogNumber: "ZR-001",
+  labelName: "Zulema",
+  productTypeName: "LP",
+  artistNames: "Vril",
+};
+
+beforeEach(() => vi.restoreAllMocks());
+
+describe("SupplierOrderGroup", () => {
+  it("shows the supplier name and an enabled 'Mark all as sent' button for a PENDING order", () => {
+    render(
+      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+    );
+    expect(screen.getByText("Beta Distro")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mark all as sent/i })).not.toBeDisabled();
+  });
+
+  it("disables the export PDF button with a 'Coming soon' title", () => {
+    render(
+      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+    );
+    const exportButton = screen.getByRole("button", { name: /export pdf/i });
+    expect(exportButton).toBeDisabled();
+    expect(exportButton).toHaveAttribute("title", "Coming soon");
+  });
+
+  it("marks the order sent on click and disables the button", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "o1", status: "SENT" }),
+    } as Response);
+    render(
+      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /mark all as sent/i }));
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/admin/orders/o1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ status: "SENT" }),
+      }),
+    );
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /^sent$/i })).toBeDisabled();
+    });
+  });
+
+  it("starts already disabled when the order is already SENT", () => {
+    render(
+      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="SENT" lines={[LINE]} />,
+    );
+    expect(screen.getByRole("button", { name: /^sent$/i })).toBeDisabled();
+  });
+});
