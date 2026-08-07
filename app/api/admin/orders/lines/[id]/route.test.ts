@@ -1,0 +1,71 @@
+// @vitest-environment node
+import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+
+vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/db", () => ({
+  db: { supplyOrderLine: { findUnique: vi.fn(), update: vi.fn() } },
+}));
+
+import { db } from "@/lib/db";
+import { PATCH } from "@/app/api/admin/orders/lines/[id]/route";
+import { requireAdmin } from "@/lib/api-auth";
+
+const line = db.supplyOrderLine as unknown as { findUnique: Mock; update: Mock };
+const mockRequireAdmin = vi.mocked(requireAdmin);
+const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
+const req = (body: unknown) =>
+  new Request("http://t/x", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockRequireAdmin.mockResolvedValue(null);
+});
+
+describe("PATCH /api/admin/orders/lines/[id]", () => {
+  it("updates quantityOrdered on a line whose order is still open", async () => {
+    line.findUnique.mockResolvedValue({
+      id: "l1",
+      quantityReceived: 2,
+      supplyOrder: { status: "PENDING" },
+    });
+    line.update.mockResolvedValue({ id: "l1", quantityOrdered: 6 });
+    const res = await PATCH(req({ quantityOrdered: 6 }), ctx("l1"));
+    expect(res.status).toBe(200);
+    expect(line.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { quantityOrdered: 6 },
+    });
+  });
+
+  it("400s a quantity below what's already been received, without writing", async () => {
+    line.findUnique.mockResolvedValue({
+      id: "l1",
+      quantityReceived: 5,
+      supplyOrder: { status: "PARTIAL" },
+    });
+    const res = await PATCH(req({ quantityOrdered: 3 }), ctx("l1"));
+    expect(res.status).toBe(400);
+    expect(line.update).not.toHaveBeenCalled();
+  });
+
+  it("404s an unknown line", async () => {
+    line.findUnique.mockResolvedValue(null);
+    const res = await PATCH(req({ quantityOrdered: 3 }), ctx("missing"));
+    expect(res.status).toBe(404);
+  });
+
+  it("409s a line on a RECEIVED order, without writing", async () => {
+    line.findUnique.mockResolvedValue({
+      id: "l1",
+      quantityReceived: 5,
+      supplyOrder: { status: "RECEIVED" },
+    });
+    const res = await PATCH(req({ quantityOrdered: 5 }), ctx("l1"));
+    expect(res.status).toBe(409);
+    expect(line.update).not.toHaveBeenCalled();
+  });
+});
