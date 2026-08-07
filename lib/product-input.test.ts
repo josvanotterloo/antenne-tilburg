@@ -184,7 +184,7 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     const parsed = parseProductInput({ ...VALID, supplierId: "s1" });
     if (!parsed.ok) throw new Error("expected ok");
     const data = toProductData(parsed.data, { primaryArtistName: "Vril", mode: "create" });
-    expect((data as Record<string, unknown>).supplier).toEqual({ connect: { id: "s1" } });
+    expect(data).toHaveProperty("supplier", { connect: { id: "s1" } });
   });
 
   it("omits supplier on create when supplierId is null", () => {
@@ -198,6 +198,6 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     const parsed = parseProductInput(VALID);
     if (!parsed.ok) throw new Error("expected ok");
     const data = toProductData(parsed.data, { primaryArtistName: "Vril", mode: "update" });
-    expect((data as Record<string, unknown>).supplier).toEqual({ disconnect: true });
+    expect(data).toHaveProperty("supplier", { disconnect: true });
   });
 });
