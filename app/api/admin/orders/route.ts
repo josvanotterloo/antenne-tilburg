@@ -1,50 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
-import { db } from "@/lib/db";
-import { parseSupplyOrderInput } from "@/lib/supply-order-input";
+import { getOpenOrderLines, type GroupBy } from "@/lib/order-overview";
 
-export async function GET() {
+const VALID_GROUP_BY = new Set(["supplier", "date", "flat"]);
+
+export async function GET(req: Request) {
   const denied = await requireAdmin();
   if (denied) return denied;
-  const orders = await db.supplyOrder.findMany({
-    orderBy: { orderedAt: "desc" },
-    include: { supplier: true, lines: true },
-  });
-  return NextResponse.json(orders);
-}
-
-export async function POST(req: Request) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-  const parsed = parseSupplyOrderInput(await req.json().catch(() => null));
-  if (!parsed.ok) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 });
-  }
-  try {
-    const created = await db.supplyOrder.create({
-      data: {
-        supplierId: parsed.data.supplierId,
-        reference: parsed.data.reference,
-        notes: parsed.data.notes,
-        orderedAt: new Date(parsed.data.orderedAt),
-        lines: {
-          create: parsed.data.lines.map((line) => ({
-            productId: line.productId,
-            quantityOrdered: line.quantityOrdered,
-          })),
-        },
-      },
-      include: { supplier: true, lines: true },
-    });
-    return NextResponse.json(created, { status: 201 });
-  } catch (error) {
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json(
-        { error: "Selected supplier or product no longer exists" },
-        { status: 400 },
-      );
-    }
-    throw error;
-  }
+  const raw = new URL(req.url).searchParams.get("groupBy") ?? "supplier";
+  const groupBy = (VALID_GROUP_BY.has(raw) ? raw : "supplier") as GroupBy;
+  const result = await getOpenOrderLines(groupBy);
+  return NextResponse.json(result);
 }

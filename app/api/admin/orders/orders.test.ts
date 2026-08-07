@@ -1,67 +1,43 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
-vi.mock("@/lib/db", () => ({ db: { supplyOrder: { findMany: vi.fn(), create: vi.fn() } } }));
+vi.mock("@/lib/order-overview", () => ({ getOpenOrderLines: vi.fn() }));
 
-import { db } from "@/lib/db";
-import { GET, POST } from "@/app/api/admin/orders/route";
+import { GET } from "@/app/api/admin/orders/route";
+import { getOpenOrderLines } from "@/lib/order-overview";
 import { requireAdmin } from "@/lib/api-auth";
 
-const order = db.supplyOrder as unknown as { findMany: Mock; create: Mock };
+const mockGetOpenOrderLines = vi.mocked(getOpenOrderLines);
 const mockRequireAdmin = vi.mocked(requireAdmin);
-const req = (body: unknown) =>
-  new Request("http://t/api/admin/orders", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-const VALID = {
-  supplierId: "s1",
-  reference: "PO-1",
-  notes: null,
-  orderedAt: "2026-07-29T10:00",
-  lines: [{ productId: "p1", quantityOrdered: 5 }],
-};
+const req = (qs = "") => new Request(`http://t/api/admin/orders${qs}`);
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  mockGetOpenOrderLines.mockResolvedValue({ groupBy: "supplier", groups: [] });
 });
 
 describe("GET /api/admin/orders", () => {
-  it("returns orders newest orderedAt first", async () => {
-    order.findMany.mockResolvedValue([]);
-    const res = await GET();
+  it("defaults to groupBy=supplier", async () => {
+    await GET(req());
+    expect(mockGetOpenOrderLines).toHaveBeenCalledWith("supplier");
+  });
+
+  it("passes through a valid groupBy value", async () => {
+    await GET(req("?groupBy=date"));
+    expect(mockGetOpenOrderLines).toHaveBeenCalledWith("date");
+  });
+
+  it("falls back to supplier for an invalid groupBy value", async () => {
+    await GET(req("?groupBy=nonsense"));
+    expect(mockGetOpenOrderLines).toHaveBeenCalledWith("supplier");
+  });
+
+  it("returns the result as JSON", async () => {
+    mockGetOpenOrderLines.mockResolvedValue({ groupBy: "flat", lines: [] });
+    const res = await GET(req("?groupBy=flat"));
     expect(res.status).toBe(200);
-    expect(order.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { orderedAt: "desc" } }),
-    );
-  });
-});
-
-describe("POST /api/admin/orders", () => {
-  it("creates an order with nested lines (201)", async () => {
-    order.create.mockResolvedValue({ id: "o1" });
-    const res = await POST(req(VALID));
-    expect(res.status).toBe(201);
-    expect(order.create.mock.calls[0][0].data).toMatchObject({
-      supplierId: "s1",
-      reference: "PO-1",
-      lines: { create: [{ productId: "p1", quantityOrdered: 5 }] },
-    });
-  });
-
-  it("400s invalid input without writing", async () => {
-    const res = await POST(req({ ...VALID, lines: [] }));
-    expect(res.status).toBe(400);
-    expect(order.create).not.toHaveBeenCalled();
-  });
-
-  it("400s when the supplier or a product no longer exists (P2025)", async () => {
-    order.create.mockRejectedValue({ code: "P2025" });
-    const res = await POST(req(VALID));
-    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ groupBy: "flat", lines: [] });
   });
 });
