@@ -22,6 +22,7 @@ export default async function EditProductPage({
       label: true,
       genre: true,
       productType: true,
+      supplier: true,
       productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
     },
   });
@@ -69,6 +70,9 @@ export default async function EditProductPage({
             id: product.productType.id,
             name: product.productType.name,
           },
+          supplier: product.supplier
+            ? { id: product.supplier.id, name: product.supplier.name }
+            : null,
           condition: product.condition,
           price: String(product.price),
           description: product.description,

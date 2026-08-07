@@ -22,6 +22,7 @@ export interface ProductFormValues {
   label: ComboboxOption;
   genre: ComboboxOption;
   productType: ComboboxOption;
+  supplier: ComboboxOption | null;
   condition: "NEW" | "SECONDHAND";
   price: string;
   description: string | null;
@@ -51,6 +52,9 @@ export function ProductForm({ product }: ProductFormProps) {
   );
   const [productType, setProductType] = useState<ComboboxOption | null>(
     product?.productType ?? null,
+  );
+  const [supplier, setSupplier] = useState<ComboboxOption | null>(
+    product?.supplier ?? null,
   );
   const [condition, setCondition] = useState<"NEW" | "SECONDHAND">(
     product?.condition ?? "NEW",
@@ -114,6 +118,7 @@ export function ProductForm({ product }: ProductFormProps) {
             labelId: label?.id ?? null,
             genreId: genre?.id ?? null,
             productTypeId: productType?.id ?? null,
+            supplierId: supplier?.id ?? null,
             condition,
             price,
             description,
@@ -158,7 +163,23 @@ export function ProductForm({ product }: ProductFormProps) {
           label="Label"
           endpoint="/api/admin/labels"
           value={label}
-          onChange={setLabel}
+          onChange={(option) => {
+            setLabel(option);
+            // Opportunistic prefill: only on create, and only if the admin
+            // hasn't already picked a supplier — never overwrite a manual pick.
+            if (!product && !supplier) {
+              const withSupplier = option as ComboboxOption & {
+                supplierId?: string | null;
+                supplierName?: string | null;
+              };
+              if (withSupplier.supplierId) {
+                setSupplier({
+                  id: withSupplier.supplierId,
+                  name: withSupplier.supplierName ?? "",
+                });
+              }
+            }
+          }}
           required
         />
       </Field>
@@ -182,6 +203,17 @@ export function ProductForm({ product }: ProductFormProps) {
           value={productType}
           onChange={setProductType}
           required
+        />
+      </Field>
+
+      <Field label="Supplier" htmlFor="supplier">
+        <Combobox
+          id="supplier"
+          label="Supplier"
+          endpoint="/api/admin/suppliers"
+          value={supplier}
+          onChange={setSupplier}
+          allowCreate={false}
         />
       </Field>
 

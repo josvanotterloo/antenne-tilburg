@@ -18,6 +18,7 @@ const PRODUCT = {
   label: { id: "l1", name: "Zulema Records" },
   genre: { id: "g1", name: "Techno" },
   productType: { id: "t1", name: "LP" },
+  supplier: null,
   condition: "NEW" as const,
   price: "24.99",
   description: "Deep dub techno.",
@@ -205,5 +206,137 @@ describe("ProductForm", () => {
       (fetchMock.mock.calls[0][1] as RequestInit).body as string,
     );
     expect(body.artistIds).toEqual(["a2"]);
+  });
+
+  it("submits supplierId: null when no supplier is picked", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/artists")) {
+        return new Response(JSON.stringify([{ id: "a1", name: "Vril" }]));
+      }
+      if (url.startsWith("/api/admin/labels")) {
+        return new Response(
+          JSON.stringify([{ id: "l1", name: "Zulema Records" }]),
+        );
+      }
+      if (url.startsWith("/api/admin/genres")) {
+        return new Response(JSON.stringify([{ id: "g1", name: "Techno" }]));
+      }
+      if (url.startsWith("/api/admin/product-types")) {
+        return new Response(JSON.stringify([{ id: "t1", name: "LP" }]));
+      }
+      return new Response(JSON.stringify([]));
+    });
+
+    render(<ProductForm />);
+
+    await user.click(screen.getByRole("combobox", { name: /artists/i }));
+    await user.click(await screen.findByRole("option", { name: "Vril" }));
+
+    await user.type(screen.getByRole("textbox", { name: /title/i }), "Torus");
+
+    await user.click(screen.getByRole("combobox", { name: /label/i }));
+    await user.click(
+      await screen.findByRole("option", { name: "Zulema Records" }),
+    );
+
+    await user.click(screen.getByRole("combobox", { name: /genre/i }));
+    await user.click(await screen.findByRole("option", { name: "Techno" }));
+
+    await user.click(screen.getByRole("combobox", { name: /product type/i }));
+    await user.click(await screen.findByRole("option", { name: "LP" }));
+
+    await user.type(screen.getByRole("spinbutton", { name: /price/i }), "24.99");
+
+    await user.click(screen.getByRole("button", { name: /add product/i }));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/admin/products",
+        expect.objectContaining({
+          body: expect.stringContaining('"supplierId":null'),
+        }),
+      ),
+    );
+  });
+
+  it("prefills the supplier from the selected label when creating, without overwriting a manual pick", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/labels")) {
+        return new Response(
+          JSON.stringify([
+            { id: "l1", name: "Warp", supplierId: "s1", supplierName: "Beta Distro" },
+          ]),
+        );
+      }
+      return new Response(JSON.stringify([]));
+    });
+
+    render(<ProductForm />);
+    await user.click(screen.getByRole("combobox", { name: /label/i }));
+    await user.click(await screen.findByRole("option", { name: "Warp" }));
+
+    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue(
+      "Beta Distro",
+    );
+  });
+
+  it("keeps a manually picked supplier when a label with its own supplier is chosen afterward", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/suppliers")) {
+        return new Response(
+          JSON.stringify([{ id: "s2", name: "Manual Distro" }]),
+        );
+      }
+      if (url.startsWith("/api/admin/labels")) {
+        return new Response(
+          JSON.stringify([
+            { id: "l1", name: "Warp", supplierId: "s1", supplierName: "Beta Distro" },
+          ]),
+        );
+      }
+      return new Response(JSON.stringify([]));
+    });
+
+    render(<ProductForm />);
+
+    await user.click(screen.getByRole("combobox", { name: /supplier/i }));
+    await user.click(
+      await screen.findByRole("option", { name: "Manual Distro" }),
+    );
+
+    await user.click(screen.getByRole("combobox", { name: /label/i }));
+    await user.click(await screen.findByRole("option", { name: "Warp" }));
+
+    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue(
+      "Manual Distro",
+    );
+  });
+
+  it("never prefills supplier when editing an existing product, even with no supplier set", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/labels")) {
+        return new Response(
+          JSON.stringify([
+            { id: "l2", name: "Ostgut Ton", supplierId: "s1", supplierName: "Beta Distro" },
+          ]),
+        );
+      }
+      return new Response(JSON.stringify([]));
+    });
+
+    render(<ProductForm product={PRODUCT} />);
+
+    await user.click(screen.getByRole("combobox", { name: /label/i }));
+    await user.click(await screen.findByRole("option", { name: "Ostgut Ton" }));
+
+    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue("");
   });
 });
