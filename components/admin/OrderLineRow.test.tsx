@@ -45,6 +45,11 @@ describe("OrderLineRow", () => {
     expect(screen.getByText(/partial/i)).toBeInTheDocument();
   });
 
+  it("does not show a 'Mark received' button for a fully received line", () => {
+    renderRow({ ...LINE, quantityReceived: 5 });
+    expect(screen.queryByRole("button", { name: /mark received/i })).not.toBeInTheDocument();
+  });
+
   it("saves an edited quantity on blur", async () => {
     const user = userEvent.setup();
     vi.spyOn(global, "fetch").mockResolvedValue({
