@@ -35,7 +35,13 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     );
   }
 
-  const updated = await db.supplyOrder.update({ where: { id }, data: { status: "SENT" } });
+  // Already sent — a no-op that preserves the original first-sent timestamp
+  // rather than bumping it on every click.
+  if (existing.sentAt !== null) {
+    return NextResponse.json(existing);
+  }
+
+  const updated = await db.supplyOrder.update({ where: { id }, data: { sentAt: new Date() } });
   return NextResponse.json(updated);
 }
 

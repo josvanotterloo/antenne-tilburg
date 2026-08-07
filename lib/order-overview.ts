@@ -13,6 +13,7 @@ export interface OpenOrderLine {
   supplyOrder: {
     id: string;
     status: SupplyOrderStatus;
+    sentAt: Date | null;
     supplier: { id: string; name: string };
   };
   product: {
@@ -27,7 +28,7 @@ export interface OpenOrderLine {
 
 export interface SupplierGroup {
   supplier: { id: string; name: string };
-  order: { id: string; status: SupplyOrderStatus };
+  order: { id: string; status: SupplyOrderStatus; sentAt: Date | null };
   lines: OpenOrderLine[];
 }
 
@@ -72,7 +73,11 @@ export async function getOpenOrderLines(groupBy: GroupBy): Promise<GroupedOrders
       if (!group) {
         group = {
           supplier: line.supplyOrder.supplier,
-          order: { id: line.supplyOrder.id, status: line.supplyOrder.status },
+          order: {
+            id: line.supplyOrder.id,
+            status: line.supplyOrder.status,
+            sentAt: line.supplyOrder.sentAt,
+          },
           lines: [],
         };
         bySupplier.set(supplierId, group);

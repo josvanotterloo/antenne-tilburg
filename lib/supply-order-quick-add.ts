@@ -4,8 +4,6 @@ export type QuickAddResult =
   | { ok: true; status: 200 | 201; line: SupplyOrderLine }
   | { ok: false; status: 400 | 409; error: string };
 
-const OPEN_STATUSES = ["PENDING", "SENT", "PARTIAL"] as const;
-
 // Finds or creates the supplier's single open (non-RECEIVED) SupplyOrder and
 // adds a one-quantity line for productId. Caller wraps this in db.$transaction
 // — the find-then-act sequence isn't otherwise atomic, and this is a
@@ -24,7 +22,7 @@ export async function quickAddToOrder(
   }
 
   const openOrder = await tx.supplyOrder.findFirst({
-    where: { supplierId: product.supplierId, status: { in: [...OPEN_STATUSES] } },
+    where: { supplierId: product.supplierId, status: { not: "RECEIVED" } },
     include: { lines: true },
   });
 

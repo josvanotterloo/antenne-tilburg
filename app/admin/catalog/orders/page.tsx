@@ -81,6 +81,7 @@ export default async function OrdersOverviewPage({
                 supplierName={group.supplier.name}
                 orderId={group.order.id}
                 orderStatus={group.order.status}
+                sentAt={group.order.sentAt ? group.order.sentAt.toISOString() : null}
                 lines={group.lines.map(toRowData)}
               />
             ))}

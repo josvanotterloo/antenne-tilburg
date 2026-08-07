@@ -21,7 +21,12 @@ const LINE = {
   quantityOrdered: 5,
   quantityReceived: 0,
   createdAt: new Date("2026-08-03T10:00:00Z"),
-  supplyOrder: { id: "o1", status: "PENDING" as const, supplier: { id: "s1", name: "Beta Distro" } },
+  supplyOrder: {
+    id: "o1",
+    status: "PENDING" as const,
+    sentAt: null,
+    supplier: { id: "s1", name: "Beta Distro" },
+  },
   product: {
     id: "p1",
     title: "Torus",
@@ -40,7 +45,13 @@ describe("/admin/catalog/orders", () => {
   it("defaults to grouping by supplier and shows the supplier's line", async () => {
     vi.mocked(getOpenOrderLines).mockResolvedValue({
       groupBy: "supplier",
-      groups: [{ supplier: { id: "s1", name: "Beta Distro" }, order: { id: "o1", status: "PENDING" }, lines: [LINE] }],
+      groups: [
+        {
+          supplier: { id: "s1", name: "Beta Distro" },
+          order: { id: "o1", status: "PENDING", sentAt: null },
+          lines: [LINE],
+        },
+      ],
     });
     const ui = await OrdersOverviewPage({ searchParams: Promise.resolve({}) });
     render(ui);

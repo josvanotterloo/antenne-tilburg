@@ -14,7 +14,7 @@ function makeLine(overrides: Partial<Record<string, unknown>> = {}) {
     quantityOrdered: 5,
     quantityReceived: 0,
     createdAt: new Date("2026-08-03T10:00:00Z"), // a Monday
-    supplyOrder: { id: "o1", status: "PENDING", supplier: { id: "s1", name: "Beta" } },
+    supplyOrder: { id: "o1", status: "PENDING", sentAt: null, supplier: { id: "s1", name: "Beta" } },
     product: {
       id: "p1",
       title: "Torus",
@@ -49,16 +49,27 @@ describe("getOpenOrderLines", () => {
   });
 
   it("supplier: groups lines by supplier, sorted alphabetically", async () => {
-    const betaLine = makeLine({ supplyOrder: { id: "o1", status: "PENDING", supplier: { id: "s1", name: "Beta" } } });
-    const alphaLine = makeLine({ id: "l2", supplyOrder: { id: "o2", status: "SENT", supplier: { id: "s2", name: "Alpha" } } });
+    const betaLine = makeLine({
+      supplyOrder: { id: "o1", status: "PENDING", sentAt: null, supplier: { id: "s1", name: "Beta" } },
+    });
+    const alphaSentAt = new Date("2026-08-02T09:00:00Z");
+    const alphaLine = makeLine({
+      id: "l2",
+      supplyOrder: { id: "o2", status: "PARTIAL", sentAt: alphaSentAt, supplier: { id: "s2", name: "Alpha" } },
+    });
     findMany.mockResolvedValue([betaLine, alphaLine]);
     const result = await getOpenOrderLines("supplier");
     expect(result.groupBy).toBe("supplier");
     if (result.groupBy !== "supplier") return;
     expect(result.groups.map((g) => g.supplier.name)).toEqual(["Alpha", "Beta"]);
+    expect(result.groups[0]).toEqual({
+      supplier: { id: "s2", name: "Alpha" },
+      order: { id: "o2", status: "PARTIAL", sentAt: alphaSentAt },
+      lines: [alphaLine],
+    });
     expect(result.groups[1]).toEqual({
       supplier: { id: "s1", name: "Beta" },
-      order: { id: "o1", status: "PENDING" },
+      order: { id: "o1", status: "PENDING", sentAt: null },
       lines: [betaLine],
     });
   });

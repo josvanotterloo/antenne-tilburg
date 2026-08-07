@@ -48,10 +48,10 @@ describe("quickAddToOrder", () => {
     });
   });
 
-  it("searches PENDING, SENT, and PARTIAL as open when looking for an existing order", async () => {
+  it("searches for any non-RECEIVED order when looking for an existing order", async () => {
     const tx = makeTx();
     (tx.product.findUnique as Mock).mockResolvedValue({ supplierId: "s1" });
-    (tx.supplyOrder.findFirst as Mock).mockResolvedValue({ id: "o1", status: "SENT", lines: [] });
+    (tx.supplyOrder.findFirst as Mock).mockResolvedValue({ id: "o1", status: "PARTIAL", lines: [] });
     (tx.supplyOrderLine.create as Mock).mockResolvedValue({
       id: "l2", supplyOrderId: "o1", productId: "p1", quantityOrdered: 1, quantityReceived: 0,
     });
@@ -61,7 +61,7 @@ describe("quickAddToOrder", () => {
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.status).toBe(200);
     expect(tx.supplyOrder.findFirst).toHaveBeenCalledWith({
-      where: { supplierId: "s1", status: { in: ["PENDING", "SENT", "PARTIAL"] } },
+      where: { supplierId: "s1", status: { not: "RECEIVED" } },
       include: { lines: true },
     });
     expect(tx.supplyOrderLine.create).toHaveBeenCalledWith({

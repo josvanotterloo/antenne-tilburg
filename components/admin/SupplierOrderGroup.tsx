@@ -10,15 +10,16 @@ import type { OrderLineRowData } from "@/components/admin/OrderLineRow";
 export function SupplierOrderGroup({
   supplierName,
   orderId,
-  orderStatus,
+  sentAt,
   lines,
 }: {
   supplierName: string;
   orderId: string;
-  orderStatus: "PENDING" | "SENT" | "PARTIAL" | "RECEIVED";
+  orderStatus: "PENDING" | "PARTIAL" | "RECEIVED";
+  sentAt: string | null;
   lines: OrderLineRowData[];
 }) {
-  const [status, setStatus] = useState(orderStatus);
+  const [sent, setSent] = useState(sentAt !== null);
   const { pending, error, run } = useAsyncAction();
 
   function markSent() {
@@ -28,7 +29,7 @@ export function SupplierOrderGroup({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status: "SENT" }),
       });
-      setStatus("SENT");
+      setSent(true);
     });
   }
 
@@ -40,10 +41,10 @@ export function SupplierOrderGroup({
           <button
             type="button"
             onClick={markSent}
-            disabled={pending || status === "SENT"}
+            disabled={pending || sent}
             className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
           >
-            {status === "SENT" ? "Sent" : pending ? "…" : "Mark all as sent"}
+            {sent ? "Sent" : pending ? "…" : "Mark all as sent"}
           </button>
           <button
             type="button"

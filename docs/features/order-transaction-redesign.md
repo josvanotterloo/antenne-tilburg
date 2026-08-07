@@ -36,9 +36,13 @@ field when creating a product under a label whose supplier is already known.
 ```prisma
 enum SupplyOrderStatus {
   PENDING
-  SENT       // new value, inserted BEFORE PARTIAL
   PARTIAL
   RECEIVED
+}
+
+model SupplyOrder {
+  // ...existing fields unchanged...
+  sentAt DateTime?  // null = never marked sent; independent of status
 }
 
 model Label {
@@ -55,9 +59,25 @@ model Product {
   @@index([supplierId])
 }
 ```
-Migration `20260806163458_add_order_redesign`: purely additive (one new enum
-value, two nullable FKs with `ON DELETE SET NULL`) — no backfill, no phased
-rollout needed.
+Migration `20260806163458_add_order_redesign`: purely additive (two nullable
+FKs with `ON DELETE SET NULL`, plus the now-superseded `SENT` enum value — see
+"Post-launch change" below) — no backfill, no phased rollout needed.
+
+## Post-launch change: `SENT` status → `SupplyOrder.sentAt`
+The final whole-branch review of this redesign found that "has this order
+been communicated to the supplier" and "how much of it has arrived" are
+independent facts that had been forced into one `status` enum column: the
+per-line receive route always overwrites `status` (`PARTIAL`/`RECEIVED`), so
+a partial receive on an already-`SENT` order silently cleared the `SENT`
+flag. Migration `20260807175757_replace_sent_status_with_sentat` removes
+`SENT` from `SupplyOrderStatus` (Postgres has no `DROP VALUE`, so the enum
+type is recreated) and adds nullable `SupplyOrder.sentAt`; "sent" is now
+derived as `sentAt !== null`, tracked independently of `status`. The wire
+contract is unchanged (`PATCH /api/admin/orders/[id] {status: "SENT"}` still
+sets it), it's just a no-op once `sentAt` is already set rather than bumping
+the timestamp on every click. Zero `SupplyOrder` rows had `status = 'SENT'`
+in the dev DB at migration time (this feature had only just shipped in the
+same session), so no data backfill was needed.
 
 - **`Product.supplierId`** is nullable and is the only field ordering logic
   reads. Until it's set, that product's "Order" button is disabled with
@@ -69,11 +89,12 @@ rollout needed.
   widened from "blocked if it has any `SupplyOrder`" to "blocked if it has
   any `SupplyOrder`, `Product`, or `Label` referencing it" — same
   `_count`-sum-then-409 pattern as before, one more relation checked.
-- **"Open order" scope**: `PENDING`, `SENT`, and `PARTIAL` are all open
-  (eligible for quick-add reuse); only `RECEIVED` is terminal. Because
-  quick-add always reuses a supplier's open order if one exists, a supplier
-  has at most one open order at any time — adding a product for a supplier
-  whose order was already marked `SENT` reopens/extends that same order.
+- **"Open order" scope**: any non-`RECEIVED` order (`status: { not:
+  "RECEIVED" }`) is open and eligible for quick-add reuse — `sentAt` doesn't
+  affect this. Because quick-add always reuses a supplier's open order if
+  one exists, a supplier has at most one open order at any time — adding a
+  product for a supplier whose order was already marked sent reopens/extends
+  that same order without clearing `sentAt`.
 
 ## New/changed admin surfaces
 
@@ -97,8 +118,8 @@ rollout needed.
   `AutoPrintToggle` (client component, `localStorage`-backed, no server
   round-trip). Supplier grouping uses one native `<details>`/`<summary>`
   per supplier (`SupplierOrderGroup`) with a "Mark all as sent" button
-  (`PATCH /api/admin/orders/[id] {status:"SENT"}`, disabled once already
-  `SENT`) and a disabled "Export PDF" button (`title="Coming soon"` — see
+  (`PATCH /api/admin/orders/[id] {status:"SENT"}`, disabled once `sentAt` is
+  already set) and a disabled "Export PDF" button (`title="Coming soon"` — see
   Known gaps). Date grouping buckets by ISO week of `line.createdAt`
   (`weekRange`, Mon–Sun) with suppliers flattened within each week. Flat is
   one chronological table. Every row (`OrderLineRow`) shows artist/title/
@@ -126,8 +147,10 @@ rollout needed.
   not "first received at", same as the prior whole-order route).
 - **`PATCH /api/admin/orders/[id]`** — repurposed to accept only
   `{status: "SENT"}` (400 `'Only { status: "SENT" } is supported' `
-  otherwise); 409 if the order is already `RECEIVED`. `DELETE` is
-  unchanged (still guarded to `status === "PENDING"`).
+  otherwise); 409 if the order is already `RECEIVED`; sets `sentAt` to
+  `new Date()` if it's still null, otherwise a no-op success that returns
+  the order unchanged (preserves the original first-sent timestamp). `DELETE`
+  is unchanged (still guarded to `status === "PENDING"`).
 - **`GET`-equivalent `lib/order-overview.ts`'s `getOpenOrderLines(groupBy)`**
   — called directly by the orders page server component (no HTTP hop,
   matching `lib/catalog.ts`'s convention). Returns every line whose parent

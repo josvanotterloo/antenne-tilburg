@@ -27,7 +27,13 @@ beforeEach(() => vi.restoreAllMocks());
 describe("SupplierOrderGroup", () => {
   it("shows the supplier name and an enabled 'Mark all as sent' button for a PENDING order", () => {
     render(
-      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+      <SupplierOrderGroup
+        supplierName="Beta Distro"
+        orderId="o1"
+        orderStatus="PENDING"
+        sentAt={null}
+        lines={[LINE]}
+      />,
     );
     expect(screen.getByText("Beta Distro")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mark all as sent/i })).not.toBeDisabled();
@@ -35,7 +41,13 @@ describe("SupplierOrderGroup", () => {
 
   it("disables the export PDF button with a 'Coming soon' title", () => {
     render(
-      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+      <SupplierOrderGroup
+        supplierName="Beta Distro"
+        orderId="o1"
+        orderStatus="PENDING"
+        sentAt={null}
+        lines={[LINE]}
+      />,
     );
     const exportButton = screen.getByRole("button", { name: /export pdf/i });
     expect(exportButton).toBeDisabled();
@@ -46,10 +58,16 @@ describe("SupplierOrderGroup", () => {
     const user = userEvent.setup();
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
-      json: async () => ({ id: "o1", status: "SENT" }),
+      json: async () => ({ id: "o1", status: "PENDING", sentAt: "2026-08-06T12:00:00.000Z" }),
     } as Response);
     render(
-      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="PENDING" lines={[LINE]} />,
+      <SupplierOrderGroup
+        supplierName="Beta Distro"
+        orderId="o1"
+        orderStatus="PENDING"
+        sentAt={null}
+        lines={[LINE]}
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: /mark all as sent/i }));
@@ -66,9 +84,15 @@ describe("SupplierOrderGroup", () => {
     });
   });
 
-  it("starts already disabled when the order is already SENT", () => {
+  it("starts already disabled when sentAt is already set", () => {
     render(
-      <SupplierOrderGroup supplierName="Beta Distro" orderId="o1" orderStatus="SENT" lines={[LINE]} />,
+      <SupplierOrderGroup
+        supplierName="Beta Distro"
+        orderId="o1"
+        orderStatus="PARTIAL"
+        sentAt="2026-08-01T09:00:00.000Z"
+        lines={[LINE]}
+      />,
     );
     expect(screen.getByRole("button", { name: /^sent$/i })).toBeDisabled();
   });

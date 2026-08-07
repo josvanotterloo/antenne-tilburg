@@ -22,7 +22,6 @@ enum PostStatus {
 
 enum SupplyOrderStatus {
   PENDING
-  SENT
   PARTIAL
   RECEIVED
 }
@@ -174,6 +173,7 @@ model SupplyOrder {
   reference  String?
   notes      String?
   orderedAt  DateTime
+  sentAt     DateTime?
   receivedAt DateTime?
   status     SupplyOrderStatus @default(PENDING)
   lines      SupplyOrderLine[]
