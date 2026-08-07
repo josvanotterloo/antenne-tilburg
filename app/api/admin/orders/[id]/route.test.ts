@@ -7,7 +7,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { db } from "@/lib/db";
-import { GET, PATCH, DELETE } from "@/app/api/admin/orders/[id]/route";
+import { PATCH, DELETE } from "@/app/api/admin/orders/[id]/route";
 import { requireAdmin } from "@/lib/api-auth";
 
 const order = db.supplyOrder as unknown as { findUnique: Mock; update: Mock; delete: Mock };
@@ -19,52 +19,45 @@ const patchReq = (body: unknown) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-const getReq = () => new Request("http://t/x");
 const delReq = () => new Request("http://t/x", { method: "DELETE" });
-
-const VALID = {
-  supplierId: "s1",
-  reference: "PO-1",
-  notes: null,
-  orderedAt: "2026-07-29T10:00",
-  lines: [{ productId: "p1", quantityOrdered: 5 }],
-};
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
 });
 
-describe("GET /api/admin/orders/[id]", () => {
-  it("404s an unknown order", async () => {
-    order.findUnique.mockResolvedValue(null);
-    const res = await GET(getReq(), ctx("missing"));
-    expect(res.status).toBe(404);
-  });
-});
-
 describe("PATCH /api/admin/orders/[id]", () => {
-  it("replaces the line set on a PENDING order", async () => {
+  it("marks a PENDING order as SENT", async () => {
     order.findUnique.mockResolvedValue({ id: "o1", status: "PENDING" });
-    order.update.mockResolvedValue({ id: "o1" });
-    const res = await PATCH(patchReq(VALID), ctx("o1"));
+    order.update.mockResolvedValue({ id: "o1", status: "SENT" });
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("o1"));
     expect(res.status).toBe(200);
-    expect(order.update.mock.calls[0][0].data.lines).toEqual({
-      deleteMany: {},
-      create: [{ productId: "p1", quantityOrdered: 5 }],
-    });
+    expect(order.update).toHaveBeenCalledWith({ where: { id: "o1" }, data: { status: "SENT" } });
   });
 
-  it("409s a non-PENDING order without writing", async () => {
-    order.findUnique.mockResolvedValue({ id: "o1", status: "PARTIAL" });
-    const res = await PATCH(patchReq(VALID), ctx("o1"));
+  it("is a no-op success on an already-SENT order", async () => {
+    order.findUnique.mockResolvedValue({ id: "o1", status: "SENT" });
+    order.update.mockResolvedValue({ id: "o1", status: "SENT" });
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("o1"));
+    expect(res.status).toBe(200);
+  });
+
+  it("409s a RECEIVED order without writing", async () => {
+    order.findUnique.mockResolvedValue({ id: "o1", status: "RECEIVED" });
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("o1"));
     expect(res.status).toBe(409);
     expect(order.update).not.toHaveBeenCalled();
   });
 
+  it("400s any body other than { status: 'SENT' }", async () => {
+    const res = await PATCH(patchReq({ status: "RECEIVED" }), ctx("o1"));
+    expect(res.status).toBe(400);
+    expect(order.findUnique).not.toHaveBeenCalled();
+  });
+
   it("404s an unknown order", async () => {
     order.findUnique.mockResolvedValue(null);
-    const res = await PATCH(patchReq(VALID), ctx("missing"));
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("missing"));
     expect(res.status).toBe(404);
   });
 });
