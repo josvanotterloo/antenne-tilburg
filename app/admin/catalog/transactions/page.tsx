@@ -1,6 +1,13 @@
 import Link from "next/link";
 
-import { shopMonthISO, shiftMonth, joinArtistNames } from "@/lib/catalog";
+import {
+  shopMonthISO,
+  shopMonthRange,
+  shiftMonth,
+  joinArtistNames,
+  shopDisplayDate,
+  shopDisplayTime,
+} from "@/lib/catalog";
 import { getMonthTransactions } from "@/lib/transactions-overview";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
 import { OrderButton } from "@/components/admin/OrderButton";
@@ -12,15 +19,16 @@ const MONTH_LABEL = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   timeZone: "UTC",
 });
-const MONTH_PARAM = /^\d{4}-\d{2}$/;
-
 export default async function TransactionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
   const sp = await searchParams;
-  const month = sp.month && MONTH_PARAM.test(sp.month) ? sp.month : shopMonthISO(new Date());
+  // Reuse shopMonthRange's validation (it already range-checks the month)
+  // instead of duplicating a syntax-only regex that would accept "2026-13".
+  const month =
+    sp.month && shopMonthRange(sp.month) ? sp.month : shopMonthISO(new Date());
   const prevMonth = shiftMonth(month, -1);
   const nextMonth = shiftMonth(month, 1);
 
@@ -84,10 +92,10 @@ export default async function TransactionsPage({
                     )}
                   </td>
                   <td className="px-3 py-2 text-admin-ink-muted">
-                    {t.createdAt.toLocaleDateString()}
+                    {shopDisplayDate(t.createdAt)}
                   </td>
                   <td className="px-3 py-2 text-admin-ink-muted">
-                    {t.createdAt.toLocaleTimeString()}
+                    {shopDisplayTime(t.createdAt)}
                   </td>
                   <td className="px-3 py-2 text-admin-ink-muted">{t.product.catalogNumber ?? "—"}</td>
                   <td className="px-3 py-2">{joinArtistNames(t.product.productArtists)}</td>

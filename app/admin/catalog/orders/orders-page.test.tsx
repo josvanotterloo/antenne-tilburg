@@ -9,6 +9,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("@/lib/order-overview", () => ({ getOpenOrderLines: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
 
 import OrdersOverviewPage from "@/app/admin/catalog/orders/page";
 import { getOpenOrderLines } from "@/lib/order-overview";

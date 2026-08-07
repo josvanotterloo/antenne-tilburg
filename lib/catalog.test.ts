@@ -30,6 +30,8 @@ import {
   shiftMonth,
   isRestock,
   composeProductDescription,
+  shopDisplayDate,
+  shopDisplayTime,
 } from "@/lib/catalog";
 import { db } from "@/lib/db";
 
@@ -399,6 +401,20 @@ describe("shopMonthRange", () => {
 describe("shopMonthISO", () => {
   it("formats a date as its shop-local YYYY-MM", () => {
     expect(shopMonthISO(new Date("2026-08-03T10:00:00Z"))).toBe("2026-08");
+  });
+});
+
+describe("shopDisplayDate", () => {
+  it("formats an instant as its shop-local calendar date, not the server/UTC date", () => {
+    // 23:30Z on Jan 1 is already Jan 2 in Amsterdam (CET, UTC+1).
+    expect(shopDisplayDate(new Date("2026-01-01T23:30:00Z"))).toBe("1/2/2026");
+  });
+});
+
+describe("shopDisplayTime", () => {
+  it("formats an instant as its shop-local time, not the server/UTC time", () => {
+    // 23:30Z is 00:30 the next day in Amsterdam (CET, UTC+1).
+    expect(shopDisplayTime(new Date("2026-01-01T23:30:00Z"))).toBe("12:30 AM");
   });
 });
 

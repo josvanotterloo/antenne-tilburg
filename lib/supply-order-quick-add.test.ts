@@ -69,18 +69,42 @@ describe("quickAddToOrder", () => {
     });
   });
 
-  it("409s when the product already has a line in the open order, without creating a line", async () => {
+  it("409s when the product already has a not-fully-received line in the open order, without creating a line", async () => {
     const tx = makeTx();
     (tx.product.findUnique as Mock).mockResolvedValue({ supplierId: "s1" });
     (tx.supplyOrder.findFirst as Mock).mockResolvedValue({
       id: "o1",
       status: "PENDING",
-      lines: [{ id: "l1", productId: "p1" }],
+      lines: [{ id: "l1", productId: "p1", quantityOrdered: 1, quantityReceived: 0 }],
     });
 
     const result = await quickAddToOrder(asTx(tx), { productId: "p1" });
 
     expect(result).toEqual({ ok: false, status: 409, error: "Product already in open order" });
     expect(tx.supplyOrderLine.create).not.toHaveBeenCalled();
+  });
+
+  it("does not 409 when the product's only existing line in the open order is fully received — adds a fresh line instead", async () => {
+    const tx = makeTx();
+    (tx.product.findUnique as Mock).mockResolvedValue({ supplierId: "s1" });
+    (tx.supplyOrder.findFirst as Mock).mockResolvedValue({
+      id: "o1",
+      status: "PARTIAL",
+      lines: [
+        { id: "l1", productId: "p1", quantityOrdered: 2, quantityReceived: 2 },
+        { id: "l2", productId: "p2", quantityOrdered: 1, quantityReceived: 0 },
+      ],
+    });
+    (tx.supplyOrderLine.create as Mock).mockResolvedValue({
+      id: "l3", supplyOrderId: "o1", productId: "p1", quantityOrdered: 1, quantityReceived: 0,
+    });
+
+    const result = await quickAddToOrder(asTx(tx), { productId: "p1" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.status).toBe(200);
+    expect(tx.supplyOrderLine.create).toHaveBeenCalledWith({
+      data: { supplyOrderId: "o1", productId: "p1", quantityOrdered: 1 },
+    });
   });
 });

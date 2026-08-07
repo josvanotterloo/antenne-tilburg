@@ -29,7 +29,11 @@ export async function quickAddToOrder(
   });
 
   if (openOrder) {
-    const existingLine = openOrder.lines.find((l) => l.productId === input.productId);
+    // A fully-received line for this product is done — it shouldn't count
+    // as "already in an open order" and block a fresh re-order.
+    const existingLine = openOrder.lines.find(
+      (l) => l.productId === input.productId && l.quantityReceived < l.quantityOrdered,
+    );
     if (existingLine) {
       return { ok: false, status: 409, error: "Product already in open order" };
     }

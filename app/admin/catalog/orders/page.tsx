@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getOpenOrderLines, type GroupBy, type OpenOrderLine } from "@/lib/order-overview";
-import { joinArtistNames } from "@/lib/catalog";
+import { joinArtistNames, shopDisplayDate } from "@/lib/catalog";
 import { AutoPrintToggle } from "@/components/admin/AutoPrintToggle";
 import { SupplierOrderGroup } from "@/components/admin/SupplierOrderGroup";
 import { OrderLinesTable } from "@/components/admin/OrderLinesTable";
@@ -100,7 +100,7 @@ export default async function OrdersOverviewPage({
                 className="rounded border border-admin-hairline bg-admin-surface"
               >
                 <h2 className="border-b border-admin-hairline px-4 py-3 font-semibold">
-                  Week of {group.weekStart.toLocaleDateString()}
+                  Week of {shopDisplayDate(group.weekStart)}
                 </h2>
                 <OrderLinesTable lines={group.lines.map(toRowData)} />
               </section>

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
+
 import { SupplierOrderGroup } from "@/components/admin/SupplierOrderGroup";
 import type { OrderLineRowData } from "@/components/admin/OrderLineRow";
 

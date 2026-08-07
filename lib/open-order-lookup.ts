@@ -9,6 +9,9 @@ export async function getOpenOrderProductIds(productIds: string[]): Promise<Set<
     where: {
       productId: { in: productIds },
       supplyOrder: { status: { not: "RECEIVED" } },
+      // A fully-received line is done, even on a still-PARTIAL order — only
+      // a line that hasn't yet fully arrived should count as "already ordered".
+      quantityReceived: { lt: db.supplyOrderLine.fields.quantityOrdered },
     },
     select: { productId: true },
   });

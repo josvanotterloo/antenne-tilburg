@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh, push: vi.fn() }),
+}));
+
 import { OrderLineRow, type OrderLineRowData } from "@/components/admin/OrderLineRow";
 import { AUTO_PRINT_STORAGE_KEY } from "@/components/admin/AutoPrintToggle";
 
@@ -31,6 +36,7 @@ function renderRow(line: OrderLineRowData = LINE) {
 beforeEach(() => {
   vi.restoreAllMocks();
   localStorage.clear();
+  refresh.mockClear();
 });
 
 describe("OrderLineRow", () => {
@@ -69,6 +75,32 @@ describe("OrderLineRow", () => {
           body: JSON.stringify({ quantityOrdered: 8 }),
         }),
       );
+    });
+  });
+
+  it("shows an inline error and does not call the API when editing quantity to zero", async () => {
+    const user = userEvent.setup();
+    const fetchSpy = vi.spyOn(global, "fetch");
+    renderRow();
+    const input = screen.getByLabelText(/quantity ordered for torus/i);
+    await user.clear(input);
+    await user.type(input, "0");
+    await user.tab();
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("calls router.refresh() after a successful receive", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(global, "fetch").mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /mark received/i }));
+    await user.click(screen.getByRole("button", { name: /confirm/i }));
+
+    await waitFor(() => {
+      expect(refresh).toHaveBeenCalled();
     });
   });
 

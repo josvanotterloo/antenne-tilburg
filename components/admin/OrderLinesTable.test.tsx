@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+}));
 
 import { OrderLinesTable } from "@/components/admin/OrderLinesTable";
 import type { OrderLineRowData } from "@/components/admin/OrderLineRow";

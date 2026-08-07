@@ -12,6 +12,7 @@ vi.mock("@/lib/open-order-lookup", () => ({ getOpenOrderProductIds: vi.fn() }));
 import TransactionsPage from "@/app/admin/catalog/transactions/page";
 import { getMonthTransactions } from "@/lib/transactions-overview";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
+import { shopMonthISO } from "@/lib/catalog";
 
 const OUT_TX = {
   id: "t1",
@@ -71,5 +72,12 @@ describe("/admin/catalog/transactions", () => {
     const ui = await TransactionsPage({ searchParams: Promise.resolve({ month: "2026-08" }) });
     render(ui);
     expect(screen.getByText(/no transactions/i)).toBeInTheDocument();
+  });
+
+  it("falls back to the current month for a syntactically-valid but out-of-range month (2026-13)", async () => {
+    vi.mocked(getMonthTransactions).mockResolvedValue([]);
+    const ui = await TransactionsPage({ searchParams: Promise.resolve({ month: "2026-13" }) });
+    render(ui);
+    expect(getMonthTransactions).toHaveBeenCalledWith(shopMonthISO(new Date()));
   });
 });

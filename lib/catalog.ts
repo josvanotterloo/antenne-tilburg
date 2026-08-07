@@ -358,6 +358,29 @@ export function shopDateISO(date: Date): string {
   return SHOP_DATE.format(date);
 }
 
+// Human-readable date/time, pinned to SHOP_TZ — for use in server components,
+// where the bare Date#toLocaleDateString()/toLocaleTimeString() would format
+// using the server's own OS timezone/locale instead of the shop's.
+const SHOP_DISPLAY_DATE = new Intl.DateTimeFormat("en-US", {
+  timeZone: SHOP_TZ,
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+const SHOP_DISPLAY_TIME = new Intl.DateTimeFormat("en-US", {
+  timeZone: SHOP_TZ,
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+export function shopDisplayDate(date: Date): string {
+  return SHOP_DISPLAY_DATE.format(date);
+}
+
+export function shopDisplayTime(date: Date): string {
+  return SHOP_DISPLAY_TIME.format(date);
+}
+
 // [start, end) of the given shop-local calendar month, as UTC instants.
 // Returns null on malformed input (untrusted — comes from a URL query param).
 const ISO_MONTH = /^(\d{4})-(\d{2})$/;

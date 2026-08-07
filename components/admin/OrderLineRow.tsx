@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
@@ -29,6 +30,7 @@ function lineStatus(line: {
 }
 
 export function OrderLineRow({ line }: { line: OrderLineRowData }) {
+  const router = useRouter();
   const [quantityOrdered, setQuantityOrdered] = useState(line.quantityOrdered);
   const [quantityReceived, setQuantityReceived] = useState(line.quantityReceived);
   const [qtyDraft, setQtyDraft] = useState(String(line.quantityOrdered));
@@ -41,8 +43,10 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
 
   function saveQuantity() {
     const next = Number.parseInt(qtyDraft, 10);
-    if (!Number.isInteger(next) || next < quantityReceived) {
-      qtyAction.setError(`Quantity must be a whole number of at least ${quantityReceived}`);
+    if (!Number.isInteger(next) || next <= 0 || next < quantityReceived) {
+      qtyAction.setError(
+        `Quantity must be a whole number of at least ${Math.max(1, quantityReceived)}`,
+      );
       return;
     }
     if (next === quantityOrdered) return;
@@ -73,6 +77,10 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
       if (localStorage.getItem(AUTO_PRINT_STORAGE_KEY) === "true") {
         window.open(`/api/admin/label/${line.productId}`, "_blank", "noopener,noreferrer");
       }
+      // Refetches the server-rendered overview so an order that just became
+      // fully received (and dropped off the open-orders list) disappears
+      // without a manual reload.
+      router.refresh();
     });
   }
 

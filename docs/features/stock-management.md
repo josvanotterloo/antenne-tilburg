@@ -6,6 +6,9 @@ hand-edited integer with an ad hoc `sellOne()` helper; it's a cache derived
 from an append-only ledger, and stock now arrives via modeled supply orders
 instead of typing a number into the product form.
 
+**Superseded (admin UI + order routes):** see
+`docs/features/order-transaction-redesign.md`.
+
 Design spec: `docs/superpowers/specs/2026-07-29-stock-management-design.md`.
 Implementation plan (21 tasks, executed via subagent-driven development,
 each with an independent task review): `docs/superpowers/plans/2026-07-29-stock-management.md`.

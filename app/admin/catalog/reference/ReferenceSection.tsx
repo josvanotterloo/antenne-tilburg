@@ -16,9 +16,11 @@ export interface ReferenceItem {
 
 const SEARCH_DEBOUNCE_MS = 200;
 
-// Matches the reference API's SEARCH_LIMIT (lib/reference-crud.ts) — when a
-// result set is exactly this size, it may have been truncated server-side,
-// so we hint at that rather than let it read as "that's everything."
+// Must match whichever SEARCH_LIMIT the section's own `endpoint` prop points
+// at (the shared factory's lib/reference-crud.ts for Genres/Product Types,
+// or Labels'/Suppliers' own bespoke route) — when a result set is exactly
+// this size, it may have been truncated server-side, so we hint at that
+// rather than let it read as "that's everything."
 const SEARCH_RESULT_CAP = 20;
 
 export function ReferenceSection({
