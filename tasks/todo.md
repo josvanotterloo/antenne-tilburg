@@ -42,6 +42,15 @@ real admin UIs.
       typeahead caller including the product-form combobox (bounded cost,
       not a shared hook with `ReferenceSection`'s debounce by deliberate
       design) — `docs/features/reference-page-typeahead.md`
+- [x] Order & transaction system redesign (2026-08-07) — product-driven
+      quick-add ordering (one-click "Order" button on catalog/transactions
+      rows), a grouped orders overview (`/admin/catalog/orders`, by
+      supplier/date/flat) with inline quantity edit and per-line receive,
+      mark-all-as-sent, and a new monthly transactions ledger
+      (`/admin/catalog/transactions`); replaces the old manual order
+      create/edit/detail pages entirely. `Product.supplierId` /
+      `Label.supplierId` added to link products to suppliers —
+      `docs/features/order-transaction-redesign.md`
 
 ## Backlog
 
@@ -75,6 +84,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       `docs/features/remove-want-list.md`
 - [x] `SocialLinks` lives in the site footer (every page). Added to the home page then
       removed as redundant with the footer — `docs/features/footer-redesign.md`
+
+### Orders
+- [ ] Export PDF per supplier group on the orders overview page
+      (`/admin/catalog/orders`) — button already present, currently disabled.
 
 ### Platform / tech debt
 - [ ] **Pre-scale task** — Move blog/post uploads from `public/uploads` to Hetzner Object
@@ -138,14 +151,18 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 789 tests (as of the
-reference page typeahead, 2026-08-06) cover managed-list delete guards,
-`authorize()`, notice active-window logic, fuzzy search, uploads, markdown
-rendering, sitemap, the public catalog API, Schema.org structured data, Dymo
-label XML generation, reference-data typeahead search, and
-the public/admin flows. (739 as of the New Arrivals overhaul, 2026-08-05, down
-from 781 — expected, see that entry's history; +30 for Dymo label printing,
-+20 for the reference page typeahead.)
+Done — Vitest runner + `run-tests` skill in place; 842 tests (as of the
+order & transaction system redesign, 2026-08-07) cover managed-list delete
+guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
+markdown rendering, sitemap, the public catalog API, Schema.org structured
+data, Dymo label XML generation, reference-data typeahead search,
+product-driven quick-add ordering, the grouped orders overview, the monthly
+transactions ledger, and the public/admin flows. (789 as of the reference
+page typeahead, 2026-08-06; 739 as of the New Arrivals overhaul, 2026-08-05,
+down from 781 — expected, see that entry's history; +30 for Dymo label
+printing, +20 for the reference page typeahead, +53 net for the order &
+transaction redesign, which also deleted the old manual-order route/
+component tests per its Test Contract.)
 
 ## Done
 
