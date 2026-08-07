@@ -330,4 +330,44 @@ describe("ReferenceSection", () => {
     await screen.findByText("Techno");
     expect(screen.queryByText(/showing the first 20/i)).toBeNull();
   });
+
+  describe("supplier field (Labels only)", () => {
+    it("does not render a supplier field when supplierEndpoint is absent", () => {
+      setup();
+      expect(screen.queryByRole("combobox", { name: /supplier/i })).toBeNull();
+    });
+
+    it("sends supplierId when adding an item with supplierEndpoint set", async () => {
+      const user = userEvent.setup();
+      fetchMock = mockFetch({
+        post: {
+          id: "l1",
+          name: "Warp",
+          productCount: 0,
+          supplierId: "s1",
+          supplierName: "Beta",
+        },
+      });
+
+      render(
+        <ReferenceSection
+          title="Labels"
+          endpoint="/api/admin/labels"
+          initialItems={[]}
+          initialTotal={0}
+          supplierEndpoint="/api/admin/suppliers"
+        />,
+      );
+      await user.type(screen.getByLabelText(/new labels name/i), "Warp");
+      await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+      expect(await screen.findByText("Warp")).toBeInTheDocument();
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/labels",
+        expect.objectContaining({
+          body: JSON.stringify({ name: "Warp", supplierId: null }),
+        }),
+      );
+    });
+  });
 });

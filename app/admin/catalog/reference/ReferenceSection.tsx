@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 
 export interface ReferenceItem {
   id: string;
   name: string;
   productCount: number;
+  supplierId?: string | null;
+  supplierName?: string | null;
 }
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -23,11 +26,13 @@ export function ReferenceSection({
   endpoint,
   initialItems,
   initialTotal,
+  supplierEndpoint,
 }: {
   title: string;
   endpoint: string;
   initialItems: ReferenceItem[];
   initialTotal: number;
+  supplierEndpoint?: string;
 }) {
   const { error, run } = useAsyncAction();
   const [items, setItems] = useState(initialItems);
@@ -37,6 +42,8 @@ export function ReferenceSection({
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [newSupplier, setNewSupplier] = useState<ComboboxOption | null>(null);
+  const [editSupplier, setEditSupplier] = useState<ComboboxOption | null>(null);
 
   const isFirstRender = useRef(true);
   const searchSeq = useRef(0);
@@ -76,10 +83,17 @@ export function ReferenceSection({
     const name = newName.trim();
     if (!name) return;
     run(async () => {
-      const created = await apiSend<{ id: string; name: string }>(endpoint, {
+      const created = await apiSend<{
+        id: string;
+        name: string;
+        supplierId?: string | null;
+        supplierName?: string | null;
+      }>(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(
+          supplierEndpoint ? { name, supplierId: newSupplier?.id ?? null } : { name },
+        ),
       });
       setTotalCount((n) => n + 1);
       // Only shown if it matches what's currently on screen — otherwise it
@@ -97,12 +111,19 @@ export function ReferenceSection({
       searchSeq.current++;
       if (matchesQuery) {
         setItems((prev) =>
-          [...prev, { ...created, productCount: 0 }].sort((a, b) =>
-            a.name.localeCompare(b.name),
-          ),
+          [
+            ...prev,
+            {
+              ...created,
+              productCount: 0,
+              supplierId: created.supplierId ?? null,
+              supplierName: created.supplierName ?? null,
+            },
+          ].sort((a, b) => a.name.localeCompare(b.name)),
         );
       }
       setNewName("");
+      setNewSupplier(null);
     });
   }
 
@@ -113,7 +134,9 @@ export function ReferenceSection({
       await apiSend(`${endpoint}/${id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(
+          supplierEndpoint ? { name, supplierId: editSupplier?.id ?? null } : { name },
+        ),
       });
       // Stays visible even if the rename no longer matches the active
       // search query — an admin editing an item shouldn't see it vanish
@@ -123,7 +146,16 @@ export function ReferenceSection({
       searchSeq.current++;
       setItems((prev) =>
         prev
-          .map((item) => (item.id === id ? { ...item, name } : item))
+          .map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  name,
+                  supplierId: editSupplier?.id ?? null,
+                  supplierName: editSupplier?.name ?? null,
+                }
+              : item,
+          )
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
       setEditingId(null);
@@ -139,6 +171,14 @@ export function ReferenceSection({
       setItems((prev) => prev.filter((item) => item.id !== id));
       setTotalCount((n) => n - 1);
     });
+  }
+
+  function startEdit(item: ReferenceItem) {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditSupplier(
+      item.supplierId ? { id: item.supplierId, name: item.supplierName ?? "" } : null,
+    );
   }
 
   const label = title.toLowerCase();
@@ -175,6 +215,15 @@ export function ReferenceSection({
         >
           Add
         </button>
+        {supplierEndpoint && (
+          <Combobox
+            label="Supplier"
+            endpoint={supplierEndpoint}
+            value={newSupplier}
+            onChange={setNewSupplier}
+            allowCreate={false}
+          />
+        )}
       </form>
 
       {(error || searchError) && (
@@ -201,6 +250,15 @@ export function ReferenceSection({
                       aria-label={`Edit ${item.name}`}
                       className="flex-1 rounded border border-admin-hairline px-2 py-1"
                     />
+                    {supplierEndpoint && (
+                      <Combobox
+                        label="Supplier"
+                        endpoint={supplierEndpoint}
+                        value={editSupplier}
+                        onChange={setEditSupplier}
+                        allowCreate={false}
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => handleSaveEdit(item.id)}
@@ -218,13 +276,17 @@ export function ReferenceSection({
                   </>
                 ) : (
                   <>
-                    <span className="flex-1">{item.name}</span>
+                    <span className="flex-1">
+                      {item.name}
+                      {supplierEndpoint && (
+                        <span className="ml-2 text-xs text-admin-ink-muted">
+                          {item.supplierName ?? "No supplier"}
+                        </span>
+                      )}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingId(item.id);
-                        setEditName(item.name);
-                      }}
+                      onClick={() => startEdit(item)}
                       className="text-admin-ink hover:underline"
                     >
                       Edit

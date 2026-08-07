@@ -12,6 +12,17 @@ type WithCount = { id: string; name: string; _count: { products: number } };
 const toItems = (rows: WithCount[]): ReferenceItem[] =>
   rows.map((r) => ({ id: r.id, name: r.name, productCount: r._count.products }));
 
+type LabelWithCount = WithCount & { supplier: { id: string; name: string } | null };
+
+const toLabelItems = (rows: LabelWithCount[]): ReferenceItem[] =>
+  rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    productCount: r._count.products,
+    supplierId: r.supplier?.id ?? null,
+    supplierName: r.supplier?.name ?? null,
+  }));
+
 // First page only — these tables can hold tens of thousands of rows
 // (55k+ artists in production), so an unbounded findMany here would defeat
 // the point of the typeahead search this page hands off to on the client.
@@ -48,7 +59,7 @@ export default async function ReferenceDataPage() {
     artists,
     artistTotal,
   ] = await Promise.all([
-    db.label.findMany(firstPage),
+    db.label.findMany({ ...firstPage, include: { ...firstPage.include, supplier: true } }),
     db.label.count(),
     db.genre.findMany(firstPage),
     db.genre.count(),
@@ -75,8 +86,9 @@ export default async function ReferenceDataPage() {
         <ReferenceSection
           title="Labels"
           endpoint="/api/admin/labels"
-          initialItems={toItems(labels)}
+          initialItems={toLabelItems(labels)}
           initialTotal={labelTotal}
+          supplierEndpoint="/api/admin/suppliers"
         />
         <ReferenceSection
           title="Genres"
