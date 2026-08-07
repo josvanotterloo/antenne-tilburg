@@ -4,6 +4,8 @@ import Link from "next/link";
 import { catalogPageNumbers, getCatalogPage, joinArtistNames } from "@/lib/catalog";
 import { fullDate, relativeDate } from "@/lib/relative-date";
 import { missingLabelFields } from "@/lib/dymo-label";
+import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
+import { OrderButton } from "@/components/admin/OrderButton";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 import { SellOneButton } from "./SellOneButton";
@@ -36,6 +38,10 @@ export default async function CatalogPage({
     sort: "date",
     page: one(sp.page),
   });
+
+  const openOrderProductIds = await getOpenOrderProductIds(
+    result.products.map((p) => p.id),
+  );
 
   return (
     <div className="space-y-6">
@@ -140,6 +146,11 @@ export default async function CatalogPage({
                 </span>
                 <div className="flex items-center gap-3">
                   <SellOneButton id={product.id} quantity={product.quantity} />
+                  <OrderButton
+                    productId={product.id}
+                    hasSupplier={!!product.supplierId}
+                    initiallyOrdered={openOrderProductIds.has(product.id)}
+                  />
                   {missingLabelFields(product).length === 0 && (
                     <a
                       href={`/api/admin/label/${product.id}`}

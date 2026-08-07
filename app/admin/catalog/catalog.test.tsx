@@ -13,9 +13,11 @@ vi.mock("@/lib/catalog", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/catalog")>();
   return { ...actual, getCatalogPage: vi.fn() };
 });
+vi.mock("@/lib/open-order-lookup", () => ({ getOpenOrderProductIds: vi.fn() }));
 
 import AdminCatalogPage from "@/app/admin/catalog/page";
 import { getCatalogPage } from "@/lib/catalog";
+import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -36,6 +38,7 @@ const PRODUCT = {
   label: { id: "l1", name: "Zulema Records" },
   genre: { id: "g1", name: "Techno" },
   productType: { id: "t1", name: "LP" },
+  supplierId: "s1",
 };
 
 beforeEach(() => {
@@ -46,6 +49,7 @@ beforeEach(() => {
     page: 2,
     pageCount: 3,
   });
+  vi.mocked(getOpenOrderProductIds).mockResolvedValue(new Set());
 });
 
 describe("/admin/catalog", () => {
@@ -112,5 +116,32 @@ describe("/admin/catalog", () => {
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
+  });
+
+  it("shows a disabled Order button with a tooltip when the product has no supplier", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [{ ...PRODUCT, supplierId: null }] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    const button = screen.getByRole("button", { name: /order/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", "No supplier linked");
+  });
+
+  it("shows a disabled 'Ordered' button when the product is already in an open order", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [{ ...PRODUCT, supplierId: "s1" }] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    vi.mocked(getOpenOrderProductIds).mockResolvedValue(new Set(["p1"]));
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.getByRole("button", { name: /ordered/i })).toBeDisabled();
   });
 });
