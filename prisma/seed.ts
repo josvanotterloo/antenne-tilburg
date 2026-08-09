@@ -221,7 +221,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    console.error(error);
+    console.error(error instanceof Error ? error.message : "Seed failed");
     process.exit(1);
   })
   .finally(async () => {
