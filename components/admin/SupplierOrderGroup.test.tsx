@@ -14,6 +14,7 @@ const LINE: OrderLineRowData = {
   productId: "p1",
   quantityOrdered: 5,
   quantityReceived: 0,
+  orderStatus: "PENDING",
   createdAt: "2026-08-03T10:00:00.000Z",
   title: "Torus",
   catalogNumber: "ZR-001",

@@ -12,6 +12,7 @@ export interface OrderLineRowData {
   productId: string;
   quantityOrdered: number;
   quantityReceived: number;
+  orderStatus: "PENDING" | "PARTIAL" | "RECEIVED";
   createdAt: string;
   title: string;
   catalogNumber: string | null;
@@ -43,7 +44,18 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
   const receiveAction = useAsyncAction();
   const removeAction = useAsyncAction();
 
+  // Only the most recently started action's error should be visible — clear
+  // the other two whenever a new action begins, so an earlier failure (e.g.
+  // a quantity-validation error) can't keep masking a later, unrelated one
+  // (e.g. a 409 from Remove).
+  function clearOtherErrors(except: "qty" | "receive" | "remove") {
+    if (except !== "qty") qtyAction.setError(null);
+    if (except !== "receive") receiveAction.setError(null);
+    if (except !== "remove") removeAction.setError(null);
+  }
+
   function saveQuantity() {
+    clearOtherErrors("qty");
     const next = Number.parseInt(qtyDraft, 10);
     if (!Number.isInteger(next) || next <= 0 || next < quantityReceived) {
       qtyAction.setError(
@@ -63,6 +75,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
   }
 
   function confirmReceive() {
+    clearOtherErrors("receive");
     const amount = Number.parseInt(receiveDraft, 10);
     if (!Number.isInteger(amount) || amount <= 0) {
       receiveAction.setError("Enter a whole number greater than zero");
@@ -87,6 +100,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
   }
 
   function confirmRemove() {
+    clearOtherErrors("remove");
     removeAction.run(async () => {
       await apiSend(`/api/admin/orders/lines/${line.id}`, { method: "DELETE" });
       // OrderLineRow doesn't own the lines array (OrderLinesTable does) —
@@ -174,12 +188,13 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
             Mark received
           </button>
         )}
-        {/* Undo for a mis-clicked quick-add. Gated client-side on
-            quantityReceived === 0 — the parent order's PENDING/PARTIAL/RECEIVED
-            status isn't threaded into OrderLineRowData, so the server's 409 is
-            the authoritative guard for that half of the rule; it surfaces via
-            the same inline error below. */}
+        {/* Undo for a mis-clicked quick-add. Gated client-side on both
+            quantityReceived === 0 and the parent order still being PENDING,
+            to avoid a guaranteed-409 round trip once a sibling line has been
+            partially received. The server's DELETE guard (same two checks)
+            stays authoritative — this is purely a UX shortcut. */}
         {quantityReceived === 0 &&
+          line.orderStatus === "PENDING" &&
           (confirmingRemove ? (
             <span className="ml-2 inline-flex items-center gap-1">
               <button

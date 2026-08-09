@@ -21,6 +21,7 @@ function toRowData(line: OpenOrderLine): OrderLineRowData {
     productId: line.product.id,
     quantityOrdered: line.quantityOrdered,
     quantityReceived: line.quantityReceived,
+    orderStatus: line.supplyOrder.status,
     createdAt: line.createdAt.toISOString(),
     title: line.product.title,
     catalogNumber: line.product.catalogNumber,

@@ -15,6 +15,7 @@ const LINE: OrderLineRowData = {
   productId: "p1",
   quantityOrdered: 5,
   quantityReceived: 0,
+  orderStatus: "PENDING",
   createdAt: "2026-08-03T10:00:00.000Z",
   title: "Torus",
   catalogNumber: "ZR-001",
@@ -190,6 +191,11 @@ describe("OrderLineRow", () => {
     expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
   });
 
+  it("does not render a Remove button when the parent order is no longer PENDING, even with quantityReceived 0", () => {
+    renderRow({ ...LINE, quantityReceived: 0, orderStatus: "PARTIAL" });
+    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+  });
+
   it("shows an inline error and keeps the row when the server rejects the remove", async () => {
     const user = userEvent.setup();
     vi.spyOn(global, "fetch").mockResolvedValue({
@@ -205,5 +211,32 @@ describe("OrderLineRow", () => {
       await screen.findByText(/cannot remove a line once the order is partially or fully received/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Torus")).toBeInTheDocument();
+  });
+
+  it("shows the remove error, not a stale quantity error, when remove fails after an earlier quantity-validation error", async () => {
+    const user = userEvent.setup();
+    renderRow();
+
+    // First, trigger a client-side quantity-validation error (no fetch involved).
+    const qtyInput = screen.getByLabelText(/quantity ordered for torus/i);
+    await user.clear(qtyInput);
+    await user.type(qtyInput, "0");
+    await user.tab();
+    expect(
+      await screen.findByText(/quantity must be a whole number/i),
+    ).toBeInTheDocument();
+
+    // Then trigger a remove that fails with a different, later error.
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Cannot remove a line once it has received quantity." }),
+    } as Response);
+    await user.click(screen.getByRole("button", { name: /remove/i }));
+    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    expect(
+      await screen.findByText(/cannot remove a line once it has received quantity/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/quantity must be a whole number/i)).not.toBeInTheDocument();
   });
 });
