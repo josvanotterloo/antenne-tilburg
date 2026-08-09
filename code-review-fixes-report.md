@@ -205,3 +205,137 @@ not applied (see above) — `OrderLineRow`'s local two-click remove
 implementation still duplicates `DeleteButton`'s UX pattern. This is a
 pre-existing duplication, not something this session introduced or made
 worse.
+
+---
+
+## Post-review fix-up (task review round)
+
+A task review of the above work found one Critical and one Important issue.
+Both were real; both are now fixed and covered by tests.
+
+### Critical: Finding 1's transaction wrapping didn't actually close the race
+
+**The gap:** the first pass wrapped `deleteOrderLine`'s read, guards, and
+delete in `db.$transaction`, and the read used the `tx` client instead of
+`db` — but the read itself was still a plain `tx.supplyOrderLine.findUnique`.
+Under Postgres READ COMMITTED, a bare `SELECT` takes no row lock. So a
+concurrent `PATCH .../receive` could still fully commit (increment
+`quantityReceived`, flip the order status, insert a `StockTransaction`) in
+the gap between DELETE's read and its `tx.supplyOrderLine.delete(...)` — and
+the delete would proceed anyway, because its guard checks were computed
+in-memory from the stale read and the `delete`'s `WHERE id = X` doesn't
+re-encode them. Being "inside a transaction" only guaranteed atomicity of
+DELETE's *own* writes, not isolation from a concurrent transaction's writes
+to the same row — that requires an explicit lock. The mock-based "runs
+inside a single transaction" test from the first pass proved the code
+called `tx` instead of `db`; it could not and did not prove the race was
+closed, since a mock can't model Postgres row-lock blocking.
+
+**The fix:** `app/api/admin/orders/lines/[id]/route.ts` now has a
+`findLineForDelete(tx, id)` helper that replaces the plain `findUnique` with
+a raw `SELECT ... FOR UPDATE OF sl` (joining `SupplyOrder` for `status`),
+following the exact locking-read pattern `lib/stock.ts`'s
+`applyStockTransaction` already established in this codebase (there, `SELECT
+... FOR UPDATE` on `Product` before writing it). `FOR UPDATE OF sl` locks
+the `SupplyOrderLine` row for the rest of DELETE's transaction, so a
+concurrent receive's `tx.supplyOrderLine.update(...)` on the same row now
+blocks until DELETE's transaction commits or rolls back — whichever
+transaction reaches the row first, the other is serialized behind it and
+sees fresh data. `deleteOrderLine`'s guard checks now run against
+`LockedOrderLine` (`quantityOrdered`, `quantityReceived`, `orderStatus`)
+read from that locked row. A code comment on `findLineForDelete` explains
+why the lock is required and explicitly warns against "simplifying" it back
+to `findUnique`.
+
+Also reverted Finding 5's `findLineWithOrder` shared-helper extraction:
+once DELETE's read became a raw locking query with a different shape and
+return type than PATCH's ORM `findUnique`, there was nothing left that was
+genuinely shared between the two handlers (per Finding 5's own fallback
+guidance to prefer a clean partial extraction over a forced one). PATCH's
+`findUnique` call is now inlined back in place.
+
+**Tests:** `app/api/admin/orders/lines/[id]/route.test.ts`'s `tx` double
+now mocks `$queryRaw` (resolving to a row array) instead of `findUnique`.
+The four existing DELETE guard-check tests were updated to mock
+`tx.$queryRaw`'s resolved rows instead of `tx.supplyOrderLine.findUnique`'s
+resolved object — required because the query shape itself changed, not a
+change to any assertion about behavior. The wiring test was extended to
+assert the raw SQL text passed to `tx.$queryRaw` contains `FOR UPDATE OF sl`
+and targets `"SupplyOrderLine"`, with a comment explicitly stating what this
+test does and does not prove: it's a regression guard for the query
+*shape* (catches a regression back to a non-locking read), not evidence the
+concurrency guarantee holds — that guarantee is a property of the real
+`FOR UPDATE` clause running inside a real Postgres transaction, which a
+mock cannot exercise.
+
+### Important: Finding 2's fix had a residual gap for concurrently-triggered actions
+
+**The gap:** `clearOtherErrors` (added in the first pass) only fires when an
+action *starts*. Each of the three trigger controls (quantity input, Mark
+received, Remove) was previously disabled only by its *own* action's
+`pending` flag, so an admin could start a second action (e.g. click Remove →
+Confirm) while a first (e.g. Mark received → Confirm) was still in flight.
+If both later failed, both `.error` fields could end up non-null at once
+with no ordering to resolve which should display — the same class of bug
+Finding 2 targeted, just requiring two genuinely concurrent in-flight
+actions instead of one stale one.
+
+**The fix:** `components/admin/OrderLineRow.tsx` now computes `const
+anyPending = qtyAction.pending || receiveAction.pending ||
+removeAction.pending` and uses it (instead of each action's own `.pending`)
+to disable all three trigger surfaces — the quantity input, the "Mark
+received" toggle button, its "Confirm" button, and both the "Remove" button
+and its "Confirm" button — whenever *any* action is in flight. This prevents
+the concurrent-trigger case at the source rather than trying to reconcile
+two simultaneously-failed errors after the fact, and matches how a single
+admin actually uses this UI (one action at a time). "Cancel" buttons are
+intentionally left unaffected by `anyPending` — they don't start a mutation,
+so leaving them clickable lets an admin back out of a confirm state without
+needing to wait.
+
+**TDD:** added a test to `OrderLineRow.test.tsx` that starts a receive
+(clicks Mark received → Confirm) against a `fetch` mock whose promise is
+held open, then asserts the quantity input and the Remove button are both
+disabled while that receive is still pending. Ran against the
+pre-fix component first — failed (`toBeDisabled()` failed for both). Applied
+the fix — passes. (The test resolves the held-open promise before finishing
+and asserts on the receiving UI closing, rather than re-asserting the
+quantity input is enabled afterwards — this line receives its full
+remaining quantity, so the input is legitimately disabled afterwards for
+the unrelated, pre-existing "line fully received" reason, and asserting on
+that would conflate the two disabled reasons.)
+
+### Verification (post-review)
+
+- `npx tsc --noEmit -p .` — clean.
+- `bash scripts/run-tests.sh` (full suite) — 134 files / 863 tests, all
+  passing (+1 net test vs. the first pass: the DELETE "wiring" test was
+  extended in place rather than duplicated; one new `OrderLineRow` test was
+  added for the `anyPending` gating).
+
+### Files touched in this fix-up round
+
+- `app/api/admin/orders/lines/[id]/route.ts`
+- `app/api/admin/orders/lines/[id]/route.test.ts`
+- `components/admin/OrderLineRow.tsx`
+- `components/admin/OrderLineRow.test.tsx`
+
+### Self-review
+
+- Finding 1 (this round): confirmed the guard-read now takes a `FOR UPDATE`
+  lock on the `SupplyOrderLine` row inside the same transaction as the
+  guard checks and the delete — a concurrent receive's row-level write to
+  the same line is now genuinely serialized behind (or ahead of, with
+  DELETE then correctly seeing the post-receive state and 409ing) DELETE's
+  transaction, not just nominally "inside a transaction" with an unlocked
+  read.
+- Finding 2 (this round): confirmed no two trigger controls can be pending
+  simultaneously anymore — starting any one action now disables the other
+  two's triggers immediately, closing the concurrent-trigger gap without
+  needing to reconcile two simultaneous errors after the fact.
+- Test Contract: the four DELETE guard-check tests' mock setup changed from
+  `tx.supplyOrderLine.findUnique` to `tx.$queryRaw` because Finding 1's
+  actual fix (this round) changed the query itself from an ORM call to a
+  raw locking query — same rationale as flagged in the first pass, now
+  updated to match the corrected implementation. No assertion about
+  observable route behavior (status codes, response bodies) changed.

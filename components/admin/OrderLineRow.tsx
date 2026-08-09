@@ -112,6 +112,13 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
 
   const status = lineStatus({ quantityOrdered, quantityReceived });
   const remaining = quantityOrdered - quantityReceived;
+  // Only one action can be safely in flight at a time (see the comment on
+  // clearOtherErrors above) — an admin triggering two of these before either
+  // resolves could otherwise leave two errors set simultaneously, with
+  // nothing to say which one is current. Disabling every trigger while any
+  // one action is pending prevents that at the source instead of trying to
+  // reconcile it after the fact.
+  const anyPending = qtyAction.pending || receiveAction.pending || removeAction.pending;
 
   return (
     <tr className="border-b border-admin-hairline text-sm">
@@ -128,7 +135,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
           onChange={(e) => setQtyDraft(e.target.value)}
           onBlur={saveQuantity}
           aria-label={`Quantity ordered for ${line.title}`}
-          disabled={qtyAction.pending || status === "received"}
+          disabled={anyPending || status === "received"}
           className="w-16 rounded border border-admin-hairline px-2 py-1 text-sm tabular-nums"
         />
       </td>
@@ -163,7 +170,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
             <button
               type="button"
               onClick={confirmReceive}
-              disabled={receiveAction.pending}
+              disabled={anyPending}
               className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
             >
               {receiveAction.pending ? "…" : "Confirm"}
@@ -183,6 +190,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
               setReceiveDraft(String(remaining));
               setReceiving(true);
             }}
+            disabled={anyPending}
             className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
           >
             Mark received
@@ -200,7 +208,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
               <button
                 type="button"
                 onClick={confirmRemove}
-                disabled={removeAction.pending}
+                disabled={anyPending}
                 className="text-xs text-red-400 hover:underline disabled:opacity-50"
               >
                 {removeAction.pending ? "…" : "Confirm"}
@@ -217,7 +225,8 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
             <button
               type="button"
               onClick={() => setConfirmingRemove(true)}
-              className="ml-2 text-xs text-red-400 hover:underline"
+              disabled={anyPending}
+              className="ml-2 text-xs text-red-400 hover:underline disabled:opacity-50"
             >
               Remove
             </button>

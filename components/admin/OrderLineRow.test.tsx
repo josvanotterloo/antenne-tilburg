@@ -196,6 +196,35 @@ describe("OrderLineRow", () => {
     expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
   });
 
+  it("disables the quantity input and Remove button while a receive is still in flight", async () => {
+    const user = userEvent.setup();
+    let resolveFetch!: (value: Response) => void;
+    vi.spyOn(global, "fetch").mockReturnValue(
+      new Promise<Response>((resolve) => {
+        resolveFetch = resolve;
+      }),
+    );
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /mark received/i }));
+    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/quantity ordered for torus/i)).toBeDisabled();
+    });
+    expect(screen.getByRole("button", { name: /remove/i })).toBeDisabled();
+
+    // Let the in-flight receive resolve so it doesn't leak into other tests
+    // (this line receives its full remaining quantity, so the quantity
+    // input stays disabled afterwards for the unrelated "received" reason —
+    // assert on the receiving UI closing instead, to flush the pending
+    // state change cleanly without conflating the two disabled reasons).
+    resolveFetch({ ok: true, json: async () => ({}) } as Response);
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument();
+    });
+  });
+
   it("shows an inline error and keeps the row when the server rejects the remove", async () => {
     const user = userEvent.setup();
     vi.spyOn(global, "fetch").mockResolvedValue({

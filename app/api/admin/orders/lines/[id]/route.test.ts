@@ -29,9 +29,13 @@ const deleteReq = () => new Request("http://t/x", { method: "DELETE" });
 // DELETE's guard-read and delete both run against this tx double. If a
 // regression moved the implementation back to reading/deleting via plain
 // `db`, these mocks would go unused and the calls would hit the real
-// (unmocked) tx methods, failing the test.
+// (unmocked) tx methods, failing the test. The guard-read is a raw
+// `$queryRaw` (FOR UPDATE locking read, not `findUnique` — see the comment
+// on findLineForDelete in route.ts for why), so it's mocked to resolve to a
+// row array the way pg's driver would return one.
 const tx = {
-  supplyOrderLine: { findUnique: vi.fn(), delete: vi.fn() },
+  $queryRaw: vi.fn(),
+  supplyOrderLine: { delete: vi.fn() },
 };
 
 beforeEach(() => {
@@ -108,11 +112,9 @@ describe("PATCH /api/admin/orders/lines/[id]", () => {
 
 describe("DELETE /api/admin/orders/lines/[id]", () => {
   it("deletes a line on a still-PENDING order with no receipts", async () => {
-    tx.supplyOrderLine.findUnique.mockResolvedValue({
-      id: "l1",
-      quantityReceived: 0,
-      supplyOrder: { status: "PENDING" },
-    });
+    tx.$queryRaw.mockResolvedValue([
+      { quantityOrdered: 5, quantityReceived: 0, orderStatus: "PENDING" },
+    ]);
     const res = await DELETE(deleteReq(), ctx("l1"));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
@@ -120,18 +122,16 @@ describe("DELETE /api/admin/orders/lines/[id]", () => {
   });
 
   it("404s an unknown line, without deleting", async () => {
-    tx.supplyOrderLine.findUnique.mockResolvedValue(null);
+    tx.$queryRaw.mockResolvedValue([]);
     const res = await DELETE(deleteReq(), ctx("missing"));
     expect(res.status).toBe(404);
     expect(tx.supplyOrderLine.delete).not.toHaveBeenCalled();
   });
 
   it("409s a line whose parent order is not PENDING, without deleting", async () => {
-    tx.supplyOrderLine.findUnique.mockResolvedValue({
-      id: "l1",
-      quantityReceived: 0,
-      supplyOrder: { status: "PARTIAL" },
-    });
+    tx.$queryRaw.mockResolvedValue([
+      { quantityOrdered: 5, quantityReceived: 0, orderStatus: "PARTIAL" },
+    ]);
     const res = await DELETE(deleteReq(), ctx("l1"));
     expect(res.status).toBe(409);
     expect(tx.supplyOrderLine.delete).not.toHaveBeenCalled();
@@ -144,41 +144,41 @@ describe("DELETE /api/admin/orders/lines/[id]", () => {
   // leaving quantityReceived > 0, to prove the defense-in-depth guard fires
   // independently of the status check above it.
   it("409s a line that already has receipts, even if the order status reads PENDING", async () => {
-    tx.supplyOrderLine.findUnique.mockResolvedValue({
-      id: "l1",
-      quantityReceived: 3,
-      supplyOrder: { status: "PENDING" },
-    });
+    tx.$queryRaw.mockResolvedValue([
+      { quantityOrdered: 5, quantityReceived: 3, orderStatus: "PENDING" },
+    ]);
     const res = await DELETE(deleteReq(), ctx("l1"));
     expect(res.status).toBe(409);
     expect(tx.supplyOrderLine.delete).not.toHaveBeenCalled();
   });
 
-  // Regression guard for the race described in the finding: DELETE must run
-  // its guard-read and its delete inside the SAME db.$transaction call,
-  // against the tx client, not the top-level db client. If the
-  // implementation regressed to reading/deleting via `db` directly (outside
-  // a transaction), this test's `tx` mocks would never be consulted —
-  // `tx.supplyOrderLine.findUnique` would return undefined by default,
-  // and the delete would 404 instead of succeeding, or the `db`-level
-  // methods asserted below would never be called.
-  it("runs the guard read and the delete inside a single db.$transaction call, not against the top-level db client", async () => {
-    tx.supplyOrderLine.findUnique.mockResolvedValue({
-      id: "l1",
-      quantityReceived: 0,
-      supplyOrder: { status: "PENDING" },
-    });
+  // Wiring guard, not a concurrency proof: confirms DELETE's guard-read and
+  // its delete both run through the SAME db.$transaction call, against the
+  // tx client (not the top-level db client), and that the guard-read is a
+  // locking `FOR UPDATE` query rather than a plain findUnique. A mock can't
+  // model Postgres row-lock blocking, so this test cannot and does not
+  // prove the race itself is closed — that guarantee comes from the actual
+  // `FOR UPDATE OF sl` clause asserted below being present in production
+  // code and running inside a real transaction against a real database
+  // (see findLineForDelete's comment in route.ts). What this test guards
+  // against is a regression back to a non-transactional or non-locking
+  // read (e.g. `tx.supplyOrderLine.findUnique`) going unnoticed.
+  it("runs a FOR UPDATE locking read and the delete inside a single db.$transaction call, not against the top-level db client", async () => {
+    tx.$queryRaw.mockResolvedValue([
+      { quantityOrdered: 5, quantityReceived: 0, orderStatus: "PENDING" },
+    ]);
     const res = await DELETE(deleteReq(), ctx("l1"));
 
     expect(res.status).toBe(200);
     expect(mockTransaction).toHaveBeenCalledTimes(1);
-    expect(tx.supplyOrderLine.findUnique).toHaveBeenCalledWith({
-      where: { id: "l1" },
-      include: { supplyOrder: true },
-    });
+    expect(tx.$queryRaw).toHaveBeenCalledTimes(1);
+    const [sqlArg] = tx.$queryRaw.mock.calls[0] as [{ text: string; values: unknown[] }];
+    expect(sqlArg.text).toMatch(/FOR UPDATE OF sl/);
+    expect(sqlArg.text).toMatch(/"SupplyOrderLine"/);
+    expect(sqlArg.values).toEqual(["l1"]);
     expect(tx.supplyOrderLine.delete).toHaveBeenCalledWith({ where: { id: "l1" } });
-    // The top-level db client's own findUnique/delete must not be touched —
-    // both must go through the transaction client instead.
+    // The top-level db client's own supplyOrderLine methods must not be
+    // touched — the guard-read and the delete both go through tx instead.
     expect(line.findUnique).not.toHaveBeenCalled();
     expect(line.delete).not.toHaveBeenCalled();
   });
