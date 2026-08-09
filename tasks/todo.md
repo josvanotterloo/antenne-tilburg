@@ -88,6 +88,18 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 ### Orders
 - [ ] Export PDF per supplier group on the orders overview page
       (`/admin/catalog/orders`) — button already present, currently disabled.
+- [ ] **Legacy multi-open-order-per-supplier data check.** `lib/order-overview.ts`'s
+      supplier grouping assumes at most one non-RECEIVED `SupplyOrder` per supplier
+      (an invariant quick-add enforces going forward, but the old manual order-creation
+      form — removed in this redesign — had no such constraint). If a supplier ever
+      ends up with two open orders in real data, the grouped overview would silently
+      show lines from both under one header, keyed off only one order's id/status —
+      "Mark all as sent" would then only affect one of the two. Not relevant until/unless
+      a legacy-data migration or audit surfaces this; run
+      `SELECT "supplierId", count(*) FROM "SupplyOrder" WHERE status <> 'RECEIVED' GROUP BY 1 HAVING count(*) > 1;`
+      against production before relying on the grouped view for a supplier with prior
+      manually-created orders, and consolidate or re-key the grouping by order id if any
+      are found.
 
 ### Platform / tech debt
 - [ ] **Pre-scale task** — Move blog/post uploads from `public/uploads` to Hetzner Object
