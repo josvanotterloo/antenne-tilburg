@@ -159,4 +159,51 @@ describe("OrderLineRow", () => {
     });
     expect(openSpy).not.toHaveBeenCalled();
   });
+
+  it("removes a line via the two-click confirm flow and refreshes", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    } as Response);
+    renderRow();
+
+    expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /remove/i }));
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/admin/orders/lines/l1",
+        expect.objectContaining({ method: "DELETE" }),
+      );
+    });
+    await waitFor(() => {
+      expect(refresh).toHaveBeenCalled();
+    });
+  });
+
+  it("does not render a Remove button once any quantity has been received", () => {
+    renderRow({ ...LINE, quantityReceived: 2 });
+    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+  });
+
+  it("shows an inline error and keeps the row when the server rejects the remove", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: "Cannot remove a line once the order is partially or fully received." }),
+    } as Response);
+    renderRow();
+
+    await user.click(screen.getByRole("button", { name: /remove/i }));
+    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+
+    expect(
+      await screen.findByText(/cannot remove a line once the order is partially or fully received/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Torus")).toBeInTheDocument();
+  });
 });

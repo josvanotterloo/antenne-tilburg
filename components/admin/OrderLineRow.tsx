@@ -38,8 +38,10 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
   const [receiveDraft, setReceiveDraft] = useState(
     String(line.quantityOrdered - line.quantityReceived),
   );
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const qtyAction = useAsyncAction();
   const receiveAction = useAsyncAction();
+  const removeAction = useAsyncAction();
 
   function saveQuantity() {
     const next = Number.parseInt(qtyDraft, 10);
@@ -80,6 +82,16 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
       // Refetches the server-rendered overview so an order that just became
       // fully received (and dropped off the open-orders list) disappears
       // without a manual reload.
+      router.refresh();
+    });
+  }
+
+  function confirmRemove() {
+    removeAction.run(async () => {
+      await apiSend(`/api/admin/orders/lines/${line.id}`, { method: "DELETE" });
+      // OrderLineRow doesn't own the lines array (OrderLinesTable does) —
+      // refetch the server-rendered overview so the removed line's row is
+      // gone, same pattern as confirmReceive above.
       router.refresh();
     });
   }
@@ -162,9 +174,42 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
             Mark received
           </button>
         )}
-        {(qtyAction.error || receiveAction.error) && (
+        {/* Undo for a mis-clicked quick-add. Gated client-side on
+            quantityReceived === 0 — the parent order's PENDING/PARTIAL/RECEIVED
+            status isn't threaded into OrderLineRowData, so the server's 409 is
+            the authoritative guard for that half of the rule; it surfaces via
+            the same inline error below. */}
+        {quantityReceived === 0 &&
+          (confirmingRemove ? (
+            <span className="ml-2 inline-flex items-center gap-1">
+              <button
+                type="button"
+                onClick={confirmRemove}
+                disabled={removeAction.pending}
+                className="text-xs text-red-400 hover:underline disabled:opacity-50"
+              >
+                {removeAction.pending ? "…" : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingRemove(false)}
+                className="text-xs text-admin-ink-muted hover:underline"
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmingRemove(true)}
+              className="ml-2 text-xs text-red-400 hover:underline"
+            >
+              Remove
+            </button>
+          ))}
+        {(qtyAction.error || receiveAction.error || removeAction.error) && (
           <p role="alert" className="mt-1 text-xs text-red-400">
-            {qtyAction.error ?? receiveAction.error}
+            {qtyAction.error ?? receiveAction.error ?? removeAction.error}
           </p>
         )}
       </td>

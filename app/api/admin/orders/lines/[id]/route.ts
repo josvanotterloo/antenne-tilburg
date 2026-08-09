@@ -42,3 +42,37 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   });
   return NextResponse.json(updated);
 }
+
+// Undo for a mis-clicked quick-add. Only safe while the order is still
+// PENDING and nothing has been received against this line yet — once any
+// receiving has happened the order status has already moved off PENDING, so
+// the quantityReceived check below is defense-in-depth, not the primary
+// guard.
+export async function DELETE(_req: Request, ctx: RouteContext) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+  const { id } = await ctx.params;
+
+  const line = await db.supplyOrderLine.findUnique({
+    where: { id },
+    include: { supplyOrder: true },
+  });
+  if (!line) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (line.supplyOrder.status !== "PENDING") {
+    return NextResponse.json(
+      { error: "Cannot remove a line once the order is partially or fully received." },
+      { status: 409 },
+    );
+  }
+  if (line.quantityReceived > 0) {
+    return NextResponse.json(
+      { error: "Cannot remove a line once it has received quantity." },
+      { status: 409 },
+    );
+  }
+
+  await db.supplyOrderLine.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
