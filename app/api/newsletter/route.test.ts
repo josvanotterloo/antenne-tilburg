@@ -14,6 +14,7 @@ import { db } from "@/lib/db";
 import { decryptEmail, emailHash } from "@/lib/email-crypto";
 import { sendEmail } from "@/lib/email/send";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
+import { TimeoutError } from "@/lib/with-timeout";
 
 // Any valid 32-byte key — the route encrypts before storing.
 const TEST_KEY = "c".repeat(64);
@@ -107,6 +108,16 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(db.newsletterSubscriber.delete).toHaveBeenCalledWith({
       where: { id: "sub_1" },
     });
+  });
+
+  it("keeps the row and reports success if the confirmation email times out (may still arrive)", async () => {
+    vi.mocked(sendEmail).mockRejectedValue(
+      new TimeoutError("Resend API timeout after 10s"),
+    );
+    const res = await post({ name: "Jos", email: "jos@x.com" });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(db.newsletterSubscriber.delete).not.toHaveBeenCalled();
   });
 
   it("rate-limits repeated signups from the same IP (429)", async () => {

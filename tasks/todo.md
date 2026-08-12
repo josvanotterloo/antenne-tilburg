@@ -163,18 +163,21 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 842 tests (as of the
-order & transaction system redesign, 2026-08-07) cover managed-list delete
+Done — Vitest runner + `run-tests` skill in place; 871 tests (as of the
+external-call timeouts branch, 2026-08-12) cover managed-list delete
 guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
 markdown rendering, sitemap, the public catalog API, Schema.org structured
 data, Dymo label XML generation, reference-data typeahead search,
 product-driven quick-add ordering, the grouped orders overview, the monthly
-transactions ledger, and the public/admin flows. (789 as of the reference
-page typeahead, 2026-08-06; 739 as of the New Arrivals overhaul, 2026-08-05,
-down from 781 — expected, see that entry's history; +30 for Dymo label
-printing, +20 for the reference page typeahead, +53 net for the order &
-transaction redesign, which also deleted the old manual-order route/
-component tests per its Test Contract.)
+transactions ledger, the shared `withTimeout` helper, and the public/admin
+flows. (842 as of the order & transaction system redesign, 2026-08-07 —
++29 for external-call timeouts: `lib/with-timeout.ts`, the Resend/DYMO
+timeout tests, and the newsletter route's timeout-vs-real-failure test.
+789 as of the reference page typeahead, 2026-08-06; 739 as of the New
+Arrivals overhaul, 2026-08-05, down from 781 — expected, see that entry's
+history; +30 for Dymo label printing, +20 for the reference page typeahead,
++53 net for the order & transaction redesign, which also deleted the old
+manual-order route/component tests per its Test Contract.)
 
 ## Done
 

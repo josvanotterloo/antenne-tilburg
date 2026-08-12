@@ -9,6 +9,7 @@ import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
 import { renderConfirmEmail } from "@/lib/email/confirm";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
+import { TimeoutError } from "@/lib/with-timeout";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
@@ -76,7 +77,10 @@ export async function POST(req: Request) {
   }
 
   // Send the confirmation email. If it fails, roll back the row so a retry starts
-  // clean (an orphaned PENDING row would collide on retry and never resend).
+  // clean (an orphaned PENDING row would collide on retry and never resend). A
+  // timeout is different: Resend has no cancellation, so the send may still land
+  // after we stop waiting on it — deleting the row here could orphan a valid
+  // confirmation link, so we keep it PENDING and report success instead.
   try {
     const confirmUrl = `${baseUrl}/api/newsletter/confirm?token=${confirmToken}`;
     await sendEmail({
@@ -85,14 +89,18 @@ export async function POST(req: Request) {
       html: renderConfirmEmail({ confirmUrl }),
     });
   } catch (error) {
-    console.error("newsletter confirm email failed", error);
-    await db.newsletterSubscriber
-      .delete({ where: { id: subscriber.id } })
-      .catch(() => {});
-    return NextResponse.json(
-      { error: "Could not send the confirmation email. Please try again." },
-      { status: 500 },
-    );
+    if (error instanceof TimeoutError) {
+      console.error("newsletter confirm email timed out (row kept)", error);
+    } else {
+      console.error("newsletter confirm email failed", error);
+      await db.newsletterSubscriber
+        .delete({ where: { id: subscriber.id } })
+        .catch(() => {});
+      return NextResponse.json(
+        { error: "Could not send the confirmation email. Please try again." },
+        { status: 500 },
+      );
+    }
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

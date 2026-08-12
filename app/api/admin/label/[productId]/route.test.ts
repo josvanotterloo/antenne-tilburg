@@ -47,6 +47,7 @@ beforeEach(() => {
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("GET /api/admin/label/[productId]", () => {
@@ -153,5 +154,33 @@ describe("GET /api/admin/label/[productId]", () => {
     const body = await res.json();
     expect(body.error).toBe("Dymo Connect print failed");
     expect(body.detail).toContain("bad printer name");
+  });
+
+  it("returns 504 when Dymo Connect does not respond within 5s", async () => {
+    process.env.DYMO_MODE = "print";
+    process.env.DYMO_PRINTER_NAME = "DYMO LabelWriter 450";
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(
+      (_url: string, options: { signal: AbortSignal }) =>
+        new Promise<Response>((_, reject) => {
+          options.signal.addEventListener("abort", () =>
+            reject(new DOMException("The operation was aborted", "AbortError")),
+          );
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const resPromise = call("p1");
+    const assertion = expect(resPromise).resolves.toMatchObject({ status: 504 });
+    await vi.advanceTimersByTimeAsync(5_000);
+    await assertion;
+
+    const res = await resPromise;
+    const body = await res.json();
+    expect(body.error).toBe(
+      "DYMO Connect did not respond within 5s — is DYMO Connect Desktop running?",
+    );
   });
 });

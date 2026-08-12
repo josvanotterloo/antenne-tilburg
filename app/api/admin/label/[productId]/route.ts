@@ -4,10 +4,12 @@ import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { CATALOG_INCLUDE } from "@/lib/catalog";
 import { generateLabelXml, missingLabelFields } from "@/lib/dymo-label";
+import { withTimeout, TimeoutError } from "@/lib/with-timeout";
 
 type RouteContext = { params: Promise<{ productId: string }> };
 
 const DYMO_PRINT_URL = "http://localhost:41951/DYMO/DLS/Printing/PrintLabel";
+const DYMO_TIMEOUT_MS = 5_000;
 
 export async function GET(_req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
@@ -44,12 +46,21 @@ export async function GET(_req: Request, ctx: RouteContext) {
     const body = new URLSearchParams({ printerName, labelXml: xml });
     let res: Response;
     try {
-      res = await fetch(DYMO_PRINT_URL, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body,
-      });
-    } catch {
+      res = await withTimeout(
+        (signal) =>
+          fetch(DYMO_PRINT_URL, {
+            method: "POST",
+            headers: { "content-type": "application/x-www-form-urlencoded" },
+            body,
+            signal,
+          }),
+        DYMO_TIMEOUT_MS,
+        `DYMO Connect did not respond within ${DYMO_TIMEOUT_MS / 1000}s — is DYMO Connect Desktop running?`,
+      );
+    } catch (err) {
+      if (err instanceof TimeoutError) {
+        return NextResponse.json({ error: err.message }, { status: 504 });
+      }
       return NextResponse.json(
         { error: "Could not reach Dymo Connect — is it running?" },
         { status: 502 },
