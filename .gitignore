@@ -29,3 +29,6 @@ next-env.d.ts
 
 # Git worktrees (local scratch, never committed)
 /.worktrees/
+
+# Sentry Config File
+.env.sentry-build-plugin

@@ -61,10 +61,38 @@ const nextConfig = {
   },
 };
 
-// No org/project/authToken configured — source map upload stays disabled, so
-// this never needs the Sentry CLI's native binary at build time.
+// org/project are real Sentry values (not secrets — safe to commit). Source
+// map upload still needs SENTRY_AUTH_TOKEN (not currently set anywhere in
+// this repo); without it the plugin skips the upload with a warning rather
+// than failing the build.
 export default withSentryConfig(nextConfig, {
-  silent: true,
-  telemetry: false,
-  sourcemaps: { disable: true },
+  // For all available options, see:
+  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+
+  org: "antenne-tilburg",
+
+  project: "javascript-nextjs",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // For all available options, see:
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+  // Upload a larger set of source maps for prettier stack traces (increases build time)
+  widenClientFileUpload: true,
+
+  webpack: {
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    // See the following for more information:
+    // https://docs.sentry.io/product/crons/
+    // https://vercel.com/docs/cron-jobs
+    automaticVercelMonitors: true,
+
+    // Tree-shaking options for reducing bundle size
+    treeshake: {
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      removeDebugLogging: true,
+    },
+  },
 });
