@@ -103,6 +103,18 @@ describe("POST /api/admin/newsletter/retry-pending", () => {
     });
   });
 
+  it("counts the send as succeeded even if recording confirmEmailSentAt fails afterward", async () => {
+    // The email is what actually matters to the subscriber; a DB write
+    // failure after a successful send shouldn't be reported as a failed
+    // retry (the previous implementation double-counted this as "failed").
+    vi.mocked(db.newsletterSubscriber.update).mockRejectedValueOnce(
+      new Error("connection dropped"),
+    );
+    const res = await post();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ tried: 2, succeeded: 2, failed: 0 });
+  });
+
   it("500s with a clear config error when the encryption key is missing, instead of N silent failures", async () => {
     vi.stubEnv("EMAIL_ENCRYPTION_KEY", "");
     const res = await post();

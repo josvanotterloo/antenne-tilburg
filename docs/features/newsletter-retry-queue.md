@@ -17,6 +17,23 @@ per `tasks/lessons.md` (2026-07-08/17/29b): `prisma migrate dev
 --create-only` re-proposed dropping the hand-written `search_vector`/trigram
 indexes unrelated to this change; those lines were removed before applying.
 
+The migration also backfills `confirmEmailSentAt = createdAt` for every
+existing `PENDING` row (`/code-review` catch — the initial version left
+pre-existing rows null, which would have made the new retry queue blast a
+duplicate confirmation email to every already-pending subscriber the first
+time an admin ran it). We can't know in hindsight whether an old row's
+original send actually succeeded; treating it as sent is the safer of the
+two wrong guesses. `CONFIRMED` rows are unaffected either way.
+
+`lib/newsletter-confirm-window.ts` holds the shared `CONFIRM_WINDOW_MS`
+(48h) and an `isRetryEligible()` helper, used by three places that must
+agree on the same window: the confirm route (rejects an expired token), the
+retry endpoint (no point retrying a dead link), and the admin page (only
+offers the retry button when it would actually do something — an earlier
+version of the button's visibility check had no age cutoff at all, so it
+could stay visible for a permanently-stuck row the retry endpoint would
+silently skip).
+
 ## Unified signup response (`app/api/newsletter/route.ts`)
 
 The `TimeoutError`-specific branch added in the external-call-timeouts
@@ -61,10 +78,21 @@ never the address" rule). Manual trigger only — no cron/scheduled job.
   one subscriber needs it; posts the retry endpoint, shows "Retried N: X
   sent[, Y failed]", then `router.refresh()`s so badges update.
 
-## Known limitation
+## Known limitations
 
-Retry is manual — the admin has to notice the red badge and click the
-button. No scheduled/automatic retry exists. Fine for this shop's signup
-volume; would need a cron trigger (e.g. via a scheduled route + external
-pinger, or a queue) if volume grows enough that "admin notices" isn't a
-reliable enough recovery path.
+- Retry is manual — the admin has to notice the red badge and click the
+  button. No scheduled/automatic retry exists. Fine for this shop's signup
+  volume; would need a cron trigger (e.g. via a scheduled route + external
+  pinger, or a queue) if volume grows enough that "admin notices" isn't a
+  reliable enough recovery path.
+- If `sendEmail` succeeds but the following `confirmEmailSentAt` write fails
+  (e.g. a dropped DB connection), the send is still counted `succeeded` in
+  the response (correct — the subscriber did get the email), but the row
+  stays eligible and may get a second, duplicate confirmation email on the
+  next retry. There's no atomic way to guarantee both the send and the DB
+  write together without infrastructure (outbox/saga) well beyond what a
+  manual admin retry needs at this scale — accepted, not fixed.
+- The retry loop sends sequentially, one subscriber at a time (like
+  `send/route.ts`), not concurrently. Deliberate: this app's subscriber
+  volume is small, and parallel sends would risk tripping Resend's own rate
+  limits for no real benefit here.

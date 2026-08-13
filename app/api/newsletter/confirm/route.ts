@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { newsletterPage } from "@/lib/newsletter-page";
-
-const EXPIRY_MS = 48 * 60 * 60 * 1000;
+import { CONFIRM_WINDOW_MS as EXPIRY_MS } from "@/lib/newsletter-confirm-window";
 
 // Double opt-in confirmation link. GET so it works from an email client.
 export async function GET(req: Request) {

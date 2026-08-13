@@ -100,6 +100,24 @@ describe("/admin/settings/subscribers", () => {
     ).toBeInTheDocument();
   });
 
+  it("does not offer a retry button for an unsent PENDING row past the 48h confirm window (retry would skip it anyway)", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        name: "Ada",
+        email: "ada@x.com",
+        status: "PENDING",
+        createdAt: new Date(Date.now() - 49 * 60 * 60 * 1000),
+        confirmEmailSentAt: null,
+      },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByText(/pending \(no email sent\)/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /retry pending emails/i }),
+    ).toBeNull();
+  });
+
   it("does not offer a retry button when every PENDING row already got its email", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
       {

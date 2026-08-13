@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { decryptEmailSafe } from "@/lib/email-crypto";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { RetryPendingButton } from "@/components/admin/RetryPendingButton";
+import { isRetryEligible } from "@/lib/newsletter-confirm-window";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +15,10 @@ export default async function AdminSubscribersPage() {
   const confirmedCount = subscribers.filter(
     (s) => s.status === "CONFIRMED",
   ).length;
-  const hasUnsentPending = subscribers.some(
-    (s) => s.status === "PENDING" && s.confirmEmailSentAt === null,
-  );
+  // Only offer the button when it can actually do something: the retry
+  // endpoint itself skips rows past the confirm window, so a row past it
+  // would silently do nothing and confuse whoever clicked retry.
+  const hasUnsentPending = subscribers.some(isRetryEligible);
 
   return (
     <div className="space-y-6">
