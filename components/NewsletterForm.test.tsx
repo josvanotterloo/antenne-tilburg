@@ -48,6 +48,26 @@ describe("NewsletterForm", () => {
     });
   });
 
+  it("shows the server's message when the confirmation email is queued for retry", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message:
+          "You're on the list — we'll send your confirmation email shortly",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NewsletterForm />);
+    fill();
+    fireEvent.click(screen.getByRole("button", { name: /sign up|subscribe/i }));
+
+    expect(
+      await screen.findByText(/we'll send your confirmation email shortly/i),
+    ).toBeInTheDocument();
+  });
+
   it("shows the server error message on failure", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { decryptEmailSafe } from "@/lib/email-crypto";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { RetryPendingButton } from "@/components/admin/RetryPendingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ export default async function AdminSubscribersPage() {
   const confirmedCount = subscribers.filter(
     (s) => s.status === "CONFIRMED",
   ).length;
+  const hasUnsentPending = subscribers.some(
+    (s) => s.status === "PENDING" && s.confirmEmailSentAt === null,
+  );
 
   return (
     <div className="space-y-6">
@@ -24,17 +28,20 @@ export default async function AdminSubscribersPage() {
             {confirmedCount === 1 ? "" : "s"}
           </p>
         </div>
-        {subscribers.length > 0 && (
-          // Not a page: this is a file-download API route, so a real <a>
-          // (with download) is correct — <Link> would client-navigate instead.
-          <a
-            href="/api/admin/subscribers/export"
-            download
-            className="rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised"
-          >
-            Export CSV
-          </a>
-        )}
+        <div className="flex items-start gap-2">
+          {hasUnsentPending && <RetryPendingButton />}
+          {subscribers.length > 0 && (
+            // Not a page: this is a file-download API route, so a real <a>
+            // (with download) is correct — <Link> would client-navigate instead.
+            <a
+              href="/api/admin/subscribers/export"
+              download
+              className="rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised"
+            >
+              Export CSV
+            </a>
+          )}
+        </div>
       </div>
 
       {subscribers.length === 0 ? (
@@ -65,7 +72,10 @@ export default async function AdminSubscribersPage() {
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <StatusBadge status={s.status} />
+                    <StatusBadge
+                      status={s.status}
+                      confirmEmailSentAt={s.confirmEmailSentAt}
+                    />
                   </td>
                   <td className="px-3 py-2 text-admin-ink-muted">
                     {new Date(s.createdAt).toLocaleDateString()}
@@ -86,15 +96,33 @@ export default async function AdminSubscribersPage() {
   );
 }
 
-function StatusBadge({ status }: { status: "PENDING" | "CONFIRMED" }) {
-  const confirmed = status === "CONFIRMED";
+function StatusBadge({
+  status,
+  confirmEmailSentAt,
+}: {
+  status: "PENDING" | "CONFIRMED";
+  confirmEmailSentAt: Date | null;
+}) {
+  if (status === "CONFIRMED") {
+    return (
+      <span className="inline-block rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-400">
+        Confirmed
+      </span>
+    );
+  }
+  // PENDING with no email ever sent needs the admin's retry queue, not just
+  // patience — a stronger color distinguishes it from an ordinary pending
+  // row that's just waiting on the subscriber to click the link.
+  if (confirmEmailSentAt === null) {
+    return (
+      <span className="inline-block rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-400">
+        Pending (no email sent)
+      </span>
+    );
+  }
   return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-        confirmed ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"
-      }`}
-    >
-      {confirmed ? "Confirmed" : "Pending"}
+    <span className="inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-400">
+      Pending
     </span>
   );
 }

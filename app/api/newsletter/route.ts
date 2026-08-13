@@ -9,7 +9,6 @@ import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
 import { renderConfirmEmail } from "@/lib/email/confirm";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
-import { TimeoutError } from "@/lib/with-timeout";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
@@ -76,11 +75,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // Send the confirmation email. If it fails, roll back the row so a retry starts
-  // clean (an orphaned PENDING row would collide on retry and never resend). A
-  // timeout is different: Resend has no cancellation, so the send may still land
-  // after we stop waiting on it — deleting the row here could orphan a valid
-  // confirmation link, so we keep it PENDING and report success instead.
+  // Send the confirmation email. This is a best-effort side effect, not a
+  // condition of signup succeeding: Resend has no cancellation on our timeout,
+  // so a "failed" send may still land later, and deleting the row on any
+  // failure would risk orphaning a confirmation link that does arrive. A
+  // failed/timed-out send instead leaves confirmEmailSentAt null — the row
+  // stays PENDING and the admin's retry queue
+  // (POST /api/admin/newsletter/retry-pending) picks it up later.
   try {
     const confirmUrl = `${baseUrl}/api/newsletter/confirm?token=${confirmToken}`;
     await sendEmail({
@@ -88,20 +89,23 @@ export async function POST(req: Request) {
       subject: "Confirm your Antenne Tilburg subscription",
       html: renderConfirmEmail({ confirmUrl }),
     });
+    await db.newsletterSubscriber.update({
+      where: { id: subscriber.id },
+      data: { confirmEmailSentAt: new Date() },
+    });
+    return NextResponse.json(
+      { ok: true, message: "Check your email to confirm your subscription" },
+      { status: 201 },
+    );
   } catch (error) {
-    if (error instanceof TimeoutError) {
-      console.error("newsletter confirm email timed out (row kept)", error);
-    } else {
-      console.error("newsletter confirm email failed", error);
-      await db.newsletterSubscriber
-        .delete({ where: { id: subscriber.id } })
-        .catch(() => {});
-      return NextResponse.json(
-        { error: "Could not send the confirmation email. Please try again." },
-        { status: 500 },
-      );
-    }
+    console.error("newsletter confirm email failed (queued for retry)", subscriber.id, error);
+    return NextResponse.json(
+      {
+        ok: true,
+        message:
+          "You're on the list — we'll send your confirmation email shortly",
+      },
+      { status: 201 },
+    );
   }
-
-  return NextResponse.json({ ok: true }, { status: 201 });
 }

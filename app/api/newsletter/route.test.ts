@@ -4,7 +4,12 @@ import { Prisma } from "@prisma/client";
 
 vi.mock("@/lib/db", () => ({
   db: {
-    newsletterSubscriber: { create: vi.fn(), delete: vi.fn(), findFirst: vi.fn() },
+    newsletterSubscriber: {
+      create: vi.fn(),
+      delete: vi.fn(),
+      update: vi.fn(),
+      findFirst: vi.fn(),
+    },
   },
 }));
 vi.mock("@/lib/email/send", () => ({ sendEmail: vi.fn() }));
@@ -14,7 +19,6 @@ import { db } from "@/lib/db";
 import { decryptEmail, emailHash } from "@/lib/email-crypto";
 import { sendEmail } from "@/lib/email/send";
 import { newsletterSignupLimiter } from "@/lib/rate-limit";
-import { TimeoutError } from "@/lib/with-timeout";
 
 // Any valid 32-byte key — the route encrypts before storing.
 const TEST_KEY = "c".repeat(64);
@@ -36,6 +40,7 @@ beforeEach(() => {
   } as never);
   vi.mocked(db.newsletterSubscriber.findFirst).mockResolvedValue(null as never);
   vi.mocked(db.newsletterSubscriber.delete).mockResolvedValue({} as never);
+  vi.mocked(db.newsletterSubscriber.update).mockResolvedValue({} as never);
   vi.mocked(sendEmail).mockResolvedValue(undefined);
 });
 
@@ -101,23 +106,33 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(sendEmail).not.toHaveBeenCalled();
   });
 
-  it("rolls back the row and 500s if the confirmation email fails", async () => {
-    vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));
+  it("marks confirmEmailSentAt and tells the user to check their email when the send succeeds", async () => {
     const res = await post({ name: "Jos", email: "jos@x.com" });
-    expect(res.status).toBe(500);
-    expect(db.newsletterSubscriber.delete).toHaveBeenCalledWith({
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({
+      ok: true,
+      message: "Check your email to confirm your subscription",
+    });
+    expect(db.newsletterSubscriber.update).toHaveBeenCalledWith({
       where: { id: "sub_1" },
+      data: { confirmEmailSentAt: expect.any(Date) },
     });
   });
 
-  it("keeps the row and reports success if the confirmation email times out (may still arrive)", async () => {
-    vi.mocked(sendEmail).mockRejectedValue(
-      new TimeoutError("Resend API timeout after 10s"),
-    );
+  it("keeps the row (no delete, no error) and queues it for retry when the send fails", async () => {
+    // Any send failure degrades gracefully now — not just a timeout. The
+    // admin's retry queue (POST /api/admin/newsletter/retry-pending) is the
+    // recovery path, not an error shown to the signing-up user.
+    vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));
     const res = await post({ name: "Jos", email: "jos@x.com" });
     expect(res.status).toBe(201);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toEqual({
+      ok: true,
+      message:
+        "You're on the list — we'll send your confirmation email shortly",
+    });
     expect(db.newsletterSubscriber.delete).not.toHaveBeenCalled();
+    expect(db.newsletterSubscriber.update).not.toHaveBeenCalled();
   });
 
   it("rate-limits repeated signups from the same IP (429)", async () => {

@@ -60,6 +60,7 @@ describe("/admin/settings/subscribers", () => {
         email: "ada@x.com",
         status: "CONFIRMED",
         createdAt: new Date(),
+        confirmEmailSentAt: new Date(),
       },
       {
         id: "s2",
@@ -67,6 +68,7 @@ describe("/admin/settings/subscribers", () => {
         email: "bo@x.com",
         status: "PENDING",
         createdAt: new Date(),
+        confirmEmailSentAt: new Date(),
       },
     ] as never);
     render(await AdminSubscribersPage());
@@ -78,6 +80,42 @@ describe("/admin/settings/subscribers", () => {
     expect(screen.getByText(/^pending$/i)).toBeInTheDocument();
     // ...but the count reflects confirmed only.
     expect(screen.getByText(/1 confirmed subscriber/i)).toBeInTheDocument();
+  });
+
+  it("badges a PENDING row with no confirmation email sent, and offers a retry button", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        name: "Ada",
+        email: "ada@x.com",
+        status: "PENDING",
+        createdAt: new Date(),
+        confirmEmailSentAt: null,
+      },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByText(/pending \(no email sent\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /retry pending emails/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not offer a retry button when every PENDING row already got its email", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        name: "Ada",
+        email: "ada@x.com",
+        status: "PENDING",
+        createdAt: new Date(),
+        confirmEmailSentAt: new Date(),
+      },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByText(/^pending$/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /retry pending emails/i }),
+    ).toBeNull();
   });
 
   it("hides the export link and shows an empty state with no subscribers", async () => {

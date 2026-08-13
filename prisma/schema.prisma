@@ -286,6 +286,10 @@ model NewsletterSubscriber {
   // doubles as the one-click unsubscribe token.
   confirmToken String           @unique
   createdAt    DateTime         @default(now())
+  // Null until the confirmation email is successfully sent. A PENDING row
+  // with this still null means signup's send failed/timed out and it's
+  // waiting on the admin's manual retry (POST /api/admin/newsletter/retry-pending).
+  confirmEmailSentAt DateTime?
 }
 
 // Public "looking for" requests — feeds sourcing decisions.

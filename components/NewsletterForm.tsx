@@ -14,6 +14,7 @@ export default function NewsletterForm() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   // Unique per instance so the form is safe to render more than once per page
   // (e.g. the newsletter page and the site footer).
   const uid = useId();
@@ -28,11 +29,15 @@ export default function NewsletterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        setSuccessMessage(
+          data.message ??
+            "Almost there — check your email to confirm your subscription. The link is valid for 48 hours.",
+        );
         setStatus("success");
         return;
       }
-      const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Something went wrong. Please try again.");
       setStatus("error");
     } catch {
@@ -47,8 +52,7 @@ export default function NewsletterForm() {
         role="status"
         className="border border-hairline bg-surface px-4 py-6 font-mono text-sm text-ink"
       >
-        Almost there — check your email to confirm your subscription. The link is
-        valid for 48 hours.
+        {successMessage}
       </p>
     );
   }

@@ -15,6 +15,7 @@ type Row = {
   status: string;
   confirmToken: string;
   createdAt: Date;
+  confirmEmailSentAt: Date | null;
 };
 
 const { store } = vi.hoisted(() => ({ store: new Map<string, Row>() }));
@@ -170,6 +171,7 @@ describe("newsletter flow (integration)", () => {
     expect(vi.mocked(sendEmail).mock.calls[0][0].html).toContain(
       `/api/newsletter/confirm?token=${sub.confirmToken}`,
     );
+    expect(store.get(sub.id)!.confirmEmailSentAt).toBeInstanceOf(Date);
 
     // 2. Confirm → 200, status becomes CONFIRMED.
     const res2 = await confirmReq(sub.confirmToken);
@@ -241,6 +243,7 @@ describe("newsletter flow (integration)", () => {
       status: "CONFIRMED",
       confirmToken: "tok-legacy",
       createdAt: new Date(),
+      confirmEmailSentAt: new Date(),
     });
 
     const res = await signupReq({ name: "Ada", email: "ada@x.com" });
