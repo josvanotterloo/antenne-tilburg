@@ -163,8 +163,11 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 871 tests (as of the
-external-call timeouts branch, 2026-08-12) cover managed-list delete
+Done — Vitest runner + `run-tests` skill in place; 875 tests (as of adding
+Sentry error monitoring, 2026-08-12; +4 for `lib/sentry-scrub.ts`'s
+email-redaction helper, incl. its fail-safe-on-serialization-failure path —
+no tests for the Sentry init/config files themselves, per that task's scope)
+cover managed-list delete
 guards, `authorize()`, notice active-window logic, fuzzy search, uploads,
 markdown rendering, sitemap, the public catalog API, Schema.org structured
 data, Dymo label XML generation, reference-data typeahead search,

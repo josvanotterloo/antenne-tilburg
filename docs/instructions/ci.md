@@ -60,6 +60,12 @@ Settings → Secrets and variables → Actions → New repository secret:
 These are throwaway CI values — they must not be production credentials.
 The `DATABASE_URL` points at the workflow's own service container.
 
+## Optional production env vars
+
+| Var | Purpose |
+|---|---|
+| `SENTRY_DSN` | Enables Sentry error monitoring (`@sentry/nextjs`) when set. Unset in dev/CI — the SDK only initializes when this is present, so the build and test suite are unaffected without it. Get a free DSN from sentry.io. See `sentry.server.config.ts` / `sentry.edge.config.ts` / `instrumentation-client.ts`. |
+
 ## Branch protection on master
 
 Settings → Branches → Add branch protection rule:
