@@ -121,6 +121,7 @@ waiting to be asked.
 - Update tasks/lessons.md immediately when a new pitfall is discovered — do not wait until close-out
 - Do not block the main thread: while Claude Code is running a long task, use the time to plan the next one, review docs, or make decisions that will be needed later
 - Context degrades in long sessions — if a session has been running for more than 2 hours or 10+ feature commits, start a fresh session with a clean handoff prompt rather than continuing in a degraded context window
+- Context window discipline: start a fresh Claude Code session when either (a) the session has run for more than 10 feature commits, or (b) the context meter reaches 70% or above. Before starting the fresh session, write a handoff summary to docs/superpowers/plans/ covering: what was built, what is in progress, what comes next, and any open decisions. A degraded context produces degraded output — start fresh rather than push through.
 
 ## When to run /code-review
 
