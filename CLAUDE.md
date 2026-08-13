@@ -143,6 +143,25 @@ CI handles security scanning (semgrep + npm audit) and test verification
 automatically on every push. /code-review is reserved for architectural
 judgment that automated tools cannot replace.
 
+## Model Routing
+Use the right model for the task. Wrong model selection wastes tokens and degrades output quality.
+
+**Use Opus or Mythos for:**
+- Architecture decisions (new data models, new lib/ modules, system design)
+- Security audits and OWASP reviews
+- Full codebase analysis (process audits, compliance checks)
+- Complex multi-file refactors touching more than 10 files
+- Any task where correctness is more important than speed
+
+**Use Sonnet for:**
+- Implementation (writing code from an approved plan)
+- Tests
+- Documentation and session logs
+- Bug fixes with a clear diagnosis
+- Routine close-out tasks
+
+**Default:** Sonnet. Escalate to Opus/Mythos when the task fits the criteria above. If in doubt about which model to use, state the task type and ask.
+
 ## Prompting Tips
 For complex or ambiguous tasks, prefix your prompt with `ultrathink` to trigger
 high-effort reasoning before starting.
