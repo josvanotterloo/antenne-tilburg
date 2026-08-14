@@ -1,4 +1,8 @@
 {
+  "enabledPlugins": {
+    "impeccable@impeccable": true,
+    "everything-claude-code@everything-claude-code": true
+  },
   "extraKnownMarketplaces": {
     "impeccable": {
       "source": {
@@ -6,8 +10,5 @@
         "repo": "pbakaus/impeccable"
       }
     }
-  },
-  "enabledPlugins": {
-    "impeccable@impeccable": true
   }
 }
