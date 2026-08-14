@@ -28,10 +28,11 @@ never hand-construct a test command.
    messages, enabled/disabled state, which element has focus. Query by role and
    accessible name (`getByRole`, `getByLabelText`), not by test-id or class.
 
-5. **Domain logic (`lib/`) gets full behavioural coverage, written first.** TDD:
-   write the failing test that states the desired input→output, watch it fail,
-   then implement. `lib/` is pure and framework-free precisely so it can be
-   exhaustively tested this way.
+5. **Domain logic (`lib/`) gets full behavioural coverage.** The gate is
+   coverage and mutation score (≥80%, via Stryker — see below), not the
+   order tests and implementation were written in. See "TDD in the agent
+   loop" below for why writing the test first is encouraged but not
+   required from an agent.
 
 6. **API routes test the contract, not the internals.** Assert status codes and
    response shape (`{ ok }`, `{ error }`, the returned fields) and the guard
@@ -113,12 +114,50 @@ tidy-up, and give false confidence because they pass whether or not the feature
 actually works. Testing what the user experiences is the only coverage that
 earns its maintenance cost.
 
+## TDD in the agent loop
+
+Why Principle 5 above no longer requires writing the test first, and what
+still does.
+
+Classic red-green-refactor assumes a human writing a test, watching it
+fail, then writing code to make it pass — two genuinely separate cognitive
+moments, where the person specifying the behavior really doesn't yet know
+the implementation. That separation doesn't hold when a coding agent
+writes both the test and the implementation in the same generation: the
+agent isn't specifying behavior it doesn't yet understand and then
+discovering how to build it — it composes both from the same context in
+the same pass. Watching the test fail before implementing is, in that
+setup, a performative red step: proof of a screenshot, not a forcing
+function. Böckeler ("TDD inside the agent loop," martinfowler.com, 2026)
+found this costs 3–8x more tokens with no corresponding gain in defect
+detection over writing the test and implementation together and verifying
+after.
+
+What actually matters is unchanged: **behavioral tests, not tautological
+ones** (a test that asserts output against itself, or re-runs the same
+logic to produce its own expected value, proves nothing), and **mutation
+score ≥80% on `lib/`** (Stryker, below) as the real measure of whether the
+suite would catch a real bug — not the order the test and the code were
+typed in.
+
+Writing the test first is still worth doing when a *human* is thinking
+through complex logic — specifying input→output pairs before implementation
+is a genuine design tool, because a human really doesn't know the
+implementation yet while writing the test. That's exactly what a Gherkin
+scenario in `features/*.feature` is: a human-authored spec, written before
+an agent implements against it — real TDD, at the acceptance layer, because
+the separation between specifying behavior and writing the implementation
+is real when a human writes the spec and an agent (possibly in a later
+session) implements it. Keep writing Gherkin scenarios and specs first.
+Don't require an agent to perform the same separation when it's writing a
+unit test and its implementation in one sitting.
+
 ## Additional Testing Layers
 
 Three layers on top of the core Vitest unit/integration/contract suite above,
 inspired by Uncle Bob's Acceptance→Unit pipeline. All three principles above
-(behavior not implementation, TDD, never weaken an existing test) apply to
-these exactly as they do to ordinary unit tests.
+(behavior not implementation, full behavioural coverage, never weaken an
+existing test) apply to these exactly as they do to ordinary unit tests.
 
 ### Gherkin/BDD acceptance tests
 

@@ -71,8 +71,14 @@ Binding for all work in this repo. Full version: `docs/instructions/testing.md`.
   styling-only change adds **no** tests.
 - Component tests assert what the user sees and does — text, links, form
   submission, error messages, enabled/disabled state — not how it looks.
-- Domain logic (`lib/`) gets full behavioral coverage written **before** the
-  implementation (TDD).
+- Tests must accompany all new lib/ functions and API routes. Tests must be
+  behavioral not tautological (never assert output against itself or re-run
+  the same logic to produce expected values). The quality gate is mutation
+  score ≥ 80% on lib/, not the order in which tests were written. Writing
+  tests before implementation is encouraged for complex logic where
+  specifying behavior first aids design — but it is not a hard requirement
+  and never a theater step where the agent writes both test and
+  implementation in the same cognitive moment.
 - API routes: test the **contract** — status codes and response shape — not
   internals.
 - **Never** change an existing passing test to make new code pass. If an
