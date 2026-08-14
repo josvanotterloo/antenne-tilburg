@@ -36,3 +36,9 @@ check, none unguarded). Admin pages gated by the `proxy.ts` matcher.
 Builds on `docs/features/security-hardening.md` (2026-07-08): signup rate
 limit, constant-time login, atomic sell-one, upload sniffing, strict quantity
 validation — all confirmed still in place.
+
+## Follow-up
+`docs/security/input-hardening-2026-08-14.md` — narrower pass specifically
+on public free-text input fields (length limits, control-character
+stripping) and a prompt-injection policy for future LLM-backed features
+(`docs/security/prompt-injection-policy.md`).

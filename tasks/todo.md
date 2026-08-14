@@ -163,7 +163,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 889 tests (as of the
+Done — Vitest runner + `run-tests` skill in place; 892 tests (as of
+hardening public input fields, 2026-08-14; +3 for `lib/newsletter-input.ts`'s
+email length cap and control-character stripping). 889 tests as of the
 newsletter retry queue, 2026-08-13; +14 net for `confirmEmailSentAt` +
 the unified graceful-degradation signup contract, the new
 `POST /api/admin/newsletter/retry-pending` route, `RetryPendingButton`,
