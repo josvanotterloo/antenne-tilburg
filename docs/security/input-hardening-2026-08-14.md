@@ -56,6 +56,15 @@ admin-authored, not public input.
   `docs/security/prompt-injection-policy.md` — not applicable to this
   codebase today (no LLM-backed feature reads user input), written so a
   future session adding one knows the rule exists.
+- `/code-review` caught a real gap: the C0 control-char strip doesn't touch
+  Unicode bidi-control or zero-width characters (e.g. U+202E RIGHT-TO-LEFT
+  OVERRIDE, U+200B ZERO WIDTH SPACE) — a different code range entirely, so
+  the ASCII-only strip silently passed them through. These are the classic
+  "Trojan Source" spoofing vectors: RLO can make a stored name render
+  visually reversed/spoofed in the admin table or CSV export. Added a
+  second strip pass for `U+200B, U+200E, U+200F, U+202A-U+202E,
+  U+2066-U+2069, U+FEFF` — deliberately excluding ZWNJ/ZWJ (U+200C/U+200D),
+  which have legitimate use in some scripts and emoji sequences.
 
 ## Not fixed, out of scope for this pass
 

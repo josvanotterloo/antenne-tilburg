@@ -48,4 +48,16 @@ describe("parseNewsletterInput", () => {
     const r = parseNewsletterInput({ name: "\x00\x01\x02", email: "a@b.co" });
     expect(r).toEqual({ ok: false, error: "Your name is required" });
   });
+
+  it("strips Unicode bidi-override and zero-width characters (Trojan Source-style spoofing)", () => {
+    // U+202E RIGHT-TO-LEFT OVERRIDE can visually reverse/spoof how a name
+    // renders in the admin table or CSV export; U+200B is invisible but
+    // still stored. Neither is a C0 control character, so the ASCII-range
+    // strip alone doesn't catch them.
+    const r = parseNewsletterInput({
+      name: "Jos\u200B\u202Esoj",
+      email: "a@b.co",
+    });
+    expect(r).toEqual({ ok: true, data: { name: "Jossoj", email: "a@b.co" } });
+  });
 });

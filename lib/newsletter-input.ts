@@ -19,8 +19,18 @@ const MAX_EMAIL = 254; // RFC 5321 §4.5.3.1.3
 // spreadsheet formula injection separately).
 const CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g;
 
+// Unicode bidi-control and zero-width formatting characters. Outside the
+// ASCII range above, so the C0 strip alone doesn't catch them, but the same
+// reasoning applies: RIGHT-TO-LEFT OVERRIDE (U+202E) can visually reverse or
+// spoof how a name renders ("Trojan Source"-style spoofing), and zero-width
+// characters are invisible but still stored. ZWNJ/ZWJ (U+200C/U+200D) are
+// deliberately excluded — they have legitimate use in some scripts and emoji
+// sequences, unlike the rest of this set.
+const BIDI_AND_INVISIBLE_CHARS =
+  /[\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+
 function stripControlChars(s: string): string {
-  return s.replace(CONTROL_CHARS, "");
+  return s.replace(CONTROL_CHARS, "").replace(BIDI_AND_INVISIBLE_CHARS, "");
 }
 
 export type NewsletterResult =
