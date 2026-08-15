@@ -33,6 +33,12 @@ row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 - Interrogate before generating: see `docs/instructions/interrogate.md`
 - Testing philosophy: see `docs/instructions/testing.md`
 - Session log template: see `docs/session-log-template.md`
+- Always read context files in full — never use head, tail, or any
+  truncation when reading CLAUDE.md, branching.md, testing.md,
+  generate-route.md, interrogate.md, lessons.md, todo.md,
+  prisma/schema.prisma, DESIGN.md, or PRODUCT.md. If a file requires
+  multiple read calls to cover fully, make them. Truncated reads of
+  context files are a process violation.
 
 ## Testing
 Run tests: see `.claude/skills/run-tests/SKILL.md` — always use the run-tests skill,
