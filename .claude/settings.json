@@ -1,4 +1,10 @@
 {
+  "permissions": {
+    "deny": [
+      "Read(**/node_modules/**)",
+      "Read(**/.next/**)"
+    ]
+  },
   "enabledPlugins": {
     "impeccable@impeccable": true,
     "everything-claude-code@everything-claude-code": true
