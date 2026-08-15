@@ -1,12 +1,7 @@
 # Project Instructions
 
-Global rules in `~/.claude/rules/common/` that conflict with this project's
-docs are superseded by this file. Project-specific docs take precedence.
-Conflicting files: `testing.md` (superseded by `docs/instructions/testing.md`),
-`patterns.md` (superseded by `docs/instructions/generate-route.md`),
-`development-workflow.md` (superseded by `docs/instructions/branching.md`),
-`security.md` (superseded by CI gates and the OWASP audit — see
-`docs/instructions/ci.md` and `docs/security/owasp-audit-2026-07-09.md`).
+Project-specific docs take precedence over global rules in
+`~/.claude/rules/common/` where they conflict.
 
 Antenne Tilburg — website for Antenne Recordshop (electronic-music vinyl & tapes,
 inside Sam-Sam vintage, Tilburg). Public site + admin for products, blog, events,
@@ -104,16 +99,8 @@ Binding for all work in this repo. Full version: `docs/instructions/testing.md`
   explicit justification and user approval.
 
 ## Autonomy
-
-### Long-running tasks
-For any task expected to take more than 30 minutes or touch more than 5 files:
-- Commit after every logical unit of work completes successfully
-- Each commit must leave the codebase in a passing state (tests green, no broken imports)
-- Use descriptive commit messages: "fix: resolve lint errors in App.jsx (12/69)"
-- Never leave uncommitted changes when stopping — partial progress in git is
-  recoverable, partial progress in the working tree is not
-
-This ensures session-limit interruptions preserve progress rather than losing it.
+Long-running-task discipline (commit cadence, never leave uncommitted work) is
+in the global CLAUDE.md — applies here too.
 
 ### Pushing
 Always push to origin after committing to master unless explicitly told
