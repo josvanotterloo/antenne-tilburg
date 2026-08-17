@@ -135,6 +135,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       fixed; report `docs/security/code-review-2026-07-09.md`
 - [x] Shared `apiSend` + `useAsyncAction` for admin fetch error handling — all
       admin mutations now fail visibly; `docs/features/admin-fetch-error-handling.md`
+- [x] Admin nav restructure (2026-08-17) — Labels/Artists/Genres/Product
+      Types/Suppliers get direct Catalog sub-nav links instead of a single
+      "Reference data" link; Suppliers moved (route + nav) from Settings to
+      Catalog. `/admin/catalog/reference` split into a shared
+      `ReferenceDataView` + 4 per-section routes that auto-focus/scroll on
+      load — `docs/sessions/2026-08-17.md`
 
 ### Auth hardening
 - [ ] Change seeded placeholder passwords (`changeme123` in `prisma/seed.ts`);
@@ -163,7 +169,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 893 tests (as of
+Done — Vitest runner + `run-tests` skill in place; 905 tests as of the
+admin nav restructure, 2026-08-17 (+16 net: 8 nav-link tests across the
+Catalog/Settings layouts, 6 for `ReferenceDataView`/per-section route
+focus behavior, 2 for `ReferenceSection`'s new `focused` prop). 893 tests (as of
 hardening public input fields, 2026-08-14; +4 for `lib/newsletter-input.ts`'s
 email length cap, control-character stripping, and (`/code-review` finding)
 Unicode bidi-control/zero-width stripping). 889 tests as of the
