@@ -5,7 +5,6 @@ const ITEMS = [
   { href: "/admin/settings/notices", label: "Notices" },
   { href: "/admin/settings/subscribers", label: "Subscribers" },
   { href: "/admin/settings/users", label: "Users" },
-  { href: "/admin/settings/suppliers", label: "Suppliers" },
 ];
 
 export default function SettingsLayout({
