@@ -72,6 +72,16 @@ describe("ReferenceSection", () => {
     ).toBeInTheDocument();
   });
 
+  it("is not focused by default", () => {
+    setup();
+    expect(screen.getByRole("region", { name: "Genres" })).not.toHaveFocus();
+  });
+
+  it("receives focus on mount when focused is true", () => {
+    setup({ focused: true });
+    expect(screen.getByRole("region", { name: "Genres" })).toHaveFocus();
+  });
+
   it("renders the total count", () => {
     setup();
     expect(screen.getByText(/90 genres/i)).toBeInTheDocument();

@@ -29,14 +29,23 @@ export function ReferenceSection({
   initialItems,
   initialTotal,
   supplierEndpoint,
+  focused,
 }: {
   title: string;
   endpoint: string;
   initialItems: ReferenceItem[];
   initialTotal: number;
   supplierEndpoint?: string;
+  focused?: boolean;
 }) {
   const { error, run } = useAsyncAction();
+  const sectionRef = useRef<HTMLElement>(null);
+  const headingId = `${title.toLowerCase().replace(/\s+/g, "-")}-heading`;
+
+  useEffect(() => {
+    if (focused) sectionRef.current?.focus();
+  }, [focused]);
+
   const [items, setItems] = useState(initialItems);
   const [totalCount, setTotalCount] = useState(initialTotal);
   const [query, setQuery] = useState("");
@@ -186,9 +195,16 @@ export function ReferenceSection({
   const label = title.toLowerCase();
 
   return (
-    <section className="rounded border border-admin-hairline bg-admin-surface p-4">
+    <section
+      ref={sectionRef}
+      tabIndex={-1}
+      aria-labelledby={headingId}
+      className="rounded border border-admin-hairline bg-admin-surface p-4"
+    >
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-semibold">{title}</h2>
+        <h2 id={headingId} className="font-semibold">
+          {title}
+        </h2>
         <span className="text-xs text-admin-ink-muted">
           {totalCount.toLocaleString()} {label}
         </span>
