@@ -26,7 +26,7 @@ describe("SupplierForm", () => {
     await user.type(screen.getByRole("textbox", { name: /name/i }), "Kalahari Oyster Cult");
     await user.click(screen.getByRole("button", { name: /create supplier/i }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/settings/suppliers"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/admin/catalog/suppliers"));
   });
 
   it("edit mode PATCHes the existing supplier and shows 'Save changes'", async () => {

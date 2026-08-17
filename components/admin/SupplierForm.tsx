@@ -27,7 +27,7 @@ export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, contact }),
       });
-      router.push("/admin/settings/suppliers");
+      router.push("/admin/catalog/suppliers");
       router.refresh();
     });
   }
@@ -70,7 +70,7 @@ export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
         </button>
         <button
           type="button"
-          onClick={() => router.push("/admin/settings/suppliers")}
+          onClick={() => router.push("/admin/catalog/suppliers")}
           className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
           Cancel

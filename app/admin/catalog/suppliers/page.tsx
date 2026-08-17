@@ -21,7 +21,7 @@ export default async function AdminSuppliersPage() {
           </p>
         </div>
         <Link
-          href="/admin/settings/suppliers/new"
+          href="/admin/catalog/suppliers/new"
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
         >
           New supplier
@@ -47,7 +47,7 @@ export default async function AdminSuppliersPage() {
               {suppliers.map((supplier) => (
                 <tr key={supplier.id}>
                   <td className="px-3 py-2">
-                    <Link href={`/admin/settings/suppliers/${supplier.id}/edit`} className="hover:underline">
+                    <Link href={`/admin/catalog/suppliers/${supplier.id}/edit`} className="hover:underline">
                       {supplier.name}
                     </Link>
                   </td>

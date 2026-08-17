@@ -7,12 +7,12 @@ vi.mock("next/link", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/lib/db", () => ({ db: { supplier: { findMany: vi.fn() } } }));
 
-import AdminSuppliersPage from "@/app/admin/settings/suppliers/page";
+import AdminSuppliersPage from "@/app/admin/catalog/suppliers/page";
 import { db } from "@/lib/db";
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("/admin/settings/suppliers", () => {
+describe("/admin/catalog/suppliers", () => {
   it("lists suppliers with contact and order count", async () => {
     vi.mocked(db.supplier.findMany).mockResolvedValue([
       { id: "s1", name: "Kalahari Oyster Cult", contact: "ask Jules", _count: { supplyOrders: 3 } },
