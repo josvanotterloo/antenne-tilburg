@@ -148,7 +148,7 @@ Flagged per this repo's Test Contract and approved before implementation:
   create→give-it-stock→now-visible coverage.
 
 ## New admin surfaces
-- **Suppliers** (`/admin/settings/suppliers`): CRUD, delete guarded (409 +
+- **Suppliers** (`/admin/catalog/suppliers`): CRUD, delete guarded (409 +
   count) when the supplier has any `SupplyOrder`, any status — mirrors the
   existing `lib/reference-crud.ts` guard pattern used for Label/Genre/
   ProductType, bespoke rather than reused since `Supplier` carries an extra

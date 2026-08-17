@@ -47,7 +47,7 @@ export default async function CatalogPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Catalog</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
           <p className="text-sm text-admin-ink-muted">
             {result.total} product{result.total === 1 ? "" : "s"}
           </p>
