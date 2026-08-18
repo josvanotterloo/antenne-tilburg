@@ -97,3 +97,49 @@ high, all the one documented-safe `brace-expansion` cascade above). Net:
 every critical and moderate finding fixed; every high finding either fixed
 or assessed as non-exploitable with no safe fix currently available
 upstream.
+
+## Update (2026-08-18): `deepmerge-ts` via Prisma, allowlisted in CI
+
+CI's `npm audit --audit-level=high --omit=dev` step started failing on
+`GHSA-ggr8-5vv4-36mx` — a stack-exhaustion DoS in `deepmerge-ts` (<8.0.0)
+when merging deeply recursive object graphs. Unlike the `brace-expansion`
+cascade above, this one **isn't excluded by `--omit=dev`**: `prisma` is a
+`peerDependency` of `@prisma/client` (a production dependency), and this
+project's devDependency `prisma@6.19.3` satisfies that peer at the same
+version — so npm's audit graph treats the whole chain
+(`deepmerge-ts` → `@prisma/config` → `prisma`) as reachable from
+production, even though `prisma`'s own code never actually runs as part of
+serving a request.
+
+**Checked for a fix:** `@prisma/config` pins `deepmerge-ts@7.1.5` exactly.
+Checked every Prisma release from the current `6.19.3` (the newest 6.x)
+through the latest stable major, `7.9.1` — every single one still pins
+`deepmerge-ts@7.1.5`. There is no Prisma version, breaking or not, that
+resolves this; it's blocked entirely on Prisma bumping their own
+`@prisma/config` dependency upstream.
+
+**Exploitability assessment:** not exploitable in this project's runtime.
+`@prisma/config`'s deepmerge logic only runs when the `prisma` CLI merges
+`prisma.config.ts` with its defaults — i.e. `prisma generate` / `migrate` /
+`db seed`, all local-dev/CI/build-time operations processing this repo's
+own trusted `prisma.config.ts`. `@prisma/client`'s actual query-execution
+code (what runs inside the deployed Next.js server, handling real
+requests) doesn't invoke `@prisma/config` at all — `prisma` is only in the
+tree to satisfy `@prisma/client`'s peer-dependency version check. There is
+no path from attacker-controlled request input to the vulnerable merge
+call.
+
+**Not fixed — allowlisted instead:** `npm audit --audit-level=high` has no
+built-in way to exclude one known advisory while still failing on
+everything else, so the CI step now runs
+`scripts/check-npm-audit.mjs`, which wraps `npm audit --omit=dev --json`
+and fails only on findings **not** in its package-name allowlist
+(`deepmerge-ts`, `@prisma/config`, `prisma` — this one cascade). Any other
+high/critical finding, on any other package, still fails the build exactly
+as before.
+
+**Revisit when:** any future Prisma release bumps `@prisma/config`'s
+`deepmerge-ts` dependency to `>=8.0.0` — check with
+`npm view @prisma/config@<new-version> dependencies` after any Prisma
+bump, and remove the three entries from `scripts/check-npm-audit.mjs`'s
+allowlist once confirmed.

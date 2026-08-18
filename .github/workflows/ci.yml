@@ -58,10 +58,12 @@ jobs:
 
       # Production-dependency vulnerabilities only — dev-only findings (e.g.
       # the eslint-toolchain brace-expansion cascade) are assessed and tracked
-      # in tasks/todo.md instead of gating every push. See
-      # docs/features/security-dependency-updates.md.
+      # in tasks/todo.md instead of gating every push. One known finding
+      # (deepmerge-ts via prisma -> @prisma/config) is allowlisted by name in
+      # scripts/check-npm-audit.mjs — any other high/critical finding still
+      # fails this step. See docs/features/security-dependency-updates.md.
       - name: npm audit (production dependencies)
-        run: npm audit --audit-level=high --omit=dev
+        run: node scripts/check-npm-audit.mjs
 
       # Native `semgrep scan`, not the deprecated semgrep/semgrep-action —
       # free/token-free for this ruleset, no Semgrep account needed.

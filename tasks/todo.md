@@ -129,6 +129,19 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       audit findings, assessed dev-only/non-exploitable, not fixed) after
       any future `eslint`, `@eslint/*`, or `eslint-config-next` bump —
       `docs/features/security-dependency-updates.md`
+- [ ] **Known transient vulnerability, blocked upstream:** `deepmerge-ts`
+      <8.0.0 (`GHSA-ggr8-5vv4-36mx`, high) via `prisma` → `@prisma/config`.
+      Checked every Prisma release from `6.19.3` through the latest stable
+      major (`7.9.1`) — `@prisma/config` still pins `deepmerge-ts@7.1.5` in
+      all of them, so no Prisma upgrade (breaking or not) fixes this; it's
+      on Prisma to bump their own dependency. Assessed non-exploitable in
+      this app's runtime (the vulnerable merge only runs inside the
+      `prisma` CLI against this repo's own trusted `prisma.config.ts`, never
+      in the deployed Next.js server). Allowlisted by package name in
+      `scripts/check-npm-audit.mjs` so CI passes on this one known cascade
+      while still failing on any other high/critical finding. Re-check with
+      `npm view @prisma/config@<new-version> dependencies` after any future
+      Prisma bump — `docs/features/security-dependency-updates.md`.
 
 ### Code quality
 - [x] Full-codebase code review (Phase 3, 2026-07-09/10) — 1 High + 5 Medium
