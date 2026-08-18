@@ -209,6 +209,20 @@ describe("searchProductIds", () => {
     expect(arg.values).toContain("%bio%"); // ILIKE partial pattern
   });
 
+  it("matches products by label name via an EXISTS join on Product.labelId", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([{ id: "p1" }] as never);
+    const ids = await searchProductIds("Tresor");
+    const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as unknown as {
+      text: string;
+      values: unknown[];
+    };
+    expect(arg.text).toContain('"Label"'); // label match via Product.labelId join
+    expect(arg.text).toMatch(/l\.name % \$/); // trigram similarity on Label.name
+    expect(arg.text.toUpperCase()).toMatch(/L\.NAME ILIKE/); // partial/substring on Label.name
+    expect(arg.values).toContain("Tresor");
+    expect(ids).toEqual(["p1"]);
+  });
+
   it("escapes LIKE wildcards in the partial pattern", async () => {
     vi.mocked(db.$queryRaw).mockResolvedValue([] as never);
     await searchProductIds("50%_off");

@@ -136,12 +136,13 @@ export function isJustIn(
 // Catalog search: the generated `search_vector` (full-word FTS over title +
 // description) OR'd with pg_trgm trigram matching on title — ILIKE for
 // substrings/partials ("bio" and "sphere" both match "Biosphere") and the `%`
-// similarity operator for fuzzy/typo matches — OR'd with an EXISTS subquery
-// matching any linked artist's name the same way (a GENERATED column can't
-// reference a joined table, so artist matching can't live in search_vector
-// itself). Returns matching product ids to inject into the Prisma where
-// clause. Trigram GIN indexes (migrations `catalog_fuzzy_search` and
-// `finalize_artist_entity`) keep it fast.
+// similarity operator for fuzzy/typo matches — OR'd with EXISTS subqueries
+// matching any linked artist's name and the product's label name the same way
+// (a GENERATED column can't reference a joined table, so neither artist nor
+// label matching can live in search_vector itself). Returns matching product
+// ids to inject into the Prisma where clause. Trigram GIN indexes (migrations
+// `catalog_fuzzy_search`, `finalize_artist_entity`, and `label_search_trgm`)
+// keep it fast.
 export async function searchProductIds(q: string): Promise<string[]> {
   const term = q.trim();
   if (!term) return [];
@@ -158,6 +159,11 @@ export async function searchProductIds(q: string): Promise<string[]> {
            JOIN "Artist" a ON a.id = pa."artistId"
            WHERE pa."productId" = p.id
              AND (a.name ILIKE ${like} OR a.name % ${term})
+         )
+         OR EXISTS (
+           SELECT 1 FROM "Label" l
+           WHERE l.id = p."labelId"
+             AND (l.name ILIKE ${like} OR l.name % ${term})
          )
     `,
   );

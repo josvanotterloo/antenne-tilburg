@@ -47,3 +47,47 @@ if it did apply.
 migration has already failed: `prisma migrate resolve --rolled-back "<name>"`, delete its
 directory, and confirm `prisma migrate status` is clean. (First hit: 2026-07-08, logged
 in `tasks/lessons.md`.)
+
+## Update (2026-08-18): label name added to `searchProductIds`
+
+Admin/public catalog search didn't match label name (e.g. searching "Warp
+Records" or "Tresor" returned nothing, even with matching products) —
+`searchProductIds` only ever covered title/description (`search_vector`)
+and, since the artist-entity migration, artist name via an `EXISTS`
+subquery. Label was never added.
+
+**Considered extending the generated `search_vector` column instead** (as
+the bug report suggested) — not possible. The same wall the artist
+migration already documented applies identically here: a Postgres
+`GENERATED ALWAYS AS` column can only reference columns in its own row,
+never a joined table, and `Product.labelId → Label.name` is a joined
+table. The fix mirrors the artist `EXISTS` clause exactly, just against
+`Label` directly (a simple FK, no join table needed, unlike artist's
+many-to-many via `ProductArtist`):
+```sql
+OR EXISTS (
+  SELECT 1 FROM "Label" l
+  WHERE l.id = p."labelId"
+    AND (l.name ILIKE ${like} OR l.name % ${term})
+)
+```
+New migration `label_search_trgm`: `CREATE INDEX label_name_trgm_idx ON
+"Label" USING GIN (name gin_trgm_ops)` — `pg_trgm` was already enabled by
+`catalog_fuzzy_search`. Hand-written per this doc's own gotcha above;
+`--create-only` proposed the usual drift (dropping the existing trigram
+indexes and `search_vector`'s default), discarded in favor of just the
+one new index.
+
+**Verified live against Postgres** (same standard as the original
+feature): searching `Warp`, `Warp Records`, `warp records`, and a typo'd
+`wrap recrds` against real seeded data all correctly matched the one
+product on "Warp Records".
+
+**Noted, not fixed — same class of tradeoff as the original feature's
+"bio"/"sphere" examples:** the `%` similarity operator can over-match
+labels that share a common word. `similarity('Zulema Records', 'Warp
+Records')` is `0.4` (above the `pg_trgm` default `0.3` threshold) purely
+because both share " Records" — searching "Warp Records" also surfaces
+products on "Zulema Records". This is the same operator already accepted
+for title/artist fuzzy matching, applied consistently to a new field, not
+a regression specific to this change.
