@@ -72,14 +72,11 @@ describe("ReferenceSection", () => {
     ).toBeInTheDocument();
   });
 
-  it("is not focused by default", () => {
+  it("renders its own title as the page heading", () => {
     setup();
-    expect(screen.getByRole("region", { name: "Genres" })).not.toHaveFocus();
-  });
-
-  it("receives focus on mount when focused is true", () => {
-    setup({ focused: true });
-    expect(screen.getByRole("region", { name: "Genres" })).toHaveFocus();
+    expect(
+      screen.getByRole("heading", { name: "Genres", level: 1 }),
+    ).toBeInTheDocument();
   });
 
   it("renders the total count", () => {

@@ -29,10 +29,10 @@ describe("CatalogLayout nav", () => {
       ["Products", "/admin/catalog"],
       ["Orders", "/admin/catalog/orders"],
       ["Transactions", "/admin/catalog/transactions"],
-      ["Labels", "/admin/catalog/reference/labels"],
-      ["Artists", "/admin/catalog/reference/artists"],
-      ["Genres", "/admin/catalog/reference/genres"],
-      ["Product Types", "/admin/catalog/reference/product-types"],
+      ["Labels", "/admin/catalog/labels"],
+      ["Artists", "/admin/catalog/artists"],
+      ["Genres", "/admin/catalog/genres"],
+      ["Product Types", "/admin/catalog/product-types"],
       ["Suppliers", "/admin/catalog/suppliers"],
     ];
     for (const [label, href] of expected) {
