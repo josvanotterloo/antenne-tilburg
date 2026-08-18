@@ -182,7 +182,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 905 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 906 tests as of the
+label-search fix, 2026-08-18 (+1 for `searchProductIds`'s new `Label`
+`EXISTS` clause; see `docs/features/fuzzy-search.md`). 905 tests as of the
 admin nav restructure, 2026-08-17 (+16 net: 8 nav-link tests across the
 Catalog/Settings layouts, 6 for `ReferenceDataView`/per-section route
 focus behavior, 2 for `ReferenceSection`'s new `focused` prop). 893 tests (as of
