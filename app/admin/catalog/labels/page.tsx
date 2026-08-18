@@ -1,10 +1,12 @@
 import { db } from "@/lib/db";
-import { ReferenceSection, type ReferenceItem } from "@/components/admin/ReferenceSection";
+import {
+  ReferenceSection,
+  SEARCH_RESULT_CAP,
+  type ReferenceItem,
+} from "@/components/admin/ReferenceSection";
 
 // Reads live reference data; never prerender at build time.
 export const dynamic = "force-dynamic";
-
-const PAGE_SIZE = 20;
 
 type LabelWithCount = {
   id: string;
@@ -26,7 +28,7 @@ export default async function LabelsPage() {
   const [labels, total] = await Promise.all([
     db.label.findMany({
       orderBy: { name: "asc" },
-      take: PAGE_SIZE,
+      take: SEARCH_RESULT_CAP,
       include: { _count: { select: { products: true } }, supplier: true },
     }),
     db.label.count(),
