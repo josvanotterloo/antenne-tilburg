@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { PATCH, DELETE } from "@/app/api/admin/artists/[id]/route";
+import { VARIOUS_ARTISTS_NAME } from "@/lib/resolve-artists";
 
 const mockRequireAdmin = vi.mocked(requireAdmin);
 
@@ -66,6 +67,16 @@ describe("PATCH /api/admin/artists/[id]", () => {
     mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
     const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
     expect(res.status).toBe(401);
+    expect(db.artist.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to rename the shared Various Artists entity", async () => {
+    vi.mocked(db.artist.findUnique).mockResolvedValue({
+      id: "va1",
+      name: VARIOUS_ARTISTS_NAME,
+    } as never);
+    const res = await PATCH(jsonRequest({ name: "Compilation Artists" }), ctx("va1"));
+    expect(res.status).toBe(400);
     expect(db.artist.update).not.toHaveBeenCalled();
   });
 });

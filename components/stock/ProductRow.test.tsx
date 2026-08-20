@@ -108,3 +108,38 @@ describe("ProductRow — no price", () => {
     expect(screen.queryByText(/€/)).toBeNull();
   });
 });
+
+describe("ProductRow — Various Artists", () => {
+  it('renders "VARIOUS ARTISTS" instead of the linked artist name', () => {
+    render(
+      <ProductRow
+        product={
+          product({
+            isVariousArtists: true,
+            contents: "Surgeon, Regis",
+            productArtists: [
+              { position: 0, artistId: "va1", artist: { id: "va1", name: "Various Artists" } },
+            ],
+          }) as never
+        }
+      />,
+    );
+    expect(screen.getByText("VARIOUS ARTISTS")).toBeInTheDocument();
+    expect(screen.queryByText("Various Artists")).toBeNull();
+  });
+
+  it("does not render contents in the list view", () => {
+    render(
+      <ProductRow
+        product={product({ isVariousArtists: true, contents: "Surgeon, Regis" }) as never}
+      />,
+    );
+    expect(screen.queryByText(/Surgeon, Regis/)).toBeNull();
+  });
+
+  it("renders the linked artist name as usual for a non-VA product", () => {
+    render(<ProductRow product={product({ isVariousArtists: false }) as never} />);
+    expect(screen.getByText("Vril")).toBeInTheDocument();
+    expect(screen.queryByText("VARIOUS ARTISTS")).toBeNull();
+  });
+});

@@ -28,6 +28,8 @@ export interface ProductFormValues {
   description: string | null;
   coverImage: string | null;
   quantity: number;
+  isVariousArtists: boolean;
+  contents: string | null;
 }
 
 interface ProductFormProps {
@@ -63,6 +65,10 @@ export function ProductForm({ product }: ProductFormProps) {
   const [description, setDescription] = useState(product?.description ?? "");
   const [coverImage, setCoverImage] = useState(product?.coverImage ?? "");
   const [quantity, setQuantity] = useState(product?.quantity ?? 0);
+  const [isVariousArtists, setIsVariousArtists] = useState(
+    product?.isVariousArtists ?? false,
+  );
+  const [contents, setContents] = useState(product?.contents ?? "");
 
   // Independent actions: saving the product and the quick "sell one" each track
   // their own pending/error so neither disables the other's button.
@@ -103,6 +109,17 @@ export function ProductForm({ product }: ProductFormProps) {
     });
   }
 
+  // Unchecking clears contents and empties the artist selection — the admin
+  // must re-pick real artist(s) before saving (MultiCombobox's own
+  // `required` hidden input already blocks submit until they do).
+  function handleVariousArtistsToggle(checked: boolean) {
+    setIsVariousArtists(checked);
+    if (!checked) {
+      setContents("");
+      setArtists([]);
+    }
+  }
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     submit.run(async () => {
@@ -123,6 +140,8 @@ export function ProductForm({ product }: ProductFormProps) {
             price,
             description,
             coverImage,
+            isVariousArtists,
+            contents,
           }),
         },
       );
@@ -136,16 +155,44 @@ export function ProductForm({ product }: ProductFormProps) {
       onSubmit={handleSubmit}
       className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
     >
-      <Field label="Artists" htmlFor="artists">
-        <MultiCombobox
-          id="artists"
-          label="Artists"
-          endpoint="/api/admin/artists"
-          selected={artists}
-          onChange={setArtists}
-          required
+      {!isVariousArtists && (
+        <Field label="Artists" htmlFor="artists">
+          <MultiCombobox
+            id="artists"
+            label="Artists"
+            endpoint="/api/admin/artists"
+            selected={artists}
+            onChange={setArtists}
+            required
+          />
+        </Field>
+      )}
+
+      <Field label="Various Artists / Compilation" htmlFor="various-artists">
+        <input
+          id="various-artists"
+          type="checkbox"
+          checked={isVariousArtists}
+          onChange={(e) => handleVariousArtistsToggle(e.target.checked)}
         />
       </Field>
+
+      {isVariousArtists && (
+        <Field
+          label="Artists on this release"
+          htmlFor="contents"
+          className="md:col-span-2"
+        >
+          <textarea
+            id="contents"
+            value={contents}
+            onChange={(e) => setContents(e.target.value)}
+            placeholder="Surgeon, Regis, Author, The Envoy"
+            rows={2}
+            className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
+          />
+        </Field>
+      )}
 
       <Field label="Title" htmlFor="product-title">
         <input

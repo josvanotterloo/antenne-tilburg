@@ -1,7 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 
-import { resolveArtists, type ArtistDelegate } from "@/lib/resolve-artists";
+import {
+  resolveArtists,
+  resolveVariousArtists,
+  VARIOUS_ARTISTS_NAME,
+  type ArtistDelegate,
+  type VariousArtistsDelegate,
+} from "@/lib/resolve-artists";
 
 function fakeDelegate(rows: { id: string; name: string }[]): ArtistDelegate {
   return {
@@ -47,5 +53,32 @@ describe("resolveArtists", () => {
     expect(delegate.findMany).toHaveBeenCalledWith({
       where: { id: { in: ["a1", "a2"] } },
     });
+  });
+});
+
+describe("resolveVariousArtists", () => {
+  function fakeUpsertDelegate(
+    existing: { id: string; name: string } | null,
+  ): VariousArtistsDelegate {
+    return {
+      upsert: vi.fn(async () => existing ?? { id: "va1", name: VARIOUS_ARTISTS_NAME }),
+    };
+  }
+
+  it("upserts on the fixed 'Various Artists' name", async () => {
+    const delegate = fakeUpsertDelegate(null);
+    const result = await resolveVariousArtists(delegate);
+    expect(delegate.upsert).toHaveBeenCalledWith({
+      where: { name: VARIOUS_ARTISTS_NAME },
+      update: {},
+      create: { name: VARIOUS_ARTISTS_NAME },
+    });
+    expect(result).toEqual({ id: "va1", name: VARIOUS_ARTISTS_NAME });
+  });
+
+  it("returns the existing entity unchanged when it already exists", async () => {
+    const delegate = fakeUpsertDelegate({ id: "existing-id", name: VARIOUS_ARTISTS_NAME });
+    const result = await resolveVariousArtists(delegate);
+    expect(result).toEqual({ id: "existing-id", name: VARIOUS_ARTISTS_NAME });
   });
 });

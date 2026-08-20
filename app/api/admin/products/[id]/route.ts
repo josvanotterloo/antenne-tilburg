@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
-import { resolveArtists } from "@/lib/resolve-artists";
+import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -39,7 +39,9 @@ export async function PATCH(req: Request, ctx: RouteContext) {
 
   // Every selected artist must still exist, not just the primary one (see
   // the matching comment in ../route.ts's POST).
-  const artists = await resolveArtists(db.artist, parsed.data.artistIds);
+  const artists = parsed.data.isVariousArtists
+    ? [await resolveVariousArtists(db.artist)]
+    : await resolveArtists(db.artist, parsed.data.artistIds);
   if (!artists) {
     return NextResponse.json(
       { error: "Selected artist no longer exists" },
@@ -50,10 +52,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   try {
     const updated = await db.product.update({
       where: { id },
-      data: toProductData(parsed.data, {
-        primaryArtistName: artists[0].name,
-        mode: "update",
-      }),
+      data: toProductData(
+        { ...parsed.data, artistIds: artists.map((a) => a.id) },
+        { primaryArtistName: artists[0].name, mode: "update" },
+      ),
     });
     return NextResponse.json(updated);
   } catch (error) {

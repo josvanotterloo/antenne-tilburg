@@ -223,6 +223,19 @@ describe("searchProductIds", () => {
     expect(ids).toEqual(["p1"]);
   });
 
+  it("matches products by a name appearing in the contents field (VA compilations)", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([{ id: "p1" }] as never);
+    const ids = await searchProductIds("Surgeon");
+    const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as unknown as {
+      text: string;
+      values: unknown[];
+    };
+    expect(arg.text).toMatch(/p\.contents % \$/); // trigram similarity on Product.contents
+    expect(arg.text.toUpperCase()).toMatch(/P\.CONTENTS ILIKE/); // partial/substring on Product.contents
+    expect(arg.values).toContain("Surgeon");
+    expect(ids).toEqual(["p1"]);
+  });
+
   it("escapes LIKE wildcards in the partial pattern", async () => {
     vi.mocked(db.$queryRaw).mockResolvedValue([] as never);
     await searchProductIds("50%_off");

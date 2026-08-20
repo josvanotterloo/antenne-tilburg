@@ -13,6 +13,12 @@ export interface ProductInput {
   price: string;
   description: string | null;
   coverImage: string | null;
+  // Various Artists / compilation flag. When true, artistIds is empty here —
+  // the route resolves the real link server-side (see
+  // lib/resolve-artists.ts's resolveVariousArtists) — and contents carries
+  // the free-text list of who's actually on the release.
+  isVariousArtists: boolean;
+  contents: string | null;
 }
 
 export type ParseResult =
@@ -38,9 +44,19 @@ export function parseProductInput(body: unknown): ParseResult {
   const b = (body ?? {}) as Record<string, unknown>;
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
-  const artistIds = parseArtistIds(b.artistIds);
-  if (!artistIds) {
-    return { ok: false, error: "At least one artist is required" };
+  const isVariousArtists = b.isVariousArtists === true;
+
+  let artistIds: string[];
+  if (isVariousArtists) {
+    // Resolved server-side to the shared "Various Artists" entity — see
+    // resolveVariousArtists.
+    artistIds = [];
+  } else {
+    const parsed = parseArtistIds(b.artistIds);
+    if (!parsed) {
+      return { ok: false, error: "At least one artist is required" };
+    }
+    artistIds = parsed;
   }
 
   const title = str(b.title);
@@ -89,6 +105,8 @@ export function parseProductInput(body: unknown): ParseResult {
       price: String(price),
       description: str(b.description) || null,
       coverImage: str(b.coverImage) || null,
+      isVariousArtists,
+      contents: isVariousArtists ? str(b.contents) || null : null,
     },
   };
 }
@@ -114,6 +132,8 @@ export function toProductData(
     price: data.price,
     description: data.description,
     coverImage: data.coverImage,
+    isVariousArtists: data.isVariousArtists,
+    contents: data.contents,
     label: { connect: { id: data.labelId } },
     genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },

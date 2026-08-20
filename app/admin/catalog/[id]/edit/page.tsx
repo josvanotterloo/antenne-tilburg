@@ -78,6 +78,8 @@ export default async function EditProductPage({
           description: product.description,
           coverImage: product.coverImage,
           quantity: product.quantity,
+          isVariousArtists: product.isVariousArtists,
+          contents: product.contents,
         }}
       />
       <div className="max-w-3xl space-y-2">

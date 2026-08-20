@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
-import { resolveArtists } from "@/lib/resolve-artists";
+import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 
 export async function GET() {
   const denied = await requireAdmin();
@@ -36,7 +36,13 @@ export async function POST(req: Request) {
   // creates a new artist immediately (before the product form ever
   // submits), same as label/genre/productType, so this is a genuine
   // deleted-out-from-under-you race, not the common case.
-  const artists = await resolveArtists(db.artist, parsed.data.artistIds);
+  //
+  // Various Artists products skip that lookup entirely — the shared VA
+  // entity is resolved (created on first use) server-side instead of
+  // trusting client-supplied artistIds.
+  const artists = parsed.data.isVariousArtists
+    ? [await resolveVariousArtists(db.artist)]
+    : await resolveArtists(db.artist, parsed.data.artistIds);
   if (!artists) {
     return NextResponse.json(
       { error: "Selected artist no longer exists" },
@@ -46,10 +52,10 @@ export async function POST(req: Request) {
 
   try {
     const created = await db.product.create({
-      data: toProductData(parsed.data, {
-        primaryArtistName: artists[0].name,
-        mode: "create",
-      }),
+      data: toProductData(
+        { ...parsed.data, artistIds: artists.map((a) => a.id) },
+        { primaryArtistName: artists[0].name, mode: "create" },
+      ),
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

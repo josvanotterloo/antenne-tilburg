@@ -107,6 +107,43 @@ describe("/stock/[id] detail", () => {
     expect(notFound).toHaveBeenCalled();
   });
 
+  it("shows contents below the header for a Various Artists product", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue({
+      ...PRODUCT,
+      isVariousArtists: true,
+      contents: "Surgeon, Regis, Author, The Envoy",
+      productArtists: [
+        { position: 0, artistId: "va1", artist: { id: "va1", name: "Various Artists" } },
+      ],
+    } as never);
+    render(await call("p1"));
+    expect(
+      screen.getByText("Surgeon, Regis, Author, The Envoy"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render a contents line for a Various Artists product without contents", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue({
+      ...PRODUCT,
+      isVariousArtists: true,
+      contents: null,
+    } as never);
+    render(await call("p1"));
+    // Only the badges/label line share this text style — the contents <p>
+    // shouldn't exist at all when there's nothing to show.
+    expect(screen.queryByText(/surgeon/i)).toBeNull();
+  });
+
+  it("does not render a contents line for a non-VA product, even if contents is somehow set", async () => {
+    vi.mocked(db.product.findUnique).mockResolvedValue({
+      ...PRODUCT,
+      isVariousArtists: false,
+      contents: "Surgeon, Regis",
+    } as never);
+    render(await call("p1"));
+    expect(screen.queryByText(/Surgeon, Regis/)).toBeNull();
+  });
+
   it("emits Product + MusicRecording structured data without price, with availability", async () => {
     vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
     const { container } = render(await call("p1"));

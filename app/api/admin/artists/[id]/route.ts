@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { VARIOUS_ARTISTS_NAME } from "@/lib/resolve-artists";
 
 // Bespoke rename/delete for Artist: unlike the generic reference-crud
 // factory, rename must also refresh the denormalized primaryArtistName on
@@ -26,6 +27,17 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   const name = readName(await req.json().catch(() => null));
   if (!name) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  }
+  // Renaming the shared Various Artists entity (see
+  // lib/resolve-artists.ts's resolveVariousArtists) would make future VA
+  // product saves upsert a second, disconnected entity under the fixed
+  // name, silently forking existing VA products from new ones.
+  const existing = await db.artist.findUnique({ where: { id }, select: { name: true } });
+  if (existing?.name === VARIOUS_ARTISTS_NAME) {
+    return NextResponse.json(
+      { error: "Cannot rename the shared Various Artists entity" },
+      { status: 400 },
+    );
   }
   try {
     const [updated] = await db.$transaction([

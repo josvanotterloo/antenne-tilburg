@@ -13,7 +13,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
-    artist: { findMany: vi.fn() },
+    artist: { findMany: vi.fn(), upsert: vi.fn() },
   },
 }));
 
@@ -33,7 +33,7 @@ const product = db.product as unknown as {
   update: Mock;
   delete: Mock;
 };
-const artist = db.artist as unknown as { findMany: Mock };
+const artist = db.artist as unknown as { findMany: Mock; upsert: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
 
 const ROW = {
@@ -80,6 +80,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
   artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
+  artist.upsert.mockResolvedValue({ id: "va1", name: "Various Artists" });
 });
 
 describe("GET /api/admin/products", () => {
@@ -170,6 +171,46 @@ describe("POST /api/admin/products", () => {
     const res = await POST(jsonReq("POST", validBody));
     expect(res.status).toBe(400);
   });
+
+  it("links the Various Artists entity (creating it if absent) and stores contents", async () => {
+    product.create.mockResolvedValue(ROW);
+    const res = await POST(
+      jsonReq("POST", {
+        ...validBody,
+        artistIds: undefined,
+        isVariousArtists: true,
+        contents: "Surgeon, Regis",
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(artist.upsert).toHaveBeenCalledWith({
+      where: { name: "Various Artists" },
+      update: {},
+      create: { name: "Various Artists" },
+    });
+    expect(artist.findMany).not.toHaveBeenCalled();
+    expect(product.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        primaryArtistName: "Various Artists",
+        productArtists: { create: [{ artistId: "va1", position: 0 }] },
+        isVariousArtists: true,
+        contents: "Surgeon, Regis",
+      }),
+    });
+  });
+
+  it("reuses the same Various Artists entity id across separate VA products", async () => {
+    product.create.mockResolvedValue(ROW);
+    await POST(
+      jsonReq("POST", { ...validBody, artistIds: undefined, isVariousArtists: true }),
+    );
+    await POST(
+      jsonReq("POST", { ...validBody, artistIds: undefined, isVariousArtists: true }),
+    );
+    const calls = product.create.mock.calls as { data: { productArtists: { create: { artistId: string }[] } } }[][];
+    expect(calls[0][0].data.productArtists.create[0].artistId).toBe("va1");
+    expect(calls[1][0].data.productArtists.create[0].artistId).toBe("va1");
+  });
 });
 
 describe("GET /api/admin/products/[id]", () => {
@@ -235,6 +276,28 @@ describe("PATCH /api/admin/products/[id]", () => {
     product.update.mockRejectedValue({ code: "P2025" });
     const res = await PATCH(jsonReq("PATCH", validBody), ctx("gone"));
     expect(res.status).toBe(404);
+  });
+
+  it("clears contents to null when toggling isVariousArtists off", async () => {
+    product.update.mockResolvedValue(ROW);
+    const res = await PATCH(
+      jsonReq("PATCH", { ...validBody, isVariousArtists: false, contents: "stale" }),
+      ctx("p1"),
+    );
+    expect(res.status).toBe(200);
+    expect(product.update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: expect.objectContaining({ contents: null, isVariousArtists: false }),
+    });
+  });
+
+  it("requires a real artist selection when isVariousArtists is false and none given", async () => {
+    const res = await PATCH(
+      jsonReq("PATCH", { ...validBody, artistIds: [], isVariousArtists: false }),
+      ctx("p1"),
+    );
+    expect(res.status).toBe(400);
+    expect(product.update).not.toHaveBeenCalled();
   });
 });
 

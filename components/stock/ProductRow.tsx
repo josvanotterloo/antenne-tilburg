@@ -21,14 +21,16 @@ export function ProductRow({ product }: { product: CatalogProduct }) {
     <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
       <span className="min-w-0 flex-1">
         <span className="font-medium text-ink">
-          {[...product.productArtists]
-            .sort((a, b) => a.position - b.position)
-            .map((pa, i) => (
-              <Fragment key={pa.artistId}>
-                {i > 0 && " / "}
-                {pa.artist.name}
-              </Fragment>
-            ))}
+          {product.isVariousArtists
+            ? "VARIOUS ARTISTS"
+            : [...product.productArtists]
+                .sort((a, b) => a.position - b.position)
+                .map((pa, i) => (
+                  <Fragment key={pa.artistId}>
+                    {i > 0 && " / "}
+                    {pa.artist.name}
+                  </Fragment>
+                ))}
         </span>
         <span className="text-ink-muted"> — </span>
         <Link

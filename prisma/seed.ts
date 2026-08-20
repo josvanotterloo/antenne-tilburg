@@ -2,6 +2,7 @@ import { PrismaClient, Condition, PostStatus } from "@prisma/client";
 import { hash } from "bcrypt";
 
 import { resolveAdminSeedUsers } from "../lib/seed-users";
+import { resolveVariousArtists } from "../lib/resolve-artists";
 
 const prisma = new PrismaClient();
 
@@ -154,6 +155,9 @@ async function main() {
       create: { name },
     });
   }
+
+  // --- Shared Various Artists / compilation entity (idempotent) ---
+  await resolveVariousArtists(prisma.artist);
 
   // --- Opening hours (idempotent on unique dayOfWeek) ---
   for (const hours of OPENING_HOURS) {

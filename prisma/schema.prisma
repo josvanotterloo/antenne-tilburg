@@ -135,14 +135,21 @@ model Product {
   // transaction. Defaults false to match quantity's 0 default — a brand-new
   // product has no stock until a transaction (adjust/receive) gives it some.
   inStock           Boolean         @default(false)
+  // Various Artists / compilation flag. When true, productArtists links to
+  // the single shared "Various Artists" Artist entity (see
+  // lib/resolve-artists.ts's resolveVariousArtists) and `contents` carries
+  // the free-text list of who's actually on the release.
+  isVariousArtists  Boolean         @default(false)
+  contents          String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
   // Postgres full-text search column — a generated STORED tsvector defined in a
   // manual migration. Declared here as Unsupported so Prisma treats it as
   // existing (no drift) but does not try to query it directly. Covers
-  // title + description only — artist matching goes through ProductArtist/
-  // Artist instead (a generated column can't reference a joined table).
+  // title + description + contents — artist matching goes through
+  // ProductArtist/Artist instead (a generated column can't reference a
+  // joined table).
   searchVector Unsupported("tsvector")? @map("search_vector")
 
   @@index([labelId])

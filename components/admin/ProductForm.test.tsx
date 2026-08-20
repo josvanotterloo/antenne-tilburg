@@ -24,6 +24,8 @@ const PRODUCT = {
   description: "Deep dub techno.",
   coverImage: "/uploads/existing-cover.webp",
   quantity: 4,
+  isVariousArtists: false,
+  contents: null,
 };
 
 describe("ProductForm", () => {
@@ -316,6 +318,67 @@ describe("ProductForm", () => {
     expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue(
       "Manual Distro",
     );
+  });
+
+  it("Various Artists checkbox is unchecked by default, with the artist combobox visible", () => {
+    render(<ProductForm />);
+    expect(
+      screen.getByRole("checkbox", { name: /various artists/i }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("combobox", { name: /artists/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/surgeon, regis/i)).toBeNull();
+  });
+
+  it("checking Various Artists hides the artist combobox and shows the contents textarea", async () => {
+    const user = userEvent.setup();
+    render(<ProductForm />);
+
+    await user.click(screen.getByRole("checkbox", { name: /various artists/i }));
+
+    expect(screen.queryByRole("combobox", { name: /artists/i })).toBeNull();
+    expect(screen.getByPlaceholderText(/surgeon, regis/i)).toBeInTheDocument();
+  });
+
+  it("unchecking Various Artists after checking clears contents and restores an empty artist combobox", async () => {
+    const user = userEvent.setup();
+    render(<ProductForm />);
+
+    const checkbox = screen.getByRole("checkbox", { name: /various artists/i });
+    await user.click(checkbox);
+    await user.type(
+      screen.getByPlaceholderText(/surgeon, regis/i),
+      "Surgeon, Regis",
+    );
+    await user.click(checkbox);
+
+    expect(screen.queryByPlaceholderText(/surgeon, regis/i)).toBeNull();
+    const combobox = screen.getByRole("combobox", { name: /artists/i });
+    expect(combobox).toBeInTheDocument();
+    expect(screen.queryByText("Vril")).toBeNull();
+  });
+
+  it("submits isVariousArtists and contents when the checkbox is checked", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+
+    render(<ProductForm product={PRODUCT} />);
+    await user.click(screen.getByRole("checkbox", { name: /various artists/i }));
+    await user.type(
+      screen.getByPlaceholderText(/surgeon, regis/i),
+      "Surgeon, Regis",
+    );
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+    );
+    expect(body.isVariousArtists).toBe(true);
+    expect(body.contents).toBe("Surgeon, Regis");
   });
 
   it("never prefills supplier when editing an existing product, even with no supplier set", async () => {

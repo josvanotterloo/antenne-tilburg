@@ -105,6 +105,9 @@ export default async function ProductDetailPage({
             </span>
           )}
         </h1>
+        {product.isVariousArtists && product.contents && (
+          <p className="text-sm text-ink">{product.contents}</p>
+        )}
         <p className="font-mono text-sm text-ink-muted">
           {product.label.name} · {product.genre.name} · {product.productType.name}
         </p>

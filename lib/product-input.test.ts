@@ -121,6 +121,58 @@ describe("parseProductInput", () => {
     expect(without.ok).toBe(true);
     if (without.ok) expect(without.data.supplierId).toBeNull();
   });
+
+  it("defaults isVariousArtists to false and contents to null when absent", () => {
+    const result = parseProductInput(VALID);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.isVariousArtists).toBe(false);
+    expect(result.data.contents).toBeNull();
+  });
+
+  it("skips the artist-required check when isVariousArtists is true", () => {
+    const result = parseProductInput({
+      ...VALID,
+      artistIds: [],
+      isVariousArtists: true,
+      contents: "Surgeon, Regis",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.artistIds).toEqual([]);
+    expect(result.data.contents).toBe("Surgeon, Regis");
+  });
+
+  it("still requires artistIds when isVariousArtists is false", () => {
+    const result = parseProductInput({
+      ...VALID,
+      artistIds: [],
+      isVariousArtists: false,
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("forces contents to null when isVariousArtists is false, even if sent", () => {
+    const result = parseProductInput({
+      ...VALID,
+      isVariousArtists: false,
+      contents: "Surgeon, Regis",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.contents).toBeNull();
+  });
+
+  it("nullifies blank contents when isVariousArtists is true", () => {
+    const result = parseProductInput({
+      ...VALID,
+      isVariousArtists: true,
+      contents: "   ",
+    });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.contents).toBeNull();
+  });
 });
 
 describe("toProductData — no longer touches quantity/inStock", () => {
@@ -136,7 +188,18 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     price: "10",
     description: null,
     coverImage: null,
+    isVariousArtists: false,
+    contents: null,
   };
+
+  it("passes isVariousArtists and contents through to the stored data", () => {
+    const data = toProductData(
+      { ...base, isVariousArtists: true, contents: "Surgeon, Regis" },
+      { primaryArtistName: "Various Artists", mode: "create" },
+    );
+    expect(data.isVariousArtists).toBe(true);
+    expect(data.contents).toBe("Surgeon, Regis");
+  });
 
   it("never includes quantity or inStock in the returned data", () => {
     const data = toProductData(base, { primaryArtistName: "Vril", mode: "create" });

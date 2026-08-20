@@ -18,3 +18,28 @@ export async function resolveArtists(
   const byId = new Map(found.map((a) => [a.id, a]));
   return artistIds.map((id) => byId.get(id)!);
 }
+
+// Shared single source of truth for the Various Artists / compilation
+// Artist entity's name — used by the product routes (isVariousArtists
+// products) and prisma/seed.ts.
+export const VARIOUS_ARTISTS_NAME = "Various Artists";
+
+export interface VariousArtistsDelegate {
+  upsert(args: {
+    where: { name: string };
+    update: Record<string, never>;
+    create: { name: string };
+  }): Promise<{ id: string; name: string }>;
+}
+
+// Idempotent find-or-create for the shared "Various Artists" entity — an
+// upsert avoids a race between two concurrent first-ever VA product saves.
+export function resolveVariousArtists(
+  delegate: VariousArtistsDelegate,
+): Promise<{ id: string; name: string }> {
+  return delegate.upsert({
+    where: { name: VARIOUS_ARTISTS_NAME },
+    update: {},
+    create: { name: VARIOUS_ARTISTS_NAME },
+  });
+}
