@@ -51,6 +51,11 @@ real admin UIs.
       create/edit/detail pages entirely. `Product.supplierId` /
       `Label.supplierId` added to link products to suppliers —
       `docs/features/order-transaction-redesign.md`
+- [x] Various Artists / compilation support (2026-08-20) —
+      `Product.isVariousArtists` + `Product.contents`, a shared "Various
+      Artists" `Artist` entity (find-or-create, rename-guarded), admin
+      `ProductForm` checkbox + contents textarea, and search matching on
+      `contents` — `docs/features/various-artists-compilations.md`
 
 ## Backlog
 
@@ -182,7 +187,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 906 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 932 tests as of Various
+Artists / compilation support, 2026-08-20 (+26 net: `parseProductInput`/
+`toProductData`, `resolveVariousArtists`, the VA-aware POST/PATCH product
+routes, the artist-rename guard, `searchProductIds`'s `contents` matching,
+`ProductForm`'s checkbox/textarea toggle, and the `/stock` list + detail
+page display rules). 906 tests as of the
 label-search fix, 2026-08-18 (+1 for `searchProductIds`'s new `Label`
 `EXISTS` clause; see `docs/features/fuzzy-search.md`). 905 tests as of the
 admin nav restructure, 2026-08-17 (+16 net: 8 nav-link tests across the
