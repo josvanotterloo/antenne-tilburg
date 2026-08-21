@@ -57,6 +57,21 @@ real admin UIs.
       `ProductForm` checkbox + contents textarea, and search matching on
       `contents` — `docs/features/various-artists-compilations.md`
 
+### Legacy data migration (2026-08-21)
+- [x] Migration script written and dry-run verified against the real dump
+      (`/Users/josvanotterloo/Downloads/_Antenne_Database_.sql`) —
+      `scripts/migrate-legacy-data.ts` + `lib/mysql-dump-parser.ts`.
+      **Not yet run for real** — `docs/features/legacy-migration.md`.
+- [ ] **Run the real migration** (`npx tsx scripts/migrate-legacy-data.ts <dump>`,
+      no `--dry-run`) when ready to cut over.
+- [ ] **After migration, verify:** product count, artist count, and label
+      count match the old system (not just internal script consistency —
+      compare against the legacy admin/DB directly). See
+      `docs/features/legacy-migration.md`'s Verification section for the
+      full checklist (re-run dry-run for idempotency, spot-check known
+      releases, opening-balance backfill for any orphaned stock history,
+      cover-image files still need a separate copy).
+
 ## Backlog
 
 ### Admin CRUD
