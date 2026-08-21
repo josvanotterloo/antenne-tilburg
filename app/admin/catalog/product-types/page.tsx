@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
+import { ReferenceSection } from "@/components/admin/ReferenceSection";
 import {
-  ReferenceSection,
   SEARCH_RESULT_CAP,
   toSimpleReferenceItems,
-} from "@/components/admin/ReferenceSection";
+} from "@/lib/reference-items";
 
 // Reads live reference data; never prerender at build time.
 export const dynamic = "force-dynamic";
