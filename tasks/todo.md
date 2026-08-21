@@ -57,6 +57,19 @@ real admin UIs.
       `ProductForm` checkbox + contents textarea, and search matching on
       `contents` — `docs/features/various-artists-compilations.md`
 
+### Product ↔ Genre many-to-many (2026-08-21)
+- [x] `Product.genreId` (single FK) replaced with `ProductGenre`, an
+      explicit join table mirroring `ProductArtist` — a release can belong
+      to more than one genre. Every consumer updated (admin multi-select
+      form, admin/public lists, search, newsletter arrivals grouping,
+      DYMO label, public JSON API). Legacy migration script now imports
+      every comma-separated `genre_id`, not just the first, and maps
+      `hints` → `contents` for VA products. Also fixed, found during this
+      task's own manual verification: all four admin reference-list pages
+      were crashing at runtime from an unrelated pre-existing bug (a
+      constant/function exported from a `"use client"` module and imported
+      by a Server Component) — `docs/features/product-genre-many-to-many.md`
+
 ### Legacy data migration (2026-08-21)
 - [x] Migration script written and dry-run verified against the real dump
       (`/Users/josvanotterloo/Downloads/_Antenne_Database_.sql`) —
@@ -202,7 +215,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 944 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 966 tests as of the
+Product ↔ Genre many-to-many change, 2026-08-21 (+22 net: `lib/resolve-genres.ts`'s
+own suite, plus updated fixtures across every consumer touched — no new
+behavior tests beyond `resolve-genres` and the multi-genre `product-input`/
+`catalog` cases, since most of the diff is a shape change to already-tested
+behavior). 944 tests as of the
 legacy data migration script, 2026-08-21 (+12 for `lib/mysql-dump-parser.ts`
 — the pure tuple-extraction module; the migration script itself has none,
 per that task's own explicit instruction, verified instead via `--dry-run`
