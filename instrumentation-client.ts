@@ -8,3 +8,4 @@ import { sentryInitOptions } from "@/lib/sentry-init-options";
 // not build-once/deploy-many with the DSN injected at container start.
 const options = sentryInitOptions(process.env.NEXT_PUBLIC_SENTRY_DSN);
 if (options) Sentry.init(options);
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
