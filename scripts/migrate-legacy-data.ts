@@ -5,9 +5,11 @@
 //
 // See docs/features/legacy-migration.md for expected row counts,
 // verification steps, and every deviation from a literal 1:1 field mapping
-// (multi-genre products, blank stock_txn.txn_type, the blog.picture ->
-// blog_img join, etc.) — the legacy dump doesn't match the original task
-// spec in several places; that doc explains each correction.
+// (blank stock_txn.txn_type, the blog.picture -> blog_img join, etc.) — the
+// legacy dump doesn't match the original task spec in several places; that
+// doc explains each correction. A product's comma-separated `genre_id`
+// (e.g. '17,57') produces one ProductGenre row per resolvable id, not just
+// the first.
 //
 // Idempotent for reference data (Supplier/Genre/ProductType/Label/Artist,
 // matched by name — a legacy row whose name already exists in the DB
@@ -15,10 +17,10 @@
 // for Product (matched by title+primaryArtistName+labelId+catalogNumber,
 // an extension of the heuristic prisma/seed.ts already uses — see
 // productDedupKey below — not a true unique key).
-// ProductArtist re-runs are protected by `skipDuplicates`. StockTransaction
-// has no natural dedup key at all — running this script twice against a DB
-// that already has migrated data will duplicate stock history. This is a
-// one-shot import, not a repeatable sync.
+// ProductArtist/ProductGenre re-runs are protected by `skipDuplicates`.
+// StockTransaction has no natural dedup key at all — running this script
+// twice against a DB that already has migrated data will duplicate stock
+// history. This is a one-shot import, not a repeatable sync.
 import { readFileSync } from "node:fs";
 
 import { PrismaClient } from "@prisma/client";
@@ -32,6 +34,12 @@ const BATCH_SIZE = 500;
 // declared DEFAULT '1900-01-01' and lastchange's DEFAULT 19001231) — not a
 // real date, so it's treated as "no value" rather than parsed literally.
 const LEGACY_UNSET_DATE = 19001231;
+// The legacy artist row used as the VA placeholder (id 6) — uppercased like
+// every migrated artist name. Distinct from lib/resolve-artists.ts's
+// VARIOUS_ARTISTS_NAME ("Various Artists", title case), the *live app's*
+// canonical entity — the two are deliberately never conflated (see vaArtist
+// below).
+const LEGACY_VA_ARTIST_NAME = "VARIOUS ARTISTS";
 
 interface SkipEntry {
   table: string;
@@ -246,6 +254,7 @@ interface ProductToCreate {
   legacyId: number;
   key: string;
   artistLinkIds: string[];
+  genreLinkIds: string[];
   data: {
     title: string;
     catalogNumber: string | null;
@@ -258,7 +267,6 @@ interface ProductToCreate {
     createdAt: Date;
     updatedAt: Date;
     labelId: string;
-    genreId: string;
     productTypeId: string;
     supplierId: string | null;
     primaryArtistName: string;
@@ -270,9 +278,9 @@ interface ProductToCreate {
 interface ProductImportResult {
   productMap: Map<number, string>;
   linksByLegacyId: Map<number, string[]>;
+  genreLinksByLegacyId: Map<number, string[]>;
   created: number;
   matchedExisting: number;
-  multiGenreTruncated: number;
 }
 
 async function importProducts(
@@ -306,10 +314,10 @@ async function importProducts(
 
   const productMap = new Map<number, string>();
   const linksByLegacyId = new Map<number, string[]>();
+  const genreLinksByLegacyId = new Map<number, string[]>();
   const toCreate: ProductToCreate[] = [];
   const seenKeysThisRun = new Set<string>();
   let matchedExisting = 0;
-  let multiGenreTruncated = 0;
 
   for (const row of rows) {
     const legacyId = num(row.id);
@@ -326,14 +334,20 @@ async function importProducts(
       continue;
     }
 
-    const genreIds = str(row.genre_id)
+    // Every genre id in the comma list gets its own ProductGenre row (not
+    // just the first) — resolve-then-reindex, same pattern as artist links
+    // below: a legacy id that no longer exists in the Genre map is dropped,
+    // not treated as a reason to fail the whole list.
+    const genreLegacyIds = str(row.genre_id)
       .split(",")
       .map((s) => s.trim())
-      .filter(Boolean);
-    if (genreIds.length > 1) multiGenreTruncated++;
-    const genreId = maps.genre.get(Number(genreIds[0]));
-    if (!genreId) {
-      skips.push({ table: "product", legacyId, reason: `unresolved genre ${genreIds[0]}` });
+      .filter(Boolean)
+      .map(Number);
+    const resolvedGenreIds = genreLegacyIds
+      .map((gid) => maps.genre.get(gid))
+      .filter((id): id is string => Boolean(id));
+    if (resolvedGenreIds.length === 0) {
+      skips.push({ table: "product", legacyId, reason: `unresolved genre ${genreLegacyIds.join(",")}` });
       continue;
     }
 
@@ -348,7 +362,15 @@ async function importProducts(
     const supplierId = supplierLegacyId ? (maps.supplier.get(supplierLegacyId) ?? null) : null;
 
     const contentsForProduct = contentsByProduct.get(legacyId) ?? [];
-    const isVariousArtists = contentsForProduct.length >= 2;
+    // Broader than "contents-row count >= 2": the legacy system's own VA
+    // flag (product.artist_id resolving to the artist literally named
+    // "VARIOUS ARTISTS") also counts, catching VA products whose `contents`
+    // table backing is thin (0 or 1 rows) that the row-count check alone
+    // would miss and miscategorize as a normal single-artist product named
+    // "VARIOUS ARTISTS".
+    const legacyArtistIsVAPlaceholder =
+      maps.artistName.get(num(row.artist_id)) === LEGACY_VA_ARTIST_NAME;
+    const isVariousArtists = legacyArtistIsVAPlaceholder || contentsForProduct.length >= 2;
 
     let resolvedLinks: { artistId: string; name: string }[];
     let primaryArtistName: string;
@@ -360,10 +382,20 @@ async function importProducts(
       // matching what the live admin UI produces for a VA save.
       resolvedLinks = [{ artistId: vaArtist.id, name: vaArtist.name }];
       primaryArtistName = vaArtist.name;
-      const names = contentsForProduct
-        .map((c) => maps.artistName.get(c.artistId))
-        .filter((n): n is string => Boolean(n));
-      contentsText = names.length > 0 ? names.join(", ") : null;
+      // `hints` is already human-formatted free text (e.g. "KID606, THE
+      // BUG, WAYNE LONESOME") from the legacy system's older, manual way of
+      // recording a VA tracklist — preferred when present. Falls back to
+      // the structured `contents` table's per-track names for products
+      // where hints happens to be blank but contents rows exist.
+      const hints = str(row.hints).trim();
+      if (hints) {
+        contentsText = hints;
+      } else {
+        const names = contentsForProduct
+          .map((c) => maps.artistName.get(c.artistId))
+          .filter((n): n is string => Boolean(n));
+        contentsText = names.length > 0 ? names.join(", ") : null;
+      }
     } else {
       const candidateArtistLegacyIds =
         contentsForProduct.length > 0 ? contentsForProduct.map((c) => c.artistId) : [num(row.artist_id)];
@@ -398,6 +430,7 @@ async function importProducts(
     if (existingId) {
       productMap.set(legacyId, existingId);
       linksByLegacyId.set(legacyId, resolvedLinks.map((l) => l.artistId));
+      genreLinksByLegacyId.set(legacyId, resolvedGenreIds);
       matchedExisting++;
       continue;
     }
@@ -411,6 +444,7 @@ async function importProducts(
       legacyId,
       key,
       artistLinkIds: resolvedLinks.map((l) => l.artistId),
+      genreLinkIds: resolvedGenreIds,
       data: {
         title,
         catalogNumber,
@@ -423,7 +457,6 @@ async function importProducts(
         createdAt,
         updatedAt,
         labelId,
-        genreId,
         productTypeId,
         supplierId,
         primaryArtistName,
@@ -449,15 +482,23 @@ async function importProducts(
       }
       productMap.set(c.legacyId, id);
       linksByLegacyId.set(c.legacyId, c.artistLinkIds);
+      genreLinksByLegacyId.set(c.legacyId, c.genreLinkIds);
     }
   } else if (dryRun) {
     for (const c of toCreate) {
       productMap.set(c.legacyId, `dry-run:product:${c.legacyId}`);
       linksByLegacyId.set(c.legacyId, c.artistLinkIds);
+      genreLinksByLegacyId.set(c.legacyId, c.genreLinkIds);
     }
   }
 
-  return { productMap, linksByLegacyId, created: toCreate.length, matchedExisting, multiGenreTruncated };
+  return {
+    productMap,
+    linksByLegacyId,
+    genreLinksByLegacyId,
+    created: toCreate.length,
+    matchedExisting,
+  };
 }
 
 async function importProductArtists(
@@ -475,6 +516,26 @@ async function importProductArtists(
   if (!dryRun && data.length > 0) {
     await batched(data, BATCH_SIZE, (chunk) =>
       prisma.productArtist.createMany({ data: chunk, skipDuplicates: true }),
+    );
+  }
+  return data.length;
+}
+
+async function importProductGenres(
+  linksByLegacyId: Map<number, string[]>,
+  productMap: Map<number, string>,
+  dryRun: boolean,
+): Promise<number> {
+  const data: { productId: string; genreId: string; position: number }[] = [];
+  for (const [legacyId, genreIds] of linksByLegacyId) {
+    const productId = productMap.get(legacyId);
+    if (!productId) continue;
+    genreIds.forEach((genreId, position) => data.push({ productId, genreId, position }));
+  }
+  console.log(`Importing product-genre links... ${data.length} rows`);
+  if (!dryRun && data.length > 0) {
+    await batched(data, BATCH_SIZE, (chunk) =>
+      prisma.productGenre.createMany({ data: chunk, skipDuplicates: true }),
     );
   }
   return data.length;
@@ -723,6 +784,11 @@ async function main() {
 
   const products = await importProducts(sql, maps, dryRun, skips);
   const productArtistCount = await importProductArtists(products.linksByLegacyId, products.productMap, dryRun);
+  const productGenreCount = await importProductGenres(
+    products.genreLinksByLegacyId,
+    products.productMap,
+    dryRun,
+  );
   const stockTxnCount = await importStockTransactions(sql, products.productMap, dryRun, skips);
   const postCount = await importPosts(sql, dryRun, skips);
 
@@ -731,18 +797,12 @@ async function main() {
     `Imported: ${supplier.created} suppliers, ${genre.created} genres, ${productType.created} product types, ` +
       `${label.created} labels, ${artist.created} artists, ${products.created} products ` +
       `(${products.matchedExisting} matched existing), ${productArtistCount} product-artist links, ` +
-      `${stockTxnCount} stock transactions, ${postCount} posts.`,
+      `${productGenreCount} product-genre links, ${stockTxnCount} stock transactions, ${postCount} posts.`,
   );
   console.log(
     `Merged duplicate names: ${supplier.merged} suppliers, ${genre.merged} genres, ` +
       `${productType.merged} product types, ${label.merged} labels, ${artist.merged} artists.`,
   );
-  if (products.multiGenreTruncated > 0) {
-    console.log(
-      `${products.multiGenreTruncated} products had more than one genre_id in the legacy dump — ` +
-        `only the first was kept (see docs/features/legacy-migration.md).`,
-    );
-  }
   logSkips(skips);
 
   const seconds = ((Date.now() - start) / 1000).toFixed(1);

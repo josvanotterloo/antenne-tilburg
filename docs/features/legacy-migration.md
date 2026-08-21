@@ -48,10 +48,12 @@ Against an empty target database, a real run should report roughly:
 labels (13 merged duplicate names, 7 blank names, 5 seed overlap), 38,761
 artists (4 merged duplicate names, 1 blank name), 46,617 products (75
 skipped — see below), 46,617 ProductArtist links (one per product — VA
-products link to a single shared entity, see below), 44,595 stock
-transactions (58 skipped), 959 posts (3 blank-title skipped). Run the dry
-run against your actual target DB for exact numbers — pre-existing seeded/admin data
-changes the "created" counts without changing what's in the dump.
+products link to a single shared entity, see below), 56,816 ProductGenre
+links (more than one per product wherever `genre_id` held a comma list —
+see below), 44,595 stock transactions (58 skipped), 959 posts (3
+blank-title skipped). Run the dry run against your actual target DB for
+exact numbers — pre-existing seeded/admin data changes the "created"
+counts without changing what's in the dump.
 
 ## Corrections to the original task spec (verified against the real dump)
 
@@ -69,10 +71,12 @@ code, not by trusting the spec:
   dump is `'Y'`. Mapping: `'Y'` or `'1'` → `PUBLISHED`, anything else →
   `DRAFT`.
 - **`product.genre_id` is a `varchar` that can hold a comma list** (e.g.
-  `'17,57'`) — 8,453 of 46,692 products (18%) have more than one. Per
-  product-owner decision: the first id is kept, the rest dropped (the new
-  schema has one required `genreId`, not many). Flagged as a simplification
-  that may be revisited.
+  `'17,57'`) — 8,453 of 46,692 products (18%) have more than one.
+  `Product.genreId` was originally a single required FK, so the first-run
+  version of this script kept only the first id and dropped the rest; the
+  schema was later changed to a `ProductGenre` many-to-many join (see
+  `docs/features/product-genre-many-to-many.md`), so the script now creates
+  one `ProductGenre` row per resolvable id, in list order.
 - **`stock_txn.txn_type` has a third value: `''`** (blank), on roughly a
   third of rows — not just `IN`/`OUT`. Per product-owner decision: blank →
   `OUT` (same shape as surrounding OUT rows — qty 1, realistic sale
@@ -91,6 +95,21 @@ code, not by trusting the spec:
   auto-increment surrogate key; sorting by `id` ascending within each
   `prod_id` group reconstructs the original insertion order used for
   `ProductArtist.position`.
+- **`product.hints` independently carries the same kind of free-text VA
+  tracklist the `contents` join table does** (e.g. product id 33's `hints`
+  — `"SI BEGG, CORRECTIONAL FASCILITIES, RYO CO, ..."` — and its 6
+  `contents` rows describe the same release) — apparently an older, manual
+  way of recording the same thing before the structured `contents` table
+  existed. `Product.contents` is populated from `hints` when non-blank
+  (already human-formatted, and the task's later instruction named it
+  explicitly), falling back to the joined `contents`-table artist names
+  otherwise.
+- **VA detection was originally `contents`-row-count-only** (≥2 rows).
+  Broadened to also include the legacy system's own VA flag —
+  `product.artist_id` resolving to the artist literally named
+  `"VARIOUS ARTISTS"` — since that flag can be set with thin or no
+  `contents` backing (0–1 rows), which the row-count check alone would
+  miscategorize as a normal single-artist product named "VARIOUS ARTISTS".
 - **`product.description` wasn't mentioned in the original mapping** (not
   in the "map" list or the "drop" list) — included anyway since it's an
   obvious 1:1 field the omission looks accidental, and dropping real
@@ -172,9 +191,11 @@ code, not by trusting the spec:
 
 ## What was dropped, and why
 
-- `barcode`, `subtitle`, `stk_home`, `ownrelease`, `hints`, `genre_id_old`,
+- `barcode`, `subtitle`, `stk_home`, `ownrelease`, `genre_id_old`,
   `instockdate_old` — per the original spec; no equivalent field in the new
-  schema, or superseded by another column that is migrated.
+  schema, or superseded by another column that is migrated. `hints` was
+  originally on this list too but is now used — see the VA-detection note
+  above.
 - `maint_users` — the new `User` table has its own seed (real admin
   passwords, not a legacy carryover).
 - `navigation` — hardcoded in the new site.
