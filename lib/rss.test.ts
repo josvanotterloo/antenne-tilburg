@@ -10,7 +10,7 @@ const PRODUCT: FeedProduct = {
   artistDisplay: "Vril",
   title: "Torus",
   label: { name: "Zulema Records" },
-  genre: { name: "Techno" },
+  genreDisplay: "Techno",
   productType: { name: "LP" },
 };
 

@@ -28,7 +28,11 @@ export async function GET(req: Request) {
 
   const where = {
     ...buildCatalogWhere({ onlyInStock: true, condition }),
-    ...(genre && { genre: { is: { name: { equals: genre, mode: "insensitive" as const } } } }),
+    ...(genre && {
+      productGenres: {
+        some: { genre: { name: { equals: genre, mode: "insensitive" as const } } },
+      },
+    }),
   };
 
   try {
@@ -56,7 +60,11 @@ export async function GET(req: Request) {
           title: p.title,
           label: p.label.name,
           catalogNumber: p.catalogNumber,
-          genre: p.genre.name,
+          // Deliberate interface change: ordered genres, not a single string
+          // — a release can belong to more than one.
+          genres: [...p.productGenres]
+            .sort((a, b) => a.position - b.position)
+            .map((pg) => pg.genre.name),
           productType: p.productType.name,
           condition: p.condition,
           inStock: p.inStock,

@@ -14,7 +14,9 @@ const PRODUCT = {
   inStock: true,
   description: "Hypnotic dub-techno LP.",
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { id: "t1", name: "LP" },
 };
 
@@ -53,6 +55,17 @@ describe("productJsonLd", () => {
   it("falls back to a composed description when the product has none", () => {
     const ld = productJsonLd({ ...PRODUCT, description: null } as never);
     expect(ld.description).toBe("Vril — Torus (LP) on Zulema Records.");
+  });
+
+  it("joins multiple genres into category", () => {
+    const ld = productJsonLd({
+      ...PRODUCT,
+      productGenres: [
+        { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+        { position: 1, genreId: "g2", genre: { id: "g2", name: "House" } },
+      ],
+    } as never);
+    expect(ld.category).toBe("Techno · House");
   });
 });
 

@@ -26,12 +26,12 @@ interface ArrivalRow {
   // full joined display string, which can have multiple artists per row.
   primaryArtistName: string;
   productArtists: { position: number; artist: { name: string } }[];
+  productGenres: { position: number; genre: { name: string } }[];
   catalogNumber: string | null;
   quantity: number;
   createdAt: Date | string;
   updatedAt: Date | string;
   label: { name: string };
-  genre: { name: string };
 }
 
 export async function getNewArrivals(range: {
@@ -40,14 +40,22 @@ export async function getNewArrivals(range: {
 }): Promise<ArrivalsGroup[]> {
   const rows = await db.product.findMany({
     where: { inStock: true, createdAt: { gte: range.start, lt: range.end } },
-    orderBy: [{ genre: { name: "asc" } }, { primaryArtistName: "asc" }],
+    // Genre grouping now happens in groupArrivalsByGenre itself (a to-many
+    // relation can't be an orderBy key) — this just pre-sorts by artist.
+    orderBy: [{ primaryArtistName: "asc" }],
     include: {
       label: true,
-      genre: true,
       productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+      productGenres: { include: { genre: true }, orderBy: { position: "asc" } },
     },
   });
   return groupArrivalsByGenre(rows);
+}
+
+// The primary (position 0) genre's name — the newsletter groups by one
+// genre per product, matching the physical print-label convention.
+function primaryGenreName(row: ArrivalRow): string {
+  return [...row.productGenres].sort((a, b) => a.position - b.position)[0]?.genre.name ?? "";
 }
 
 // Pure: rows → genre groups (genre asc, artist A-Z within), restocks flagged.
@@ -59,14 +67,15 @@ export function groupArrivalsByGenre(rows: ArrivalRow[]): ArrivalsGroup[] {
   );
   const byGenre = new Map<string, ArrivalItem[]>();
   for (const row of sortedRows) {
-    const items = byGenre.get(row.genre.name) ?? [];
+    const genreName = primaryGenreName(row);
+    const items = byGenre.get(genreName) ?? [];
     items.push({
       artist: joinArtistNames(row.productArtists),
       label: row.label.name,
       catalogNumber: row.catalogNumber,
       restock: isRestock(row),
     });
-    byGenre.set(row.genre.name, items);
+    byGenre.set(genreName, items);
   }
   return [...byGenre.entries()]
     .sort(([a], [b]) => a.localeCompare(b))

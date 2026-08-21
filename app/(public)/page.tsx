@@ -5,6 +5,7 @@ import {
   getLatestProducts,
   isJustIn,
   joinArtistNames,
+  joinGenreNames,
   type CatalogProduct,
 } from "@/lib/catalog";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
@@ -190,7 +191,7 @@ function JustInRow({ product }: { product: CatalogProduct }) {
           </span>
         )}
         <span className="block truncate font-mono text-xs text-ink-muted">
-          {product.label.name} · {product.genre.name}
+          {product.label.name} · {joinGenreNames(product.productGenres)}
         </span>
       </span>
     </Link>

@@ -1,7 +1,12 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { catalogPageNumbers, getCatalogPage, joinArtistNames } from "@/lib/catalog";
+import {
+  catalogPageNumbers,
+  getCatalogPage,
+  joinArtistNames,
+  joinGenreNames,
+} from "@/lib/catalog";
 import { fullDate, relativeDate } from "@/lib/relative-date";
 import { missingLabelFields } from "@/lib/dymo-label";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
@@ -107,7 +112,7 @@ export default async function CatalogPage({
                 <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-admin-ink-muted">
                   <span>{product.label.name}</span>
                   <span aria-hidden>·</span>
-                  <span>{product.genre.name}</span>
+                  <span>{joinGenreNames(product.productGenres)}</span>
                   <span
                     className={`rounded px-1.5 py-0.5 ${
                       product.condition === "NEW"

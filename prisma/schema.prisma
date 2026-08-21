@@ -56,11 +56,11 @@ model Label {
 }
 
 model Genre {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  products  Product[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id             String         @id @default(cuid())
+  name           String         @unique
+  productGenres  ProductGenre[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model ProductType {
@@ -103,6 +103,22 @@ model ProductArtist {
   @@index([artistId])
 }
 
+model ProductGenre {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  genreId   String
+  genre     Genre   @relation(fields: [genreId], references: [id])
+  // 0 = primary genre. Drives dymo-label/newsletter "primary genre" logic
+  // the same way ProductArtist.position drives primaryArtistName.
+  position  Int     @default(0)
+
+  @@unique([productId, genreId])
+  @@unique([productId, position])
+  @@index([productId])
+  @@index([genreId])
+}
+
 // Vinyl / tape records. `price` is present now so online purchasing can be
 // added later without a schema migration. "Just In" is derived from createdAt
 // (< 30 days) — no manual flag.
@@ -110,6 +126,7 @@ model Product {
   id                String          @id @default(cuid())
   title             String
   productArtists    ProductArtist[]
+  productGenres     ProductGenre[]
   transactions      StockTransaction[]
   supplyOrderLines  SupplyOrderLine[]
   // Denormalized copy of the position-0 artist's name — exists purely so
@@ -124,8 +141,6 @@ model Product {
   supplier          Supplier?       @relation(fields: [supplierId], references: [id])
   productTypeId     String
   productType       ProductType     @relation(fields: [productTypeId], references: [id])
-  genreId           String
-  genre             Genre           @relation(fields: [genreId], references: [id])
   condition         Condition
   price             Decimal         @db.Decimal(10, 2)
   description       String?
@@ -155,7 +170,6 @@ model Product {
   @@index([labelId])
   @@index([supplierId])
   @@index([productTypeId])
-  @@index([genreId])
   @@index([condition])
   @@index([inStock])
   @@index([createdAt])

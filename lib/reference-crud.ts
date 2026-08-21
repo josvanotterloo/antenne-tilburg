@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 
 // Labels, Genres and Product Types are managed lists with identical shape and
-// behaviour ({ id, name } + a products relation guarding deletes). These
-// factories build the route handlers so the three resources stay consistent
-// instead of triplicating CRUD logic.
+// behaviour ({ id, name } + a relation guarding deletes — Labels/Product
+// Types still count a direct `products` relation, Genres count `productGenres`
+// via the ProductGenre join). These factories build the route handlers so
+// the three resources stay consistent instead of triplicating CRUD logic.
 
 export interface ReferenceRecord {
   id: string;
@@ -25,8 +26,8 @@ export interface ReferenceDelegate {
   create(args: { data: { name: string } }): Promise<ReferenceRecord>;
   findUnique(args: {
     where: { id: string };
-    include: { _count: { select: { products: true } } };
-  }): Promise<(ReferenceRecord & { _count: { products: number } }) | null>;
+    include: { _count: { select: Record<string, true> } };
+  }): Promise<(ReferenceRecord & { _count: Record<string, number> }) | null>;
   update(args: {
     where: { id: string };
     data: { name: string };
@@ -48,9 +49,11 @@ function isUniqueViolation(error: unknown): boolean {
 // thousands of rows.
 const SEARCH_LIMIT = 20;
 
+export type CountField = "products" | "productArtists" | "productGenres";
+
 export function collectionHandlers(
   delegate: ReferenceDelegate,
-  options: { countField?: "products" | "productArtists" } = {},
+  options: { countField?: CountField } = {},
 ) {
   const countField = options.countField ?? "products";
 
@@ -99,7 +102,11 @@ export function collectionHandlers(
   return { GET, POST };
 }
 
-export function itemHandlers(delegate: ReferenceDelegate) {
+export function itemHandlers(
+  delegate: ReferenceDelegate,
+  options: { countField?: CountField } = {},
+) {
+  const countField = options.countField ?? "products";
   async function PATCH(req: Request, ctx: RouteContext) {
     const denied = await requireAdmin();
     if (denied) return denied;
@@ -128,18 +135,16 @@ export function itemHandlers(delegate: ReferenceDelegate) {
     const { id } = await ctx.params;
     const item = await delegate.findUnique({
       where: { id },
-      include: { _count: { select: { products: true } } },
+      include: { _count: { select: { [countField]: true } } },
     });
     if (!item) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if (item._count.products > 0) {
+    const count = item._count[countField];
+    if (count > 0) {
       // Server-enforced delete guard — never trust the UI to hide the button.
       return NextResponse.json(
-        {
-          error: `In use by ${item._count.products} products`,
-          count: item._count.products,
-        },
+        { error: `In use by ${count} products`, count },
         { status: 409 },
       );
     }

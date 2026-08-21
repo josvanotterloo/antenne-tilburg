@@ -14,11 +14,13 @@ vi.mock("@/lib/db", () => {
   let seq = 0;
   const ROW_RELATIONS = {
     label: { id: "l1", name: "Zulema Records" },
-    genre: { id: "g1", name: "Techno" },
     productType: { id: "t1", name: "LP" },
   };
   const ARTISTS: Record<string, { id: string; name: string }> = {
     a1: { id: "a1", name: "Vril" },
+  };
+  const GENRES: Record<string, { id: string; name: string }> = {
+    g1: { id: "g1", name: "Techno" },
   };
   function resolveProductArtists(data: Record<string, unknown>) {
     const pa = data.productArtists as
@@ -30,12 +32,28 @@ vi.mock("@/lib/db", () => {
       artist: ARTISTS[artistId],
     }));
   }
+  function resolveProductGenres(data: Record<string, unknown>) {
+    const pg = data.productGenres as
+      | { create?: { genreId: string; position: number }[] }
+      | undefined;
+    return (pg?.create ?? []).map(({ genreId, position }) => ({
+      position,
+      genreId,
+      genre: GENRES[genreId],
+    }));
+  }
   return {
     db: {
       artist: {
         findMany: vi.fn(
           async ({ where }: { where: { id: { in: string[] } } }) =>
             where.id.in.map((id) => ARTISTS[id]).filter(Boolean),
+        ),
+      },
+      genre: {
+        findMany: vi.fn(
+          async ({ where }: { where: { id: { in: string[] } } }) =>
+            where.id.in.map((id) => GENRES[id]).filter(Boolean),
         ),
       },
       product: {
@@ -48,6 +66,7 @@ vi.mock("@/lib/db", () => {
             ...data,
             ...ROW_RELATIONS,
             productArtists: resolveProductArtists(data),
+            productGenres: resolveProductGenres(data),
           };
           store.set(row.id, row);
           return row;
@@ -108,7 +127,7 @@ const VALID_PRODUCT = {
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
-  genreId: "g1",
+  genreIds: ["g1"],
   productTypeId: "t1",
   condition: "NEW",
   price: "24.99",

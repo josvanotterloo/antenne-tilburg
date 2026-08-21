@@ -60,16 +60,20 @@ describe("buildCatalogWhere", () => {
   it("maps scalar filters", () => {
     expect(
       buildCatalogWhere({
-        genreId: "g1",
         labelId: "l1",
         productTypeId: "t1",
         condition: "NEW",
       }),
     ).toEqual({
-      genreId: "g1",
       labelId: "l1",
       productTypeId: "t1",
       condition: "NEW",
+    });
+  });
+
+  it("filters by genre via the ProductGenre join", () => {
+    expect(buildCatalogWhere({ genreId: "g1" })).toEqual({
+      productGenres: { some: { genreId: "g1" } },
     });
   });
 
@@ -101,7 +105,7 @@ describe("buildCatalogWhere", () => {
       ids: ["x"],
       now,
     });
-    expect(where.genreId).toBe("g1");
+    expect(where.productGenres).toEqual({ some: { genreId: "g1" } });
     expect(where.condition).toBe("SECONDHAND");
     expect(where.inStock).toBe(true);
     expect(where.id).toEqual({ in: ["x"] });
@@ -220,6 +224,20 @@ describe("searchProductIds", () => {
     expect(arg.text).toMatch(/l\.name % \$/); // trigram similarity on Label.name
     expect(arg.text.toUpperCase()).toMatch(/L\.NAME ILIKE/); // partial/substring on Label.name
     expect(arg.values).toContain("Tresor");
+    expect(ids).toEqual(["p1"]);
+  });
+
+  it("matches products by genre name via an EXISTS join on ProductGenre", async () => {
+    vi.mocked(db.$queryRaw).mockResolvedValue([{ id: "p1" }] as never);
+    const ids = await searchProductIds("Techno");
+    const arg = vi.mocked(db.$queryRaw).mock.calls[0][0] as unknown as {
+      text: string;
+      values: unknown[];
+    };
+    expect(arg.text).toContain('"ProductGenre"'); // genre match via ProductGenre join
+    expect(arg.text).toMatch(/g\.name % \$/); // trigram similarity on Genre.name
+    expect(arg.text.toUpperCase()).toMatch(/G\.NAME ILIKE/); // partial/substring on Genre.name
+    expect(arg.values).toContain("Techno");
     expect(ids).toEqual(["p1"]);
   });
 

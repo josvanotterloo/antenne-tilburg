@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(db.genre.findMany).mockResolvedValue([
-    { id: "g1", name: "Techno", _count: { products: 3 } },
+    { id: "g1", name: "Techno", _count: { productGenres: 3 } },
   ] as never);
   vi.mocked(db.genre.count).mockResolvedValue(1 as never);
 });

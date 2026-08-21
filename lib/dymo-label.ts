@@ -1,5 +1,13 @@
 import { type CatalogProduct, joinArtistNames } from "@/lib/catalog";
 
+// Physical label space is tight — only the primary (position 0) genre is
+// printed, even when a product has more than one.
+function primaryGenreName(product: CatalogProduct): string {
+  return (
+    [...product.productGenres].sort((a, b) => a.position - b.position)[0]?.genre.name ?? ""
+  );
+}
+
 // DYMO Connect Framework XML for the 89x36mm label (part 99012), built as
 // plain string templates — no DYMO SDK dependency. Visual fidelity is
 // checked by hand: DYMO_MODE=preview serves this XML for the admin to
@@ -95,7 +103,7 @@ export function generateLabelXml(product: CatalogProduct): string {
     }),
     textObject({
       name: "GENRE", x: 80, y: 1640, width: 1600, height: 340,
-      align: "Left", fontSize: 9, bold: false, text: product.genre.name, shrinkToFit: true,
+      align: "Left", fontSize: 9, bold: false, text: primaryGenreName(product), shrinkToFit: true,
     }),
     textObject({
       name: "BRAND", x: 1680, y: 1640, width: 1680, height: 340,
@@ -129,7 +137,7 @@ const REQUIRED_FIELDS: RequiredField[] = [
   { key: "Title", present: (p) => p.title.trim().length > 0 },
   { key: "Price", present: (p) => p.price != null },
   { key: "Label", present: (p) => Boolean(p.label) },
-  { key: "Genre", present: (p) => Boolean(p.genre) },
+  { key: "Genre", present: (p) => p.productGenres.length > 0 },
   { key: "Product Type", present: (p) => Boolean(p.productType) },
 ];
 

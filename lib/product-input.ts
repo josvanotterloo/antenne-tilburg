@@ -6,7 +6,7 @@ export interface ProductInput {
   title: string;
   catalogNumber: string | null;
   labelId: string;
-  genreId: string;
+  genreIds: string[];
   productTypeId: string;
   supplierId: string | null;
   condition: "NEW" | "SECONDHAND";
@@ -27,8 +27,9 @@ export type ParseResult =
 
 // Non-empty array of non-blank string ids, deduped preserving first-seen
 // order (a client-side bug producing a repeated id isn't malicious input,
-// just redundant — silently normalize rather than reject).
-function parseArtistIds(v: unknown): string[] | null {
+// just redundant — silently normalize rather than reject). Shared by
+// artistIds and genreIds parsing.
+function parseIdArray(v: unknown): string[] | null {
   if (!Array.isArray(v) || v.length === 0) return null;
   const ids: string[] = [];
   for (const item of v) {
@@ -52,7 +53,7 @@ export function parseProductInput(body: unknown): ParseResult {
     // resolveVariousArtists.
     artistIds = [];
   } else {
-    const parsed = parseArtistIds(b.artistIds);
+    const parsed = parseIdArray(b.artistIds);
     if (!parsed) {
       return { ok: false, error: "At least one artist is required" };
     }
@@ -65,8 +66,8 @@ export function parseProductInput(body: unknown): ParseResult {
   const labelId = str(b.labelId);
   if (!labelId) return { ok: false, error: "Label is required" };
 
-  const genreId = str(b.genreId);
-  if (!genreId) return { ok: false, error: "Genre is required" };
+  const genreIds = parseIdArray(b.genreIds);
+  if (!genreIds) return { ok: false, error: "At least one genre is required" };
 
   const productTypeId = str(b.productTypeId);
   if (!productTypeId) return { ok: false, error: "Product type is required" };
@@ -98,7 +99,7 @@ export function parseProductInput(body: unknown): ParseResult {
       title,
       catalogNumber: str(b.catalogNumber) || null,
       labelId,
-      genreId,
+      genreIds,
       productTypeId,
       supplierId: str(b.supplierId) || null,
       condition: b.condition,
@@ -112,15 +113,14 @@ export function parseProductInput(body: unknown): ParseResult {
 }
 
 // Maps validated input to the Prisma create/update `data` shape (single
-// relations by connect; artists as an ordered ProductArtist nested write).
-// Shared by POST and PATCH so both stay in sync. `primaryArtistName` is
-// resolved by the route handler (it needs a `db` lookup on artistIds[0],
+// relations by connect; artists and genres as ordered nested joins-table
+// writes). Shared by POST and PATCH so both stay in sync. `primaryArtistName`
+// is resolved by the route handler (it needs a `db` lookup on artistIds[0],
 // which by this point already exists — the admin form's Quick Add creates
 // new artists immediately, before the product form ever submits) so this
 // function stays pure. `mode` picks the create-vs-update nested-write shape:
 // `deleteMany` is only valid inside an update (full-set replacement each
-// save, matching how label/genre single-FK replacement already behaves) —
-// Prisma's create-nested-write type doesn't have it at all.
+// save) — Prisma's create-nested-write type doesn't have it at all.
 export function toProductData(
   data: ProductInput,
   { primaryArtistName, mode }: { primaryArtistName: string; mode: "create" | "update" },
@@ -135,7 +135,6 @@ export function toProductData(
     isVariousArtists: data.isVariousArtists,
     contents: data.contents,
     label: { connect: { id: data.labelId } },
-    genre: { connect: { id: data.genreId } },
     productType: { connect: { id: data.productTypeId } },
     ...(data.supplierId
       ? { supplier: { connect: { id: data.supplierId } } }
@@ -146,6 +145,10 @@ export function toProductData(
     productArtists: {
       ...(mode === "update" ? { deleteMany: {} } : {}),
       create: data.artistIds.map((artistId, position) => ({ artistId, position })),
+    },
+    productGenres: {
+      ...(mode === "update" ? { deleteMany: {} } : {}),
+      create: data.genreIds.map((genreId, position) => ({ genreId, position })),
     },
   };
 }

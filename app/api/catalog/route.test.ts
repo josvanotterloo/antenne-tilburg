@@ -23,7 +23,9 @@ const PRODUCT = {
   createdAt: new Date("2026-07-01T10:00:00Z"),
   updatedAt: new Date("2026-07-01T10:00:00Z"),
   label: { id: "l1", name: "Dirty Carpets" },
-  genre: { id: "g1", name: "Ambient" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Ambient" } },
+  ],
   productType: { id: "t1", name: "LP" },
 };
 
@@ -54,7 +56,7 @@ describe("GET /api/catalog", () => {
       title: "Substrata",
       label: "Dirty Carpets",
       catalogNumber: "DC001",
-      genre: "Ambient",
+      genres: ["Ambient"],
       productType: "LP",
       condition: "NEW",
       inStock: true,
@@ -77,7 +79,9 @@ describe("GET /api/catalog", () => {
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          genre: { is: { name: { equals: "Techno", mode: "insensitive" } } },
+          productGenres: {
+            some: { genre: { name: { equals: "Techno", mode: "insensitive" } } },
+          },
         }),
       }),
     );

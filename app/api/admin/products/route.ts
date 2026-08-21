@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
+import { resolveGenres } from "@/lib/resolve-genres";
 
 export async function GET() {
   const denied = await requireAdmin();
@@ -13,9 +14,9 @@ export async function GET() {
     orderBy: [{ primaryArtistName: "asc" }, { title: "asc" }],
     include: {
       label: true,
-      genre: true,
       productType: true,
       productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+      productGenres: { include: { genre: true }, orderBy: { position: "asc" } },
     },
   });
   return NextResponse.json(products);
@@ -50,10 +51,22 @@ export async function POST(req: Request) {
     );
   }
 
+  const genres = await resolveGenres(db.genre, parsed.data.genreIds);
+  if (!genres) {
+    return NextResponse.json(
+      { error: "Selected genre no longer exists" },
+      { status: 400 },
+    );
+  }
+
   try {
     const created = await db.product.create({
       data: toProductData(
-        { ...parsed.data, artistIds: artists.map((a) => a.id) },
+        {
+          ...parsed.data,
+          artistIds: artists.map((a) => a.id),
+          genreIds: genres.map((g) => g.id),
+        },
         { primaryArtistName: artists[0].name, mode: "create" },
       ),
     });

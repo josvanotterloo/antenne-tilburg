@@ -17,7 +17,9 @@ const PRODUCT = {
   title: "Torus",
   createdAt: new Date("2026-07-01T00:00:00Z"),
   label: { name: "Zulema Records" },
-  genre: { name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { name: "LP" },
 };
 

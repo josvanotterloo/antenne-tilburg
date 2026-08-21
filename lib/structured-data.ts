@@ -1,6 +1,7 @@
 import {
   composeProductDescription,
   joinArtistNames,
+  joinGenreNames,
   type CatalogProduct,
 } from "@/lib/catalog";
 import type { OpeningHoursSpec } from "@/lib/opening-hours";
@@ -18,7 +19,7 @@ export function productJsonLd(product: CatalogProduct) {
     description: composeProductDescription(product),
     brand: { "@type": "Brand", name: product.label.name },
     ...(product.catalogNumber && { sku: product.catalogNumber }),
-    category: product.genre.name,
+    category: joinGenreNames(product.productGenres),
     offers: {
       "@type": "Offer",
       availability: product.inStock

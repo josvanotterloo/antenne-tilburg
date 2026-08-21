@@ -16,7 +16,7 @@ const PRODUCT = {
   title: "Torus",
   catalogNumber: "ZR-001",
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  genres: [{ id: "g1", name: "Techno" }],
   productType: { id: "t1", name: "LP" },
   supplier: null,
   condition: "NEW" as const,
@@ -173,7 +173,7 @@ describe("ProductForm", () => {
       artistIds: ["a1"],
       title: "Torus",
       labelId: "l1",
-      genreId: "g1",
+      genreIds: ["g1"],
       productTypeId: "t1",
       condition: "NEW",
       price: "24.99",
@@ -208,6 +208,53 @@ describe("ProductForm", () => {
       (fetchMock.mock.calls[0][1] as RequestInit).body as string,
     );
     expect(body.artistIds).toEqual(["a2"]);
+  });
+
+  it("renders a genre multi-select, with existing genres shown as removable chips", () => {
+    render(
+      <ProductForm
+        product={{
+          ...PRODUCT,
+          genres: [
+            { id: "g1", name: "Techno" },
+            { id: "g2", name: "House" },
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("combobox", { name: /genres/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Techno" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove House" })).toBeInTheDocument();
+  });
+
+  it("adding a second genre and submitting sends both genreIds, in pick order", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/genres")) {
+        return new Response(JSON.stringify([{ id: "g2", name: "House" }]));
+      }
+      return new Response(JSON.stringify({ ok: true }));
+    });
+
+    render(<ProductForm product={PRODUCT} />);
+
+    await user.click(screen.getByRole("combobox", { name: /genres/i }));
+    await user.click(await screen.findByRole("option", { name: "House" }));
+    await user.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/admin/products/p1",
+        expect.objectContaining({ method: "PATCH" }),
+      ),
+    );
+    const call = fetchMock.mock.calls.find(([url]) => url === "/api/admin/products/p1")!;
+    const body = JSON.parse((call[1] as RequestInit).body as string);
+    expect(body.genreIds).toEqual(["g1", "g2"]);
   });
 
   it("submits supplierId: null when no supplier is picked", async () => {

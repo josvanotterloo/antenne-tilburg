@@ -25,7 +25,9 @@ const PRODUCT = {
     { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } },
   ],
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { id: "t1", name: "LP" },
 };
 

@@ -200,7 +200,9 @@ async function main() {
         description: product.description,
         label: { connect: { name: product.label } },
         productType: { connect: { name: product.productType } },
-        genre: { connect: { name: product.genre } },
+        productGenres: {
+          create: [{ position: 0, genre: { connect: { name: product.genre } } }],
+        },
         productArtists: { create: artistLinks },
       },
     });

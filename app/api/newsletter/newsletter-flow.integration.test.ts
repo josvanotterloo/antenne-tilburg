@@ -97,7 +97,7 @@ vi.mock("@/lib/db", () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             label: { name: "Zulema Records" },
-            genre: { name: "Techno" },
+            productGenres: [{ position: 0, genre: { name: "Techno" } }],
           },
         ]),
       },

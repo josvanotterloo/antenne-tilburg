@@ -1,4 +1,4 @@
-import { getLatestProducts, joinArtistNames } from "@/lib/catalog";
+import { getLatestProducts, joinArtistNames, joinGenreNames } from "@/lib/catalog";
 import { productFeed } from "@/lib/rss";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,7 @@ export async function GET() {
     products: products.map((p) => ({
       ...p,
       artistDisplay: joinArtistNames(p.productArtists),
+      genreDisplay: joinGenreNames(p.productGenres),
     })),
     pubDate: (p) => p.createdAt,
   });

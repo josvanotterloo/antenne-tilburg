@@ -25,7 +25,9 @@ const product = (over: Record<string, unknown> = {}) => ({
   updatedAt: OLD,
   quantity: 1,
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { id: "t1", name: "LP" },
   ...over,
 });

@@ -35,10 +35,11 @@ const PRODUCT = {
   createdAt: new Date(),
   updatedAt: new Date(),
   labelId: "l1",
-  genreId: "g1",
   productTypeId: "t1",
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { id: "t1", name: "LP" },
 };
 

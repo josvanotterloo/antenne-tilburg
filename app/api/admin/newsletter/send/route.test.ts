@@ -103,7 +103,7 @@ describe("POST /api/admin/newsletter/send", () => {
         createdAt: new Date("2026-07-14T10:00:00Z"),
         updatedAt: new Date("2026-07-14T10:00:00Z"),
         label: { name: "Zulema Records" },
-        genre: { name: "Techno" },
+        productGenres: [{ position: 0, genre: { name: "Techno" } }],
       },
     ] as never);
 

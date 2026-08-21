@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 
-import { isJustIn, isRestock, type CatalogProduct } from "@/lib/catalog";
+import { isJustIn, isRestock, joinGenreNames, type CatalogProduct } from "@/lib/catalog";
 
 const badgeClass =
   "ml-2 align-middle font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal";
@@ -44,7 +44,7 @@ export function ProductRow({ product }: { product: CatalogProduct }) {
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
           <span>{product.label.name}</span>
           {" · "}
-          {product.genre.name}
+          {joinGenreNames(product.productGenres)}
           {" · "}
           {product.productType.name}
         </span>

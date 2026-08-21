@@ -20,10 +20,10 @@ export default async function EditProductPage({
     where: { id },
     include: {
       label: true,
-      genre: true,
       productType: true,
       supplier: true,
       productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+      productGenres: { include: { genre: true }, orderBy: { position: "asc" } },
     },
   });
 
@@ -65,7 +65,10 @@ export default async function EditProductPage({
           title: product.title,
           catalogNumber: product.catalogNumber,
           label: { id: product.label.id, name: product.label.name },
-          genre: { id: product.genre.id, name: product.genre.name },
+          genres: product.productGenres.map((pg) => ({
+            id: pg.genre.id,
+            name: pg.genre.name,
+          })),
           productType: {
             id: product.productType.id,
             name: product.productType.name,

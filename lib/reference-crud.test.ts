@@ -206,6 +206,26 @@ describe("itemHandlers", () => {
     expect(fns.delete).not.toHaveBeenCalled();
   });
 
+  it("DELETE uses a custom countField", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findUnique.mockResolvedValue({
+      id: "1",
+      name: "Techno",
+      _count: { productGenres: 5 },
+    });
+    const { DELETE } = itemHandlers(delegate, { countField: "productGenres" });
+
+    const res = await DELETE(delReq(), ctx("1"));
+
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ count: 5 });
+    expect(fns.findUnique).toHaveBeenCalledWith({
+      where: { id: "1" },
+      include: { _count: { select: { productGenres: true } } },
+    });
+    expect(fns.delete).not.toHaveBeenCalled();
+  });
+
   it("DELETE removes the item when no products are attached", async () => {
     const { fns, delegate } = makeDelegate();
     fns.findUnique.mockResolvedValue({

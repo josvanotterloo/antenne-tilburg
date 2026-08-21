@@ -20,7 +20,9 @@ export interface ProductFormValues {
   // Selected reference options carry the name so the combobox can display it —
   // options are searched server-side, there is no preloaded list to look it up in.
   label: ComboboxOption;
-  genre: ComboboxOption;
+  // Ordered — position in this array is the sort order (see
+  // lib/catalog.ts's joinGenreNames and dymo-label.ts's primary-genre pick).
+  genres: ComboboxOption[];
   productType: ComboboxOption;
   supplier: ComboboxOption | null;
   condition: "NEW" | "SECONDHAND";
@@ -49,8 +51,8 @@ export function ProductForm({ product }: ProductFormProps) {
   const [label, setLabel] = useState<ComboboxOption | null>(
     product?.label ?? null,
   );
-  const [genre, setGenre] = useState<ComboboxOption | null>(
-    product?.genre ?? null,
+  const [genres, setGenres] = useState<ComboboxOption[]>(
+    product?.genres ?? [],
   );
   const [productType, setProductType] = useState<ComboboxOption | null>(
     product?.productType ?? null,
@@ -133,7 +135,7 @@ export function ProductForm({ product }: ProductFormProps) {
             title,
             catalogNumber,
             labelId: label?.id ?? null,
-            genreId: genre?.id ?? null,
+            genreIds: genres.map((g) => g.id),
             productTypeId: productType?.id ?? null,
             supplierId: supplier?.id ?? null,
             condition,
@@ -231,13 +233,13 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Genre" htmlFor="genre">
-        <Combobox
-          id="genre"
-          label="Genre"
+      <Field label="Genres" htmlFor="genres">
+        <MultiCombobox
+          id="genres"
+          label="Genres"
           endpoint="/api/admin/genres"
-          value={genre}
-          onChange={setGenre}
+          selected={genres}
+          onChange={setGenres}
           required
         />
       </Field>

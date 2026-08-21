@@ -14,6 +14,7 @@ vi.mock("@/lib/db", () => ({
       delete: vi.fn(),
     },
     artist: { findMany: vi.fn(), upsert: vi.fn() },
+    genre: { findMany: vi.fn() },
   },
 }));
 
@@ -34,6 +35,7 @@ const product = db.product as unknown as {
   delete: Mock;
 };
 const artist = db.artist as unknown as { findMany: Mock; upsert: Mock };
+const genre = db.genre as unknown as { findMany: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
 
 const ROW = {
@@ -49,7 +51,9 @@ const ROW = {
   quantity: 2,
   inStock: true,
   label: { id: "l1", name: "Zulema Records" },
-  genre: { id: "g1", name: "Techno" },
+  productGenres: [
+    { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+  ],
   productType: { id: "t1", name: "LP" },
 };
 
@@ -58,7 +62,7 @@ const validBody = {
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
-  genreId: "g1",
+  genreIds: ["g1"],
   productTypeId: "t1",
   condition: "NEW",
   price: "24.99",
@@ -81,6 +85,7 @@ beforeEach(() => {
   mockRequireAdmin.mockResolvedValue(null);
   artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
   artist.upsert.mockResolvedValue({ id: "va1", name: "Various Artists" });
+  genre.findMany.mockResolvedValue([{ id: "g1", name: "Techno" }]);
 });
 
 describe("GET /api/admin/products", () => {
@@ -93,8 +98,8 @@ describe("GET /api/admin/products", () => {
       expect.objectContaining({
         include: expect.objectContaining({
           label: true,
-          genre: true,
           productType: true,
+          productGenres: expect.objectContaining({ include: { genre: true } }),
         }),
       }),
     );
@@ -110,11 +115,11 @@ describe("POST /api/admin/products", () => {
       data: expect.objectContaining({
         primaryArtistName: "Vril",
         productArtists: { create: [{ artistId: "a1", position: 0 }] },
+        productGenres: { create: [{ genreId: "g1", position: 0 }] },
         title: "Torus",
         condition: "NEW",
         price: "24.99",
         label: { connect: { id: "l1" } },
-        genre: { connect: { id: "g1" } },
         productType: { connect: { id: "t1" } },
       }),
     });
@@ -136,6 +141,44 @@ describe("POST /api/admin/products", () => {
     );
     expect(res.status).toBe(400);
     expect(product.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the primary genre no longer exists", async () => {
+    genre.findMany.mockResolvedValue([]);
+    const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(400);
+    expect(product.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when a non-primary genre no longer exists (not just the primary)", async () => {
+    genre.findMany.mockResolvedValue([{ id: "g1", name: "Techno" }]);
+    const res = await POST(
+      jsonReq("POST", { ...validBody, genreIds: ["g1", "g2"] }),
+    );
+    expect(res.status).toBe(400);
+    expect(product.create).not.toHaveBeenCalled();
+  });
+
+  it("creates ordered ProductGenre links for multiple genres", async () => {
+    genre.findMany.mockResolvedValue([
+      { id: "g1", name: "Techno" },
+      { id: "g2", name: "House" },
+    ]);
+    product.create.mockResolvedValue(ROW);
+    const res = await POST(
+      jsonReq("POST", { ...validBody, genreIds: ["g1", "g2"] }),
+    );
+    expect(res.status).toBe(201);
+    expect(product.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        productGenres: {
+          create: [
+            { genreId: "g1", position: 0 },
+            { genreId: "g2", position: 1 },
+          ],
+        },
+      }),
+    });
   });
 
   it("accepts and stores a coverImage URL", async () => {
@@ -241,6 +284,10 @@ describe("PATCH /api/admin/products/[id]", () => {
           deleteMany: {},
           create: [{ artistId: "a1", position: 0 }],
         },
+        productGenres: {
+          deleteMany: {},
+          create: [{ genreId: "g1", position: 0 }],
+        },
         price: "24.99",
       }),
     });
@@ -248,6 +295,13 @@ describe("PATCH /api/admin/products/[id]", () => {
 
   it("returns 400 when the primary artist no longer exists", async () => {
     artist.findMany.mockResolvedValue([]);
+    const res = await PATCH(jsonReq("PATCH", validBody), ctx("p1"));
+    expect(res.status).toBe(400);
+    expect(product.update).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when the primary genre no longer exists", async () => {
+    genre.findMany.mockResolvedValue([]);
     const res = await PATCH(jsonReq("PATCH", validBody), ctx("p1"));
     expect(res.status).toBe(400);
     expect(product.update).not.toHaveBeenCalled();

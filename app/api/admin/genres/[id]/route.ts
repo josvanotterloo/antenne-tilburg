@@ -3,4 +3,5 @@ import { itemHandlers, type ReferenceDelegate } from "@/lib/reference-crud";
 
 export const { PATCH, DELETE } = itemHandlers(
   db.genre as unknown as ReferenceDelegate,
+  { countField: "productGenres" },
 );

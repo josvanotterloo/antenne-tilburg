@@ -40,7 +40,9 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
       expect(results.products).toHaveLength(1);
       expect(vi.mocked(db.product.findMany)).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ genreId: "techno" }),
+          where: expect.objectContaining({
+            productGenres: { some: { genreId: "techno" } },
+          }),
         }),
       );
     });

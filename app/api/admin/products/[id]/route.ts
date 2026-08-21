@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
+import { resolveGenres } from "@/lib/resolve-genres";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -16,9 +17,9 @@ export async function GET(_req: Request, ctx: RouteContext) {
     where: { id },
     include: {
       label: true,
-      genre: true,
       productType: true,
       productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+      productGenres: { include: { genre: true }, orderBy: { position: "asc" } },
     },
   });
   if (!product) {
@@ -49,11 +50,23 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     );
   }
 
+  const genres = await resolveGenres(db.genre, parsed.data.genreIds);
+  if (!genres) {
+    return NextResponse.json(
+      { error: "Selected genre no longer exists" },
+      { status: 400 },
+    );
+  }
+
   try {
     const updated = await db.product.update({
       where: { id },
       data: toProductData(
-        { ...parsed.data, artistIds: artists.map((a) => a.id) },
+        {
+          ...parsed.data,
+          artistIds: artists.map((a) => a.id),
+          genreIds: genres.map((g) => g.id),
+        },
         { primaryArtistName: artists[0].name, mode: "update" },
       ),
     });

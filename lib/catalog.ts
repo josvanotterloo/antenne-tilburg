@@ -41,7 +41,7 @@ export function buildCatalogWhere(f: CatalogFilters): Prisma.ProductWhereInput {
   if (f.artistIds?.length) {
     where.productArtists = { some: { artistId: { in: f.artistIds } } };
   }
-  if (f.genreId) where.genreId = f.genreId;
+  if (f.genreId) where.productGenres = { some: { genreId: f.genreId } };
   if (f.labelId) where.labelId = f.labelId;
   if (f.productTypeId) where.productTypeId = f.productTypeId;
   if (f.justIn) {
@@ -64,6 +64,18 @@ export function joinArtistNames(
     .sort((a, b) => a.position - b.position)
     .map((pa) => pa.artist.name)
     .join(" / ");
+}
+
+// Ordered display string for a product's genre(s), joined "Genre1 · Genre2"
+// — shared by every rendering surface (admin list, public pages, RSS,
+// structured data, print label falls back to just the first).
+export function joinGenreNames(
+  productGenres: { position: number; genre: { name: string } }[],
+): string {
+  return [...productGenres]
+    .sort((a, b) => a.position - b.position)
+    .map((pg) => pg.genre.name)
+    .join(" · ");
 }
 
 // The product's own description, or a composed fallback — shared by the public
@@ -137,15 +149,17 @@ export function isJustIn(
 // description + contents) OR'd with pg_trgm trigram matching on title and
 // contents — ILIKE for substrings/partials ("bio" and "sphere" both match
 // "Biosphere") and the `%` similarity operator for fuzzy/typo matches — OR'd
-// with EXISTS subqueries matching any linked artist's name and the product's
-// label name the same way (a GENERATED column can't reference a joined
-// table, so neither artist nor label matching can live in search_vector
-// itself). `contents` needs no EXISTS/join — it's a column on Product
-// itself — so a name typed into a Various Artists product's contents (e.g.
-// "Surgeon") matches the same way a real linked artist would. Returns
-// matching product ids to inject into the Prisma where clause. Trigram GIN
-// indexes (migrations `catalog_fuzzy_search`, `finalize_artist_entity`,
-// `label_search_trgm`, and `add_various_artists_support`) keep it fast.
+// with EXISTS subqueries matching any linked artist's name, the product's
+// label name, and any linked genre's name the same way (a GENERATED column
+// can't reference a joined table, so none of artist/label/genre matching
+// can live in search_vector itself). `contents` needs no EXISTS/join — it's
+// a column on Product itself — so a name typed into a Various Artists
+// product's contents (e.g. "Surgeon") matches the same way a real linked
+// artist would. Returns matching product ids to inject into the Prisma
+// where clause. Trigram GIN indexes (migrations `catalog_fuzzy_search`,
+// `finalize_artist_entity`, `label_search_trgm`,
+// `add_various_artists_support`, and `product_genre_many_to_many`) keep it
+// fast.
 export async function searchProductIds(q: string): Promise<string[]> {
   const term = q.trim();
   if (!term) return [];
@@ -170,6 +184,12 @@ export async function searchProductIds(q: string): Promise<string[]> {
            WHERE l.id = p."labelId"
              AND (l.name ILIKE ${like} OR l.name % ${term})
          )
+         OR EXISTS (
+           SELECT 1 FROM "ProductGenre" pg
+           JOIN "Genre" g ON g.id = pg."genreId"
+           WHERE pg."productId" = p.id
+             AND (g.name ILIKE ${like} OR g.name % ${term})
+         )
     `,
   );
   return rows.map((r) => r.id);
@@ -177,10 +197,13 @@ export async function searchProductIds(q: string): Promise<string[]> {
 
 export const CATALOG_INCLUDE = {
   label: true,
-  genre: true,
   productType: true,
   productArtists: {
     include: { artist: true },
+    orderBy: { position: "asc" },
+  },
+  productGenres: {
+    include: { genre: true },
     orderBy: { position: "asc" },
   },
 } as const;

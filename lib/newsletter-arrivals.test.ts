@@ -26,7 +26,7 @@ const row = (over: Record<string, unknown> = {}) => {
     createdAt: OLD,
     updatedAt: OLD,
     label: { name: "Zulema Records" },
-    genre: { name: "Techno" },
+    productGenres: [{ position: 0, genre: { name: "Techno" } }],
     ...rest,
   };
 };
@@ -41,11 +41,11 @@ describe("getNewArrivals", () => {
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { inStock: true, createdAt: { gte: start, lt: end } },
-        orderBy: [{ genre: { name: "asc" } }, { primaryArtistName: "asc" }],
+        orderBy: [{ primaryArtistName: "asc" }],
         include: {
           label: true,
-          genre: true,
           productArtists: { include: { artist: true }, orderBy: { position: "asc" } },
+          productGenres: { include: { genre: true }, orderBy: { position: "asc" } },
         },
       }),
     );
@@ -55,9 +55,12 @@ describe("getNewArrivals", () => {
 describe("groupArrivalsByGenre", () => {
   it("groups by genre and sorts artists A-Z within each group", () => {
     const groups = groupArrivalsByGenre([
-      row({ artist: "Vril", genre: { name: "Techno" } }),
-      row({ artist: "Aleksi Perälä", genre: { name: "Techno" } }),
-      row({ artist: "Mr. Fingers", genre: { name: "House" } }),
+      row({ artist: "Vril", productGenres: [{ position: 0, genre: { name: "Techno" } }] }),
+      row({
+        artist: "Aleksi Perälä",
+        productGenres: [{ position: 0, genre: { name: "Techno" } }],
+      }),
+      row({ artist: "Mr. Fingers", productGenres: [{ position: 0, genre: { name: "House" } }] }),
     ] as never);
 
     expect(groups.map((g) => g.genre)).toEqual(["House", "Techno"]);

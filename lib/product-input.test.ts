@@ -8,7 +8,7 @@ const VALID = {
   title: "Torus",
   catalogNumber: "ZR-001",
   labelId: "l1",
-  genreId: "g1",
+  genreIds: ["g1"],
   productTypeId: "t1",
   condition: "NEW",
   price: "24.99",
@@ -26,7 +26,7 @@ describe("parseProductInput", () => {
       title: "Torus",
       catalogNumber: "ZR-001",
       labelId: "l1",
-      genreId: "g1",
+      genreIds: ["g1"],
       productTypeId: "t1",
       condition: "NEW",
       price: "24.99",
@@ -65,7 +65,7 @@ describe("parseProductInput", () => {
   it.each([
     ["title", { ...VALID, title: "" }],
     ["labelId", { ...VALID, labelId: "" }],
-    ["genreId", { ...VALID, genreId: "" }],
+    ["genreIds", { ...VALID, genreIds: [] }],
     ["productTypeId", { ...VALID, productTypeId: "" }],
   ])("rejects missing %s", (_field, body) => {
     expect(parseProductInput(body).ok).toBe(false);
@@ -83,6 +83,25 @@ describe("parseProductInput", () => {
   it("dedupes repeated artistIds, preserving first-seen order", () => {
     const result = parseProductInput({ ...VALID, artistIds: ["a1", "a2", "a1"] });
     expect(result.ok && result.data.artistIds).toEqual(["a1", "a2"]);
+  });
+
+  it.each([
+    ["empty array", []],
+    ["not an array", "g1"],
+    ["blank entry", ["g1", "   "]],
+    ["non-string entry", ["g1", 2]],
+  ])("rejects genreIds: %s", (_label, genreIds) => {
+    expect(parseProductInput({ ...VALID, genreIds }).ok).toBe(false);
+  });
+
+  it("accepts multiple genreIds, preserving order", () => {
+    const result = parseProductInput({ ...VALID, genreIds: ["g1", "g2"] });
+    expect(result.ok && result.data.genreIds).toEqual(["g1", "g2"]);
+  });
+
+  it("dedupes repeated genreIds, preserving first-seen order", () => {
+    const result = parseProductInput({ ...VALID, genreIds: ["g1", "g2", "g1"] });
+    expect(result.ok && result.data.genreIds).toEqual(["g1", "g2"]);
   });
 
   it("rejects an invalid condition", () => {
@@ -181,7 +200,7 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     title: "Torus",
     catalogNumber: null,
     labelId: "l1",
-    genreId: "g1",
+    genreIds: ["g1", "g2"],
     productTypeId: "t1",
     supplierId: null,
     condition: "NEW" as const,
@@ -239,6 +258,27 @@ describe("toProductData — no longer touches quantity/inStock", () => {
       create: [
         { artistId: "a1", position: 0 },
         { artistId: "a2", position: 1 },
+      ],
+    });
+  });
+
+  it("creates ordered ProductGenre links on create (no deleteMany)", () => {
+    const data = toProductData(base, { primaryArtistName: "Vril", mode: "create" });
+    expect(data.productGenres).toEqual({
+      create: [
+        { genreId: "g1", position: 0 },
+        { genreId: "g2", position: 1 },
+      ],
+    });
+  });
+
+  it("replaces the full genre set on update (deleteMany then create)", () => {
+    const data = toProductData(base, { primaryArtistName: "Vril", mode: "update" });
+    expect(data.productGenres).toEqual({
+      deleteMany: {},
+      create: [
+        { genreId: "g1", position: 0 },
+        { genreId: "g2", position: 1 },
       ],
     });
   });

@@ -14,7 +14,9 @@ function product(over: Record<string, unknown> = {}): CatalogProduct {
       { position: 0, artistId: "a1", artist: { id: "a1", name: "Vril" } } as never,
     ],
     label: { id: "l1", name: "Zulema Records" } as never,
-    genre: { id: "g1", name: "Techno" } as never,
+    productGenres: [
+      { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } } as never,
+    ],
     productType: { id: "t1", name: "LP" } as never,
     ...over,
   } as unknown as CatalogProduct;
@@ -118,7 +120,7 @@ describe("missingLabelFields", () => {
 
   it("flags a missing label/genre/productType", () => {
     expect(missingLabelFields(product({ label: null }))).toContain("Label");
-    expect(missingLabelFields(product({ genre: null }))).toContain("Genre");
+    expect(missingLabelFields(product({ productGenres: [] }))).toContain("Genre");
     expect(
       missingLabelFields(product({ productType: null })),
     ).toContain("Product Type");

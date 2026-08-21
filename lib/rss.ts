@@ -6,13 +6,13 @@ const BASE = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 
 export interface FeedProduct {
   id: string;
-  // Pre-joined "Artist1 / Artist2" display string (see lib/catalog.ts's
-  // joinArtistNames) — this module stays decoupled from the Artist/
-  // ProductArtist relation shape.
+  // Pre-joined "Artist1 / Artist2" / "Genre1 · Genre2" display strings (see
+  // lib/catalog.ts's joinArtistNames / joinGenreNames) — this module stays
+  // decoupled from the Artist/Genre relation shapes.
   artistDisplay: string;
+  genreDisplay: string;
   title: string;
   label: { name: string };
-  genre: { name: string };
   productType: { name: string };
 }
 
@@ -36,7 +36,7 @@ export function productFeed<T extends FeedProduct>(options: {
       const link = `${BASE}/stock/${p.id}`;
       const title = escapeXml(`${p.artistDisplay} — ${p.title}`);
       const desc = escapeXml(
-        `${p.label.name} · ${p.genre.name} · ${p.productType.name}`,
+        `${p.label.name} · ${p.genreDisplay} · ${p.productType.name}`,
       );
       return `    <item>
       <title>${title}</title>

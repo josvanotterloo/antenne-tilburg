@@ -9,6 +9,7 @@ import {
   isRestock,
   composeProductDescription,
   joinArtistNames,
+  joinGenreNames,
   CATALOG_INCLUDE,
 } from "@/lib/catalog";
 import { productJsonLd } from "@/lib/structured-data";
@@ -109,7 +110,7 @@ export default async function ProductDetailPage({
           <p className="text-sm text-ink">{product.contents}</p>
         )}
         <p className="font-mono text-sm text-ink-muted">
-          {product.label.name} · {product.genre.name} · {product.productType.name}
+          {product.label.name} · {joinGenreNames(product.productGenres)} · {product.productType.name}
         </p>
       </header>
 
@@ -131,7 +132,9 @@ export default async function ProductDetailPage({
         <dt className={`${dt} border-b border-hairline py-2`}>Label</dt>
         <dd className="border-b border-hairline py-2 text-ink">{product.label.name}</dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Genre</dt>
-        <dd className="border-b border-hairline py-2 text-ink">{product.genre.name}</dd>
+        <dd className="border-b border-hairline py-2 text-ink">
+          {joinGenreNames(product.productGenres)}
+        </dd>
         <dt className={`${dt} border-b border-hairline py-2`}>Type</dt>
         <dd className="border-b border-hairline py-2 text-ink">
           {product.productType.name}
