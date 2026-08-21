@@ -202,7 +202,11 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 932 tests as of Various
+Done — Vitest runner + `run-tests` skill in place; 944 tests as of the
+legacy data migration script, 2026-08-21 (+12 for `lib/mysql-dump-parser.ts`
+— the pure tuple-extraction module; the migration script itself has none,
+per that task's own explicit instruction, verified instead via `--dry-run`
+against the real dump). 932 tests as of Various
 Artists / compilation support, 2026-08-20 (+26 net: `parseProductInput`/
 `toProductData`, `resolveVariousArtists`, the VA-aware POST/PATCH product
 routes, the artist-rename guard, `searchProductIds`'s `contents` matching,
