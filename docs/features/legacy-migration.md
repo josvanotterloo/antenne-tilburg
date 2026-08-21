@@ -46,10 +46,11 @@ Against an empty target database, a real run should report roughly:
 33 suppliers created (1 blank name skipped), 64 genres (8 already seeded by
 `prisma/seed.ts`), 111 product types (7 overlap with the seed list), 10,271
 labels (13 merged duplicate names, 7 blank names, 5 seed overlap), 38,761
-artists (4 merged duplicate names, 1 blank name), 46,616 products (76
-skipped — see below), 66,966 ProductArtist links, 44,594 stock transactions
-(59 skipped), 959 posts (3 blank-title skipped). Run the dry run against
-your actual target DB for exact numbers — pre-existing seeded/admin data
+artists (4 merged duplicate names, 1 blank name), 46,617 products (75
+skipped — see below), 46,617 ProductArtist links (one per product — VA
+products link to a single shared entity, see below), 44,595 stock
+transactions (58 skipped), 959 posts (3 blank-title skipped). Run the dry
+run against your actual target DB for exact numbers — pre-existing seeded/admin data
 changes the "created" counts without changing what's in the dump.
 
 ## Corrections to the original task spec (verified against the real dump)
@@ -97,20 +98,36 @@ code, not by trusting the spec:
 
 ## ProductArtist / isVariousArtists resolution
 
-- If a product has ≥1 `contents` rows, its `ProductArtist` links are
-  **exactly** those rows (ordered by `contents.id`) — `product.artist_id`
-  is ignored entirely. Confirmed: the legacy placeholder artist id used on
-  VA-style products (id 6) is literally named `'VARIOUS ARTISTS'` in the
-  legacy `artist` table; the real per-track artists live only in
-  `contents`.
-- If a product has 0 `contents` rows, its single link comes from
-  `product.artist_id`.
-- `isVariousArtists = true` iff the contents-row count is ≥ 2. Exactly one
-  `contents` row still uses that row as the sole artist but stays
-  `isVariousArtists: false`.
-- `primaryArtistName` is always the resolved position-0 artist's name. A
-  product whose artist can't be resolved at all is skipped and logged
-  (`Product.primaryArtistName` is required).
+- `isVariousArtists = true` iff a product has ≥2 `contents` rows.
+- **VA products link to the single shared "Various Artists" `Artist`
+  entity** (`lib/resolve-artists.ts`'s `resolveVariousArtists` — the exact
+  same helper and the exact same entity the live admin UI uses), not to
+  the individual per-track artists. `primaryArtistName` is that entity's
+  name (`"Various Artists"`). The real per-track names (resolved from
+  `contents`, ordered by `contents.id`) go into free-text `Product.contents`
+  instead — comma-joined, matching what an admin typing them into
+  `ProductForm`'s "Artists on this release" textarea would produce.
+  **This was a `/code-review` finding, not the original design**: linking
+  the real individual artists directly (which the migration is technically
+  capable of, and initially did) looks fine until an admin opens that
+  product in `ProductForm` and clicks Save without touching the VA
+  checkbox — `parseProductInput` unconditionally discards client-supplied
+  `artistIds` whenever `isVariousArtists` is true, and the route resolves
+  to the shared placeholder instead, silently deleting the real links via
+  `productArtists: { deleteMany: {} }`. Matching the live UI's own
+  convention exactly avoids that trap. The legacy artist row literally
+  named `'VARIOUS ARTISTS'` (id 6, all-caps like every migrated artist
+  name) is deliberately a *different*, unused-for-linking row from the
+  live app's canonical `"Various Artists"` (title case) — kept in the
+  Artist table for completeness but not the same entity.
+- If a product has 0 or 1 `contents` rows, its single `ProductArtist` link
+  comes from that one `contents` row (if present) or `product.artist_id`
+  (if not) — unaffected by the above, since a non-VA product's artist
+  links flow through the live app's normal (non-discarding) save path.
+  `primaryArtistName` is that artist's name. A product whose artist can't
+  be resolved at all is skipped and logged (`Product.primaryArtistName` is
+  required) — this can no longer happen for VA products, since
+  `resolveVariousArtists` always succeeds (idempotent upsert).
 
 ## Idempotency
 
@@ -129,6 +146,18 @@ code, not by trusting the spec:
   inspecting the colliding rows' actual `labelcode`/price/date, which all
   differed). Adding `catalogNumber` dropped that to 53, which do look like
   genuine re-entries of the same catalog number.
+  **Known theoretical gap** (raised in `/code-review`, not fixed): the key
+  uses the *post-merge* `labelId`, so two genuinely different products
+  could theoretically collide if they share title+artist+catalogNumber
+  *and* sit under two differently-named legacy labels that got merged as
+  duplicates. Not fixed because it requires two independently unlikely
+  things to coincide, the 13 real label merges were manually verified to
+  be genuine same-label duplicates (not two different real labels sharing
+  a name), and zero such collisions exist in the actual dump — a fix would
+  add real complexity (keeping the legacy label id in the key, or similar)
+  for a risk that's more theoretical than the false-collision problem
+  `catalogNumber` was added to fix. Worth revisiting only if a real
+  collision ever actually shows up in a skip log.
 - **ProductArtist**: re-run safe via `skipDuplicates: true` (the schema's
   own `@@unique([productId, artistId])` / `@@unique([productId, position])`
   constraints do the real work).
@@ -188,4 +217,19 @@ The script logs a per-table count plus up to 20 example reasons at the end
 of every run (dry or real). Every skip in the reference dump falls into one
 of: blank required name/title in the source data, an unresolvable required
 FK (deleted/never-existed legacy id), or a duplicate-key match (product
-already imported, or a same-day-generated blog slug that collided).
+already imported, or a same-day-generated blog slug that collided). A blog
+row whose `created_date` doesn't parse to a real calendar date is also
+skipped and logged (`unparseable created_date`) rather than silently
+stamped with the migration run's own timestamp — none exist in this dump,
+but the check exists so a future re-export can't silently mis-date a post.
+
+## Testing
+
+`lib/mysql-dump-parser.ts` (the pure, DB-free tuple extractor) has a full
+test suite — `lib/mysql-dump-parser.test.ts` — covering escaped quotes,
+NULL, quote-aware statement/tuple boundaries (so a semicolon or comma
+inside a text field doesn't corrupt parsing), multiple INSERT statements
+per table, column-order independence, and malformed-row skipping. The
+orchestrator (`scripts/migrate-legacy-data.ts` itself) has none, per the
+task's own explicit instruction — verified instead via `--dry-run` against
+the real dump throughout development.

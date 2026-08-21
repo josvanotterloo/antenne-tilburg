@@ -24,6 +24,7 @@ import { readFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 
 import { extractInsertRows, type SqlValue } from "../lib/mysql-dump-parser";
+import { resolveVariousArtists, VARIOUS_ARTISTS_NAME } from "../lib/resolve-artists";
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 500;
@@ -81,7 +82,12 @@ function parseLegacyDate(n: number): Date | null {
   const day = Number(s.slice(6, 8));
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
-  return Number.isNaN(date.getTime()) ? null : date;
+  // Date.UTC silently rolls an invalid day (e.g. Feb 30) into the next
+  // month instead of throwing — reject anything that didn't round-trip.
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  return date;
 }
 
 // stock_txn's separate date ('20180612') + time ('1205', HHMM) char fields.
@@ -95,7 +101,10 @@ function parseLegacyDateTime(dateStr: string, timeStr: string): Date | null {
   const minute = Number(t.slice(2, 4));
   if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
   const date = new Date(Date.UTC(year, month - 1, day, hour, minute));
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  return date;
 }
 
 function slugify(title: string): string {
@@ -254,7 +263,7 @@ interface ProductToCreate {
     supplierId: string | null;
     primaryArtistName: string;
     isVariousArtists: boolean;
-    contents: null;
+    contents: string | null;
   };
 }
 
@@ -275,6 +284,20 @@ async function importProducts(
   const rows = extractInsertRows(sql, "product");
   console.log(`Importing products... ${rows.length} rows`);
   const contentsByProduct = groupContentsByProduct(sql);
+
+  // VA products must link to the exact same shared "Various Artists" entity
+  // the live admin UI uses (lib/resolve-artists.ts's resolveVariousArtists),
+  // not individual per-track artists — ProductForm hides the artist picker
+  // whenever isVariousArtists is true and parseProductInput unconditionally
+  // discards client-supplied artistIds for VA saves (replacing them with
+  // this same placeholder). Linking real per-track artists instead would
+  // make the product look fine until an admin opens and saves it, silently
+  // destroying those real links. The migrated legacy artist row literally
+  // named "VARIOUS ARTISTS" (id 6, uppercased like every other artist name)
+  // is a *different* row from this one — deliberately not reused.
+  const vaArtist = dryRun
+    ? { id: "dry-run:artist:various-artists", name: VARIOUS_ARTISTS_NAME }
+    : await resolveVariousArtists(prisma.artist);
 
   const existing = await prisma.product.findMany({
     select: { id: true, title: true, primaryArtistName: true, labelId: true, catalogNumber: true },
@@ -325,17 +348,35 @@ async function importProducts(
     const supplierId = supplierLegacyId ? (maps.supplier.get(supplierLegacyId) ?? null) : null;
 
     const contentsForProduct = contentsByProduct.get(legacyId) ?? [];
-    const candidateArtistLegacyIds =
-      contentsForProduct.length > 0 ? contentsForProduct.map((c) => c.artistId) : [num(row.artist_id)];
-    const resolvedLinks = candidateArtistLegacyIds
-      .map((aid) => ({ artistId: maps.artist.get(aid), name: maps.artistName.get(aid) }))
-      .filter((l): l is { artistId: string; name: string } => Boolean(l.artistId && l.name));
-    if (resolvedLinks.length === 0) {
-      skips.push({ table: "product", legacyId, reason: "no resolvable artist" });
-      continue;
-    }
-    const primaryArtistName = resolvedLinks[0].name;
     const isVariousArtists = contentsForProduct.length >= 2;
+
+    let resolvedLinks: { artistId: string; name: string }[];
+    let primaryArtistName: string;
+    let contentsText: string | null;
+
+    if (isVariousArtists) {
+      // Links to the single shared placeholder (see vaArtist above); the
+      // real per-track names go into free-text `contents` instead, exactly
+      // matching what the live admin UI produces for a VA save.
+      resolvedLinks = [{ artistId: vaArtist.id, name: vaArtist.name }];
+      primaryArtistName = vaArtist.name;
+      const names = contentsForProduct
+        .map((c) => maps.artistName.get(c.artistId))
+        .filter((n): n is string => Boolean(n));
+      contentsText = names.length > 0 ? names.join(", ") : null;
+    } else {
+      const candidateArtistLegacyIds =
+        contentsForProduct.length > 0 ? contentsForProduct.map((c) => c.artistId) : [num(row.artist_id)];
+      resolvedLinks = candidateArtistLegacyIds
+        .map((aid) => ({ artistId: maps.artist.get(aid), name: maps.artistName.get(aid) }))
+        .filter((l): l is { artistId: string; name: string } => Boolean(l.artistId && l.name));
+      if (resolvedLinks.length === 0) {
+        skips.push({ table: "product", legacyId, reason: "no resolvable artist" });
+        continue;
+      }
+      primaryArtistName = resolvedLinks[0].name;
+      contentsText = null;
+    }
 
     const createdAt = parseLegacyDate(num(row.instockdate)) ?? parseLegacyDate(num(row.lastchange));
     if (!createdAt) {
@@ -387,7 +428,7 @@ async function importProducts(
         supplierId,
         primaryArtistName,
         isVariousArtists,
-        contents: null,
+        contents: contentsText,
       },
     });
   }
@@ -519,8 +560,17 @@ async function importPosts(sql: string, dryRun: boolean, skips: SkipEntry[]): Pr
     const actInd = str(row.act_ind);
     const status: "PUBLISHED" | "DRAFT" = actInd === "Y" || actInd === "1" ? "PUBLISHED" : "DRAFT";
     const createdDateStr = str(row.created_date);
-    const publishedAt = /^\d{8}$/.test(createdDateStr) ? parseLegacyDate(Number(createdDateStr)) : null;
-    const createdAt = publishedAt ?? new Date();
+    const publishedAt = parseLegacyDate(Number(createdDateStr));
+    if (!publishedAt) {
+      // No silent "now()" fallback: that would stamp a historical post with
+      // today's date and, combined with a PUBLISHED status, sort it above
+      // every genuinely recent post (lib/blog.ts orders by publishedAt desc,
+      // and Postgres puts NULLs first on DESC — a null here would be worse
+      // still).
+      skips.push({ table: "blog", legacyId, reason: "unparseable created_date" });
+      continue;
+    }
+    const createdAt = publishedAt;
 
     const imgId = num(row.picture);
     const coverImage = imgId ? (filenameByImgId.get(imgId) ?? null) : null;
