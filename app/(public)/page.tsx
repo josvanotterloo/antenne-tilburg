@@ -33,7 +33,7 @@ const GENRE_STATIC = [
 
 export default async function HomePage() {
   const [products, allPosts, hours] = await Promise.all([
-    getLatestProducts(100),
+    getLatestProducts(100, true),
     getPublishedPosts(),
     getOpeningHours(),
   ]);

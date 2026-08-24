@@ -21,10 +21,15 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v) ?? undefined;
 
-function adminHref(q: string | undefined, page: number): string {
+function adminHref(
+  q: string | undefined,
+  page: number,
+  instock: boolean,
+): string {
   const sp = new URLSearchParams();
   if (q) sp.set("q", q);
   if (page > 1) sp.set("page", String(page));
+  if (instock) sp.set("instock", "true");
   const qs = sp.toString();
   return qs ? `/admin/catalog?${qs}` : "/admin/catalog";
 }
@@ -36,10 +41,11 @@ export default async function CatalogPage({
 }) {
   const sp = await searchParams;
   const q = one(sp.q);
+  const instock = one(sp.instock) === "true";
 
   const result = await getCatalogPage({
     q,
-    onlyInStock: false, // admin sees everything, incl. out of stock
+    onlyInStock: instock,
     sort: "date",
     page: one(sp.page),
   });
@@ -87,6 +93,17 @@ export default async function CatalogPage({
             Clear
           </Link>
         )}
+        <Link
+          href={adminHref(q, 1, !instock)}
+          aria-pressed={instock}
+          className={`rounded border px-3 py-2 text-sm ${
+            instock
+              ? "border-signal bg-signal/10 text-signal"
+              : "border-admin-hairline text-admin-ink-muted"
+          }`}
+        >
+          In stock only
+        </Link>
       </form>
 
       {result.products.length === 0 ? (
@@ -180,7 +197,7 @@ export default async function CatalogPage({
         >
           {result.page > 1 && (
             <Link
-              href={adminHref(q, result.page - 1)}
+              href={adminHref(q, result.page - 1, instock)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Prev
@@ -192,7 +209,7 @@ export default async function CatalogPage({
                 <span className="px-1 text-admin-ink-muted">…</span>
               )}
               <Link
-                href={adminHref(q, n)}
+                href={adminHref(q, n, instock)}
                 aria-current={n === result.page ? "page" : undefined}
                 className={`rounded px-2 py-1 ${
                   n === result.page
@@ -206,7 +223,7 @@ export default async function CatalogPage({
           ))}
           {result.page < result.pageCount && (
             <Link
-              href={adminHref(q, result.page + 1)}
+              href={adminHref(q, result.page + 1, instock)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Next

@@ -3,9 +3,10 @@ import { productFeed } from "@/lib/rss";
 
 export const dynamic = "force-dynamic";
 
-// RSS feed of the last 100 new arrivals (in-stock, newest first) — mirrors /stock.
+// RSS feed of the last 100 new arrivals (in-stock, newest first) — always
+// in-stock only, independent of /stock's own instock filter param.
 export async function GET() {
-  const products = await getLatestProducts();
+  const products = await getLatestProducts(100, true);
 
   return productFeed({
     title: "Antenne Recordshop — New Arrivals",

@@ -315,15 +315,23 @@ describe("getCatalogPage", () => {
 });
 
 describe("getLatestProducts", () => {
-  it("queries in-stock products newest-first, limited to the given count", async () => {
+  it("queries all products newest-first, limited to the given count, by default", async () => {
     vi.mocked(db.product.findMany).mockResolvedValue([] as never);
     await getLatestProducts(100);
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { inStock: true },
+        where: {},
         orderBy: { createdAt: "desc" },
         take: 100,
       }),
+    );
+  });
+
+  it("limits to in-stock products when onlyInStock is true", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    await getLatestProducts(100, true);
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { inStock: true } }),
     );
   });
 

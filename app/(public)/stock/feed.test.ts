@@ -40,9 +40,9 @@ describe("/stock/feed.xml", () => {
     expect(body).toContain("Zulema Records");
     expect(body).not.toContain("€");
 
-    // getLatestProducts() with no args uses its default limit of 100 —
-    // mirrors the /stock page exactly.
-    expect(getLatestProducts).toHaveBeenCalledWith();
+    // The feed always shows in-stock arrivals only, independent of /stock's
+    // own instock filter param (a machine feed has no UI to read one from).
+    expect(getLatestProducts).toHaveBeenCalledWith(100, true);
   });
 
   it("escapes XML-special characters", async () => {

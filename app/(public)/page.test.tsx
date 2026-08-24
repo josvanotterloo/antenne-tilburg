@@ -96,9 +96,9 @@ describe("home page", () => {
     );
   });
 
-  it("requests the 100 latest arrivals", async () => {
+  it("requests the 100 latest in-stock arrivals", async () => {
     await HomePage();
-    expect(getLatestProducts).toHaveBeenCalledWith(100);
+    expect(getLatestProducts).toHaveBeenCalledWith(100, true);
   });
 
   it("teases the latest blog posts linking to each post", async () => {

@@ -274,11 +274,15 @@ export async function getCatalogPage(
   };
 }
 
-// The N most recent in-stock arrivals, newest first. Powers the home "Just In"
-// section (100 latest by createdAt, no pagination).
-export function getLatestProducts(limit = 100): Promise<CatalogProduct[]> {
+// The N most recent arrivals, newest first — in-stock only when
+// onlyInStock is set. Powers the home "Just In" section and public /stock
+// (100 latest by createdAt, no pagination).
+export function getLatestProducts(
+  limit = 100,
+  onlyInStock = false,
+): Promise<CatalogProduct[]> {
   return db.product.findMany({
-    where: { inStock: true },
+    where: buildCatalogWhere({ onlyInStock }),
     orderBy: { createdAt: "desc" },
     take: limit,
     include: CATALOG_INCLUDE,

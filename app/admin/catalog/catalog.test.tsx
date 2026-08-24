@@ -2,8 +2,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 vi.mock("next/link", () => ({
-  default: ({ href, children }: { href: string; children: React.ReactNode }) => (
-    <a href={href}>{children}</a>
+  default: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  } & Record<string, unknown>) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
   ),
 }));
 vi.mock("next/navigation", () => ({
@@ -110,6 +119,33 @@ describe("/admin/catalog", () => {
     expect(getCatalogPage).toHaveBeenCalledWith(
       expect.objectContaining({ q: "vril", onlyInStock: false }),
     );
+  });
+
+  it("passes onlyInStock: true when ?instock=true", async () => {
+    await AdminCatalogPage({
+      searchParams: Promise.resolve({ instock: "true" }),
+    });
+    expect(getCatalogPage).toHaveBeenCalledWith(
+      expect.objectContaining({ onlyInStock: true }),
+    );
+  });
+
+  it("shows an 'In stock only' toggle, off by default, linking to turn it on", async () => {
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    const toggle = screen.getByRole("link", { name: /in stock only/i });
+    expect(toggle).toHaveAttribute("href", "/admin/catalog?instock=true");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("shows the toggle as on, preserving ?q=, when ?instock=true", async () => {
+    const ui = await AdminCatalogPage({
+      searchParams: Promise.resolve({ q: "vril", instock: "true" }),
+    });
+    render(ui);
+    const toggle = screen.getByRole("link", { name: /in stock only/i });
+    expect(toggle).toHaveAttribute("href", "/admin/catalog?q=vril");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows a print icon link with the correct href for a complete product", async () => {
