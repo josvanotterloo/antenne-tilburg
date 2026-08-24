@@ -58,14 +58,16 @@ describe("/stock page", () => {
     ).toBeInTheDocument();
   });
 
-  it("requests the last 100 arrivals, all stock statuses, by default", async () => {
+  it("requests the last 100 in-stock arrivals, unsorted, by default", async () => {
     await StockPage({ searchParams: noParams });
-    expect(getLatestProducts).toHaveBeenCalledWith(100, false);
+    expect(getLatestProducts).toHaveBeenCalledWith(100, true, undefined, undefined);
   });
 
-  it("requests only in-stock arrivals when ?instock=true", async () => {
-    await StockPage({ searchParams: Promise.resolve({ instock: "true" }) });
-    expect(getLatestProducts).toHaveBeenCalledWith(100, true);
+  it("passes sort/order from the URL through to getLatestProducts", async () => {
+    await StockPage({
+      searchParams: Promise.resolve({ sort: "artist", order: "desc" }),
+    });
+    expect(getLatestProducts).toHaveBeenCalledWith(100, true, "artist", "desc");
   });
 
   it("renders products from getLatestProducts", async () => {
@@ -73,6 +75,7 @@ describe("/stock page", () => {
     expect(screen.getByText("Vril")).toBeInTheDocument();
     expect(screen.getByText(/Torus/)).toBeInTheDocument();
     expect(screen.getByText(/Zulema Records/)).toBeInTheDocument();
+    expect(screen.getByText("LP")).toBeInTheDocument();
   });
 
   it("shows the RESTOCK badge when a product is a restock", async () => {
@@ -87,22 +90,26 @@ describe("/stock page", () => {
     expect(screen.getByText(/restock/i)).toBeInTheDocument();
   });
 
-  it("shows the JUST IN badge for a recently created product", async () => {
+  it("never shows a JUST IN badge", async () => {
     vi.mocked(getLatestProducts).mockResolvedValue([
       product({ createdAt: new Date() }),
     ] as never);
     render(await StockPage({ searchParams: noParams }));
-    expect(screen.getByText(/just in/i)).toBeInTheDocument();
+    expect(screen.queryByText(/just in/i)).toBeNull();
   });
 
-  it("renders no filter sidebar, search box, sort controls, or pagination", async () => {
+  it("no longer shows an 'In stock only' toggle", async () => {
+    render(await StockPage({ searchParams: noParams }));
+    expect(
+      screen.queryByRole("link", { name: /in stock only/i }),
+    ).toBeNull();
+  });
+
+  it("renders no filter sidebar, search box, or pagination", async () => {
     render(await StockPage({ searchParams: noParams }));
     expect(screen.queryByRole("searchbox")).toBeNull();
     expect(screen.queryByRole("heading", { name: /^genre$/i })).toBeNull();
     expect(screen.queryByRole("heading", { name: /^condition$/i })).toBeNull();
-    expect(screen.queryByText(/sort:/i)).toBeNull();
-    expect(screen.queryByText(/grid view/i)).toBeNull();
-    expect(screen.queryByText(/list view/i)).toBeNull();
     expect(screen.queryByRole("navigation", { name: /pagination/i })).toBeNull();
     expect(screen.queryByRole("navigation", { name: /stock sections/i })).toBeNull();
   });
@@ -122,26 +129,84 @@ describe("/stock page", () => {
     );
   });
 
-  it("shows an empty-state message and no list when there are no arrivals", async () => {
+  it("shows an empty-state message and no table when there are no arrivals", async () => {
     vi.mocked(getLatestProducts).mockResolvedValue([] as never);
     render(await StockPage({ searchParams: noParams }));
     expect(screen.getByText(/nothing here yet/i)).toBeInTheDocument();
-    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
-  it("shows an 'In stock only' toggle, off by default, linking to turn it on", async () => {
-    render(await StockPage({ searchParams: noParams }));
-    const toggle = screen.getByRole("link", { name: /in stock only/i });
-    expect(toggle).toHaveAttribute("href", "/stock?instock=true");
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
-  });
+  describe("sortable column headers", () => {
+    it("renders a sortable header for each of Type, Artist, Title, and Label", async () => {
+      render(await StockPage({ searchParams: noParams }));
+      for (const name of ["Type", "Artist", "Title", "Label"]) {
+        expect(
+          screen.getByRole("columnheader", { name: new RegExp(`^${name}$`, "i") }),
+        ).toBeInTheDocument();
+      }
+    });
 
-  it("shows the toggle as on and linking back to all stock when ?instock=true", async () => {
-    render(
-      await StockPage({ searchParams: Promise.resolve({ instock: "true" }) }),
-    );
-    const toggle = screen.getByRole("link", { name: /in stock only/i });
-    expect(toggle).toHaveAttribute("href", "/stock");
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    it("defaults to no active sort — every header reads aria-sort=none", async () => {
+      render(await StockPage({ searchParams: noParams }));
+      for (const name of ["Type", "Artist", "Title", "Label"]) {
+        expect(
+          screen.getByRole("columnheader", { name: new RegExp(`^${name}$`, "i") }),
+        ).toHaveAttribute("aria-sort", "none");
+      }
+    });
+
+    it("each header's first-click link sorts ascending", async () => {
+      render(await StockPage({ searchParams: noParams }));
+      expect(screen.getByRole("link", { name: "Type" })).toHaveAttribute(
+        "href",
+        "/stock?sort=type&order=asc",
+      );
+      expect(screen.getByRole("link", { name: "Artist" })).toHaveAttribute(
+        "href",
+        "/stock?sort=artist&order=asc",
+      );
+      expect(screen.getByRole("link", { name: "Title" })).toHaveAttribute(
+        "href",
+        "/stock?sort=title&order=asc",
+      );
+      expect(screen.getByRole("link", { name: "Label" })).toHaveAttribute(
+        "href",
+        "/stock?sort=label&order=asc",
+      );
+    });
+
+    it("shows the active column as ascending, second-click link sorts descending", async () => {
+      render(
+        await StockPage({
+          searchParams: Promise.resolve({ sort: "title", order: "asc" }),
+        }),
+      );
+      expect(
+        screen.getByRole("columnheader", { name: /^title/i }),
+      ).toHaveAttribute("aria-sort", "ascending");
+      expect(screen.getByRole("link", { name: /^title/i })).toHaveAttribute(
+        "href",
+        "/stock?sort=title&order=desc",
+      );
+      // Inactive columns stay unsorted.
+      expect(
+        screen.getByRole("columnheader", { name: /^artist$/i }),
+      ).toHaveAttribute("aria-sort", "none");
+    });
+
+    it("shows the active column as descending, toggles back to ascending on next click", async () => {
+      render(
+        await StockPage({
+          searchParams: Promise.resolve({ sort: "title", order: "desc" }),
+        }),
+      );
+      expect(
+        screen.getByRole("columnheader", { name: /^title/i }),
+      ).toHaveAttribute("aria-sort", "descending");
+      expect(screen.getByRole("link", { name: /^title/i })).toHaveAttribute(
+        "href",
+        "/stock?sort=title&order=asc",
+      );
+    });
   });
 });

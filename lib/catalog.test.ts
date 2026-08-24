@@ -133,6 +133,23 @@ describe("buildCatalogOrderBy", () => {
 
   it("sorts by label name", () => {
     expect(buildCatalogOrderBy("label")).toEqual({ label: { name: "asc" } });
+    expect(buildCatalogOrderBy("label", "desc")).toEqual({
+      label: { name: "desc" },
+    });
+  });
+
+  it("sorts by product type name", () => {
+    expect(buildCatalogOrderBy("type")).toEqual({
+      productType: { name: "asc" },
+    });
+    expect(buildCatalogOrderBy("type", "desc")).toEqual({
+      productType: { name: "desc" },
+    });
+  });
+
+  it("sorts by title", () => {
+    expect(buildCatalogOrderBy("title")).toEqual({ title: "asc" });
+    expect(buildCatalogOrderBy("title", "desc")).toEqual({ title: "desc" });
   });
 });
 
@@ -332,6 +349,14 @@ describe("getLatestProducts", () => {
     await getLatestProducts(100, true);
     expect(db.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { inStock: true } }),
+    );
+  });
+
+  it("passes sort/order through to buildCatalogOrderBy", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([] as never);
+    await getLatestProducts(100, true, "title", "desc");
+    expect(db.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { title: "desc" } }),
     );
   });
 

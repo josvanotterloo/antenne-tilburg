@@ -33,141 +33,92 @@ const product = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
-describe("ProductRow — RESTOCK badge", () => {
-  it("renders the RESTOCK badge when updatedAt is well after createdAt and stock remains", () => {
-    render(
-      <ProductRow product={product({ createdAt: OLD, updatedAt: RECENT, quantity: 2 }) as never} />,
-    );
-    expect(screen.getByText(/restock/i)).toBeInTheDocument();
-  });
+// ProductRow renders a bare <tr> — a valid render target needs a real
+// table/tbody ancestor, or jsdom silently drops/mis-renders the row.
+function renderRow(p: ReturnType<typeof product>) {
+  return render(
+    <table>
+      <tbody>
+        <ProductRow product={p as never} />
+      </tbody>
+    </table>,
+  );
+}
 
-  it("does not render the RESTOCK badge for a freshly created product", () => {
-    render(<ProductRow product={product({ createdAt: OLD, updatedAt: OLD }) as never} />);
-    expect(screen.queryByText(/restock/i)).toBeNull();
-  });
-
-  it("does not render the RESTOCK badge when out of stock", () => {
-    render(
-      <ProductRow
-        product={product({ createdAt: OLD, updatedAt: RECENT, quantity: 0 }) as never}
-      />,
-    );
-    expect(screen.queryByText(/restock/i)).toBeNull();
-  });
-
-  it("renders both JUST IN and RESTOCK together, gracefully, when both apply", () => {
-    const now = new Date();
-    render(
-      <ProductRow
-        product={
-          product({
-            createdAt: now, // within the Just In window
-            updatedAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // >60s later, stock remains
-            quantity: 3,
-          }) as never
-        }
-      />,
-    );
-    expect(screen.getByText(/just in/i)).toBeInTheDocument();
-    expect(screen.getByText(/restock/i)).toBeInTheDocument();
-  });
-});
-
-describe("ProductRow — artist and label as plain text", () => {
-  it("renders a single artist as plain text, not a link", () => {
-    render(<ProductRow product={product() as never} />);
+describe("ProductRow — table columns", () => {
+  it("renders type, artist, title, and label", () => {
+    renderRow(product());
+    expect(screen.getByText("LP")).toBeInTheDocument();
     expect(screen.getByText("Vril")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Vril" })).toBeNull();
-  });
-
-  it('renders two artists joined by " / ", both as plain text', () => {
-    render(
-      <ProductRow
-        product={
-          product({
-            productArtists: [
-              { position: 0, artistId: "a1", artist: { id: "a1", name: "Jeff Mills" } },
-              { position: 1, artistId: "a2", artist: { id: "a2", name: "Surgeon" } },
-            ],
-          }) as never
-        }
-      />,
-    );
-    expect(screen.getByText(/Jeff Mills \/ Surgeon/)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Jeff Mills" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Surgeon" })).toBeNull();
-  });
-
-  it("renders the label as plain text, not a link", () => {
-    render(<ProductRow product={product() as never} />);
-    expect(screen.getByText("Zulema Records")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
-  });
-});
-
-describe("ProductRow — out of stock", () => {
-  it("does not link the title when the product is out of stock", () => {
-    render(<ProductRow product={product({ inStock: false, quantity: 0 }) as never} />);
     expect(screen.getByText("Torus")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Torus/ })).toBeNull();
+    expect(screen.getByText("Zulema Records")).toBeInTheDocument();
   });
 
-  it("shows an Out of Stock label when the product is out of stock", () => {
-    render(<ProductRow product={product({ inStock: false, quantity: 0 }) as never} />);
-    expect(screen.getByText(/out of stock/i)).toBeInTheDocument();
-  });
-
-  it("does not show an Out of Stock label when in stock", () => {
-    render(<ProductRow product={product({ inStock: true }) as never} />);
-    expect(screen.queryByText(/out of stock/i)).toBeNull();
-  });
-
-  it("still links the title when the product is in stock", () => {
-    render(<ProductRow product={product({ inStock: true }) as never} />);
+  it("links only the title, to the product's detail page", () => {
+    renderRow(product());
     expect(screen.getByRole("link", { name: /Torus/ })).toHaveAttribute(
       "href",
       "/stock/p1",
     );
+    expect(screen.queryByRole("link", { name: "Vril" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "LP" })).toBeNull();
+  });
+});
+
+describe("ProductRow — RESTOCK badge", () => {
+  it("renders the RESTOCK badge when updatedAt is well after createdAt and stock remains", () => {
+    renderRow(product({ createdAt: OLD, updatedAt: RECENT, quantity: 2 }));
+    expect(screen.getByText(/restock/i)).toBeInTheDocument();
+  });
+
+  it("does not render the RESTOCK badge for a freshly created product", () => {
+    renderRow(product({ createdAt: OLD, updatedAt: OLD }));
+    expect(screen.queryByText(/restock/i)).toBeNull();
+  });
+
+  it("does not render the RESTOCK badge when out of stock", () => {
+    renderRow(product({ createdAt: OLD, updatedAt: RECENT, quantity: 0 }));
+    expect(screen.queryByText(/restock/i)).toBeNull();
+  });
+});
+
+describe("ProductRow — no JUST IN badge", () => {
+  it("never renders a JUST IN badge, even for a freshly created product", () => {
+    renderRow(product({ createdAt: new Date() }));
+    expect(screen.queryByText(/just in/i)).toBeNull();
   });
 });
 
 describe("ProductRow — no price", () => {
   it("does not render a price", () => {
-    render(<ProductRow product={product() as never} />);
+    renderRow(product());
     expect(screen.queryByText(/€/)).toBeNull();
   });
 });
 
 describe("ProductRow — Various Artists", () => {
   it('renders "VARIOUS ARTISTS" instead of the linked artist name', () => {
-    render(
-      <ProductRow
-        product={
-          product({
-            isVariousArtists: true,
-            contents: "Surgeon, Regis",
-            productArtists: [
-              { position: 0, artistId: "va1", artist: { id: "va1", name: "Various Artists" } },
-            ],
-          }) as never
-        }
-      />,
+    renderRow(
+      product({
+        isVariousArtists: true,
+        contents: "Surgeon, Regis",
+        productArtists: [
+          { position: 0, artistId: "va1", artist: { id: "va1", name: "Various Artists" } },
+        ],
+      }),
     );
     expect(screen.getByText("VARIOUS ARTISTS")).toBeInTheDocument();
     expect(screen.queryByText("Various Artists")).toBeNull();
   });
 
-  it("does not render contents in the list view", () => {
-    render(
-      <ProductRow
-        product={product({ isVariousArtists: true, contents: "Surgeon, Regis" }) as never}
-      />,
-    );
+  it("does not render contents in the table", () => {
+    renderRow(product({ isVariousArtists: true, contents: "Surgeon, Regis" }));
     expect(screen.queryByText(/Surgeon, Regis/)).toBeNull();
   });
 
   it("renders the linked artist name as usual for a non-VA product", () => {
-    render(<ProductRow product={product({ isVariousArtists: false }) as never} />);
+    renderRow(product({ isVariousArtists: false }));
     expect(screen.getByText("Vril")).toBeInTheDocument();
     expect(screen.queryByText("VARIOUS ARTISTS")).toBeNull();
   });

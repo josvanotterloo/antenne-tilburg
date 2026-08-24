@@ -106,6 +106,10 @@ export function buildCatalogOrderBy(
       return [{ primaryArtistName: explicit ?? "asc" }, { title: "asc" }];
     case "label":
       return { label: { name: explicit ?? "asc" } };
+    case "type":
+      return { productType: { name: explicit ?? "asc" } };
+    case "title":
+      return { title: explicit ?? "asc" };
     case "date":
     default:
       return { createdAt: explicit ?? "desc" };
@@ -274,16 +278,19 @@ export async function getCatalogPage(
   };
 }
 
-// The N most recent arrivals, newest first — in-stock only when
-// onlyInStock is set. Powers the home "Just In" section and public /stock
-// (100 latest by createdAt, no pagination).
+// The N most recent arrivals — in-stock only when onlyInStock is set,
+// newest-first by default or sorted by sort/order when given (see
+// buildCatalogOrderBy). Powers the home "Just In" section, the RSS feed,
+// and public /stock (100 latest, no pagination).
 export function getLatestProducts(
   limit = 100,
   onlyInStock = false,
+  sort?: string,
+  order?: string,
 ): Promise<CatalogProduct[]> {
   return db.product.findMany({
     where: buildCatalogWhere({ onlyInStock }),
-    orderBy: { createdAt: "desc" },
+    orderBy: buildCatalogOrderBy(sort, order),
     take: limit,
     include: CATALOG_INCLUDE,
   });
