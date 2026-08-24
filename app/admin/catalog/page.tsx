@@ -100,7 +100,7 @@ export default async function CatalogPage({
               key={product.id}
               className="flex flex-col gap-2 p-3 md:flex-row md:items-center md:gap-4"
             >
-              {/* Identity: artist — title, then label · genre · condition, then dates */}
+              {/* Identity: artist — title, then label · genre, then dates */}
               <div className="min-w-0 flex-1 space-y-0.5 text-sm">
                 <p className="truncate">
                   <span className="font-semibold">
@@ -113,15 +113,6 @@ export default async function CatalogPage({
                   <span>{product.label.name}</span>
                   <span aria-hidden>·</span>
                   <span>{joinGenreNames(product.productGenres)}</span>
-                  <span
-                    className={`rounded px-1.5 py-0.5 ${
-                      product.condition === "NEW"
-                        ? "bg-green-500/15 text-green-400"
-                        : "bg-admin-raised text-admin-ink"
-                    }`}
-                  >
-                    {product.condition}
-                  </span>
                 </p>
                 <p className="text-xs text-admin-ink-muted">
                   <span title={fullDate(product.createdAt)}>

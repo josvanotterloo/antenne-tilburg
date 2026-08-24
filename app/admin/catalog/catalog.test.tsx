@@ -77,7 +77,6 @@ describe("/admin/catalog", () => {
     expect(screen.getByText("Torus")).toBeInTheDocument();
     expect(screen.getByText("Zulema Records")).toBeInTheDocument();
     expect(screen.getByText("Techno")).toBeInTheDocument();
-    expect(screen.getByText("NEW")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument(); // quantity
     expect(screen.getByText(/€24\.99/)).toBeInTheDocument();
 
@@ -91,6 +90,19 @@ describe("/admin/catalog", () => {
       "href",
       "/admin/catalog/p1/edit",
     );
+  });
+
+  it("does not render the product's condition", async () => {
+    vi.mocked(getCatalogPage).mockResolvedValue({
+      products: [{ ...PRODUCT, condition: "SECONDHAND" }] as never,
+      total: 1,
+      page: 1,
+      pageCount: 1,
+    });
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.queryByText("NEW")).not.toBeInTheDocument();
+    expect(screen.queryByText("SECONDHAND")).not.toBeInTheDocument();
   });
 
   it("passes ?q= through and shows all products (not in-stock only)", async () => {

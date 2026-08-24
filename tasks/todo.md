@@ -177,6 +177,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       Prisma bump — `docs/features/security-dependency-updates.md`.
 
 ### Code quality
+- [x] Removed the condition (NEW/SECONDHAND) badge from `/admin/catalog`'s
+      product rows (2026-08-24) — display-only; `product.condition` is
+      still stored and still editable on the product form.
 - [x] Full-codebase code review (Phase 3, 2026-07-09/10) — 1 High + 5 Medium
       fixed; report `docs/security/code-review-2026-07-09.md`
 - [x] Shared `apiSend` + `useAsyncAction` for admin fetch error handling — all
@@ -215,7 +218,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 966 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 967 tests as of removing
+the admin catalog condition badge, 2026-08-24 (+1: asserts NEW/SECONDHAND
+text no longer renders on `/admin/catalog` rows). 966 tests as of the
 Product ↔ Genre many-to-many change, 2026-08-21 (+22 net: `lib/resolve-genres.ts`'s
 own suite, plus updated fixtures across every consumer touched — no new
 behavior tests beyond `resolve-genres` and the multi-genre `product-input`/
