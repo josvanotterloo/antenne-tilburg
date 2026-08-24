@@ -29,6 +29,7 @@ const product = (over: Record<string, unknown> = {}) => ({
     { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
   ],
   productType: { id: "t1", name: "LP" },
+  inStock: true,
   ...over,
 });
 
@@ -101,6 +102,32 @@ describe("ProductRow — artist and label as plain text", () => {
     render(<ProductRow product={product() as never} />);
     expect(screen.getByText("Zulema Records")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Zulema Records" })).toBeNull();
+  });
+});
+
+describe("ProductRow — out of stock", () => {
+  it("does not link the title when the product is out of stock", () => {
+    render(<ProductRow product={product({ inStock: false, quantity: 0 }) as never} />);
+    expect(screen.getByText("Torus")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Torus/ })).toBeNull();
+  });
+
+  it("shows an Out of Stock label when the product is out of stock", () => {
+    render(<ProductRow product={product({ inStock: false, quantity: 0 }) as never} />);
+    expect(screen.getByText(/out of stock/i)).toBeInTheDocument();
+  });
+
+  it("does not show an Out of Stock label when in stock", () => {
+    render(<ProductRow product={product({ inStock: true }) as never} />);
+    expect(screen.queryByText(/out of stock/i)).toBeNull();
+  });
+
+  it("still links the title when the product is in stock", () => {
+    render(<ProductRow product={product({ inStock: true }) as never} />);
+    expect(screen.getByRole("link", { name: /Torus/ })).toHaveAttribute(
+      "href",
+      "/stock/p1",
+    );
   });
 });
 

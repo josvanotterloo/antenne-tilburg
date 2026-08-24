@@ -138,6 +138,17 @@ describe("/admin/catalog", () => {
     expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
 
+  it("Clear link preserves the instock filter while clearing the search text", async () => {
+    const ui = await AdminCatalogPage({
+      searchParams: Promise.resolve({ q: "vril", instock: "true" }),
+    });
+    render(ui);
+    expect(screen.getByRole("link", { name: /clear/i })).toHaveAttribute(
+      "href",
+      "/admin/catalog?instock=true",
+    );
+  });
+
   it("shows the toggle as on, preserving ?q=, when ?instock=true", async () => {
     const ui = await AdminCatalogPage({
       searchParams: Promise.resolve({ q: "vril", instock: "true" }),

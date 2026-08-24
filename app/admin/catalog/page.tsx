@@ -87,7 +87,7 @@ export default async function CatalogPage({
         </button>
         {q && (
           <Link
-            href="/admin/catalog"
+            href={adminHref(undefined, 1, instock)}
             className="rounded px-3 py-2 text-sm text-admin-ink-muted underline"
           >
             Clear

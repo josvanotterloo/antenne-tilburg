@@ -14,8 +14,15 @@ export function RestockBadge() {
   return <span className={badgeClass}>Restock</span>;
 }
 
+export function OutOfStockBadge() {
+  return <span className={badgeClass}>Out of Stock</span>;
+}
+
 // The /stock list row. Artist, title and label are plain text/detail links —
 // no price, no artist/label filter links (removed with the public filter UI).
+// Out-of-stock products (shown when the "In stock only" filter is off) have
+// no detail page — /stock/[id] 404s them — so the title stays plain text,
+// not a link, for those rows.
 export function ProductRow({ product }: { product: CatalogProduct }) {
   return (
     <div className="-mx-4 flex items-baseline justify-between gap-4 px-4 py-4 transition-colors duration-150 ease-out hover:bg-surface">
@@ -33,14 +40,19 @@ export function ProductRow({ product }: { product: CatalogProduct }) {
                 ))}
         </span>
         <span className="text-ink-muted"> — </span>
-        <Link
-          href={`/stock/${product.id}`}
-          className="text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
-        >
-          {product.title}
-        </Link>
+        {product.inStock ? (
+          <Link
+            href={`/stock/${product.id}`}
+            className="text-ink-muted transition-colors duration-150 ease-out hover:text-ink"
+          >
+            {product.title}
+          </Link>
+        ) : (
+          <span className="text-ink-muted">{product.title}</span>
+        )}
         {isJustIn(product.createdAt) && <JustInBadge />}
         {isRestock(product) && <RestockBadge />}
+        {!product.inStock && <OutOfStockBadge />}
         <span className="mt-0.5 block truncate font-mono text-xs text-ink-muted">
           <span>{product.label.name}</span>
           {" · "}
