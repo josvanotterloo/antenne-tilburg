@@ -21,6 +21,9 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v) ?? undefined;
 
+// "In stock only" defaults to ON — instock is only written into the
+// querystring when explicitly turned off, keeping the (now-default) URL
+// clean.
 function adminHref(
   q: string | undefined,
   page: number,
@@ -29,7 +32,7 @@ function adminHref(
   const sp = new URLSearchParams();
   if (q) sp.set("q", q);
   if (page > 1) sp.set("page", String(page));
-  if (instock) sp.set("instock", "true");
+  if (!instock) sp.set("instock", "false");
   const qs = sp.toString();
   return qs ? `/admin/catalog?${qs}` : "/admin/catalog";
 }
@@ -41,7 +44,7 @@ export default async function CatalogPage({
 }) {
   const sp = await searchParams;
   const q = one(sp.q);
-  const instock = one(sp.instock) === "true";
+  const instock = one(sp.instock) !== "false";
 
   const result = await getCatalogPage({
     q,
@@ -142,9 +145,12 @@ export default async function CatalogPage({
                 </p>
               </div>
 
-              {/* Stock, price and actions; wraps below the identity block on mobile */}
-              <div className="flex items-center justify-between gap-4 text-sm md:justify-end">
-                <span className="whitespace-nowrap">
+              {/* Stock, price and actions; wraps below the identity block on
+                  mobile. Fixed grid columns keep quantity/price/every
+                  action control aligned row-to-row regardless of digit
+                  count or button label length. */}
+              <div className="grid grid-cols-[104px_76px_84px_84px_32px_48px_56px] items-center gap-3 text-sm">
+                <div className="text-right">
                   <span
                     className={`font-semibold tabular-nums ${
                       product.quantity === 0 ? "text-red-400" : "text-admin-ink"
@@ -153,17 +159,21 @@ export default async function CatalogPage({
                     {product.quantity}
                   </span>
                   <span className="text-xs text-admin-ink-muted"> in stock</span>
-                </span>
-                <span className="tabular-nums">
+                </div>
+                <div className="text-right tabular-nums">
                   €{Number(product.price).toFixed(2)}
-                </span>
-                <div className="flex items-center gap-3">
+                </div>
+                <div className="flex justify-center">
                   <SellOneButton id={product.id} quantity={product.quantity} />
+                </div>
+                <div className="flex justify-center">
                   <OrderButton
                     productId={product.id}
                     hasSupplier={!!product.supplierId}
                     initiallyOrdered={openOrderProductIds.has(product.id)}
                   />
+                </div>
+                <div className="flex justify-center">
                   {missingLabelFields(product).length === 0 && (
                     <a
                       href={`/api/admin/label/${product.id}`}
@@ -176,12 +186,16 @@ export default async function CatalogPage({
                       🖨️
                     </a>
                   )}
+                </div>
+                <div className="flex justify-center">
                   <Link
                     href={`/admin/catalog/${product.id}/edit`}
                     className="text-admin-ink hover:underline"
                   >
                     Edit
                   </Link>
+                </div>
+                <div className="flex justify-center">
                   <DeleteProductButton id={product.id} />
                 </div>
               </div>

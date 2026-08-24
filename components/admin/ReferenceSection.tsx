@@ -188,39 +188,41 @@ export function ReferenceSection({
         </span>
       </div>
 
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={`Search ${label}`}
-        aria-label={`Search ${label}`}
-        className="mt-3 w-full rounded border border-admin-hairline px-2 py-1 text-sm"
-      />
-
-      <form onSubmit={handleAdd} className="mt-3 flex gap-2">
+      <div className="rounded border border-admin-hairline bg-admin-surface p-4 space-y-3">
         <input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder={`Add ${title.toLowerCase().replace(/s$/, "")}`}
-          aria-label={`New ${title} name`}
-          className="flex-1 rounded border border-admin-hairline px-2 py-1 text-sm"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={`Search ${label}`}
+          aria-label={`Search ${label}`}
+          className="w-full rounded border border-admin-hairline bg-admin-bg px-2 py-1 text-sm"
         />
-        <button
-          type="submit"
-          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-1 text-sm text-admin-bg"
-        >
-          Add
-        </button>
-        {supplierEndpoint && (
-          <Combobox
-            label="Supplier"
-            endpoint={supplierEndpoint}
-            value={newSupplier}
-            onChange={setNewSupplier}
-            allowCreate={false}
+
+        <form onSubmit={handleAdd} className="flex gap-2">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder={`Add ${title.toLowerCase().replace(/s$/, "")}`}
+            aria-label={`New ${title} name`}
+            className="flex-1 rounded border border-admin-hairline bg-admin-bg px-2 py-1 text-sm"
           />
-        )}
-      </form>
+          <button
+            type="submit"
+            className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
+          >
+            Add
+          </button>
+          {supplierEndpoint && (
+            <Combobox
+              label="Supplier"
+              endpoint={supplierEndpoint}
+              value={newSupplier}
+              onChange={setNewSupplier}
+              allowCreate={false}
+            />
+          )}
+        </form>
+      </div>
 
       {(error || searchError) && (
         <p role="alert" className="mt-2 text-sm text-red-400">
@@ -280,26 +282,36 @@ export function ReferenceSection({
                         </span>
                       )}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => startEdit(item)}
-                      className="text-admin-ink hover:underline"
-                    >
-                      Edit
-                    </button>
-                    {item.productCount > 0 ? (
-                      <span className="text-admin-ink-muted">
-                        In use by {item.productCount} products
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-400 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    )}
+                    {/* Fixed columns keep Edit aligned across every row,
+                        and align whatever trails it (Delete, or the
+                        "In use by N products" text) too — same approach
+                        as the catalog list. */}
+                    <div className="grid grid-cols-[48px_200px] items-center gap-2">
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(item)}
+                          className="text-admin-ink hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      <div className="flex justify-start">
+                        {item.productCount > 0 ? (
+                          <span className="text-admin-ink-muted">
+                            In use by {item.productCount} products
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            className="text-red-400 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </>
                 )}
               </li>

@@ -114,49 +114,49 @@ describe("/admin/catalog", () => {
     expect(screen.queryByText("SECONDHAND")).not.toBeInTheDocument();
   });
 
-  it("passes ?q= through and shows all products (not in-stock only)", async () => {
+  it("passes ?q= through and defaults to in-stock only", async () => {
     await AdminCatalogPage({ searchParams: Promise.resolve({ q: "vril" }) });
     expect(getCatalogPage).toHaveBeenCalledWith(
-      expect.objectContaining({ q: "vril", onlyInStock: false }),
+      expect.objectContaining({ q: "vril", onlyInStock: true }),
     );
   });
 
-  it("passes onlyInStock: true when ?instock=true", async () => {
+  it("passes onlyInStock: false when ?instock=false", async () => {
     await AdminCatalogPage({
-      searchParams: Promise.resolve({ instock: "true" }),
+      searchParams: Promise.resolve({ instock: "false" }),
     });
     expect(getCatalogPage).toHaveBeenCalledWith(
-      expect.objectContaining({ onlyInStock: true }),
+      expect.objectContaining({ onlyInStock: false }),
     );
   });
 
-  it("shows an 'In stock only' toggle, off by default, linking to turn it on", async () => {
+  it("shows an 'In stock only' toggle, on by default, linking to turn it off", async () => {
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
     const toggle = screen.getByRole("link", { name: /in stock only/i });
-    expect(toggle).toHaveAttribute("href", "/admin/catalog?instock=true");
-    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle).toHaveAttribute("href", "/admin/catalog?instock=false");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("Clear link preserves the instock filter while clearing the search text", async () => {
+  it("Clear link preserves an explicit instock=false while clearing the search text", async () => {
     const ui = await AdminCatalogPage({
-      searchParams: Promise.resolve({ q: "vril", instock: "true" }),
+      searchParams: Promise.resolve({ q: "vril", instock: "false" }),
     });
     render(ui);
     expect(screen.getByRole("link", { name: /clear/i })).toHaveAttribute(
       "href",
-      "/admin/catalog?instock=true",
+      "/admin/catalog?instock=false",
     );
   });
 
-  it("shows the toggle as on, preserving ?q=, when ?instock=true", async () => {
+  it("shows the toggle as off, preserving ?q=, when ?instock=false", async () => {
     const ui = await AdminCatalogPage({
-      searchParams: Promise.resolve({ q: "vril", instock: "true" }),
+      searchParams: Promise.resolve({ q: "vril", instock: "false" }),
     });
     render(ui);
     const toggle = screen.getByRole("link", { name: /in stock only/i });
     expect(toggle).toHaveAttribute("href", "/admin/catalog?q=vril");
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
 
   it("shows a print icon link with the correct href for a complete product", async () => {
