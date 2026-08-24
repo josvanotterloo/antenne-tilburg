@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 export const JUST_IN_DAYS = 30;
 export const PAGE_SIZE = 50;
 
-export type CatalogSort = "date" | "artist" | "label";
+export type CatalogSort = "date" | "artist" | "label" | "type" | "title";
 export type SortOrder = "asc" | "desc";
 
 // artistIds/labelId/productTypeId/justIn below, and the "artist"/"label" sort
