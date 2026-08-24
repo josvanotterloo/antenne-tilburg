@@ -177,9 +177,16 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       Prisma bump — `docs/features/security-dependency-updates.md`.
 
 ### Code quality
-- [x] "In Stock Only" filter (2026-08-24) — `?instock=true` toggle on
-      `/admin/catalog` and public `/stock`, default off. Out-of-stock rows
-      on `/stock` are no longer clickable (the detail page 404s them by
+- [x] Admin UI polish (2026-08-24) — `/admin/catalog`'s "In Stock Only"
+      filter now defaults ON (was off; `?instock=false` opts out); catalog
+      list rows use a fixed-column grid so quantity/price/action buttons
+      align across rows; `ReferenceSection` (Genres/Labels/Artists/Product
+      Types) gets a tinted search/add panel, a heavier Add button, and
+      the same fixed-column Edit/Delete alignment.
+- [x] "In Stock Only" filter (2026-08-24) — `?instock=true` toggle added
+      to `/admin/catalog` and public `/stock`, originally default off (see
+      the entry above — admin's default later flipped to on). Out-of-stock
+      rows on `/stock` are not clickable (the detail page 404s them by
       design) and carry an Out of Stock badge instead.
 - [x] Removed the condition (NEW/SECONDHAND) badge from `/admin/catalog`'s
       product rows (2026-08-24) — display-only; `product.condition` is
@@ -223,6 +230,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 
 ### Testing
 Done — Vitest runner + `run-tests` skill in place; 979 tests as of the
+admin UI polish, 2026-08-24 (net 0 — style-only except the default-value
+flip on `/admin/catalog`'s instock param, which updated existing
+assertions in place rather than adding new ones). 979 tests as of the
 "In Stock Only" filter, 2026-08-24 (+12 net: the toggle/default tests on
 `/admin/catalog` and `/stock`, `getLatestProducts`'s new `onlyInStock`
 param, and the `/code-review`-fix regression tests — out-of-stock rows
