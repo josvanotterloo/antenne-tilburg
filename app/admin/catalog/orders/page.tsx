@@ -72,7 +72,7 @@ export default async function OrdersOverviewPage({
       {result.groupBy === "supplier" &&
         (result.groups.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-            No open orders. Use &quot;Order&quot; on a catalog or transactions row to start one.
+            No open orders. Use &quot;Order&quot; on a catalog row to start one.
           </p>
         ) : (
           <div className="space-y-4">

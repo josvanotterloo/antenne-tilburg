@@ -28,7 +28,6 @@ describe("CatalogLayout nav", () => {
     const expected: [string, string][] = [
       ["Products", "/admin/catalog"],
       ["Orders", "/admin/catalog/orders"],
-      ["Transactions", "/admin/catalog/transactions"],
       ["Labels", "/admin/catalog/labels"],
       ["Artists", "/admin/catalog/artists"],
       ["Genres", "/admin/catalog/genres"],

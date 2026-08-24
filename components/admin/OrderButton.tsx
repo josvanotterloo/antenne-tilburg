@@ -5,8 +5,8 @@ import { useState } from "react";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 
-// Shared "Order" action for the catalog list and the monthly transactions
-// page: quick-adds a product to its supplier's open SupplyOrder.
+// "Order" action for the catalog list: quick-adds a product to its
+// supplier's open SupplyOrder.
 export function OrderButton({
   productId,
   hasSupplier,
