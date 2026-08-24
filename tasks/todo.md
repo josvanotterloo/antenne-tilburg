@@ -177,6 +177,10 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       Prisma bump — `docs/features/security-dependency-updates.md`.
 
 ### Code quality
+- [x] "In Stock Only" filter (2026-08-24) — `?instock=true` toggle on
+      `/admin/catalog` and public `/stock`, default off. Out-of-stock rows
+      on `/stock` are no longer clickable (the detail page 404s them by
+      design) and carry an Out of Stock badge instead.
 - [x] Removed the condition (NEW/SECONDHAND) badge from `/admin/catalog`'s
       product rows (2026-08-24) — display-only; `product.condition` is
       still stored and still editable on the product form.
@@ -218,7 +222,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 967 tests as of removing
+Done — Vitest runner + `run-tests` skill in place; 979 tests as of the
+"In Stock Only" filter, 2026-08-24 (+12 net: the toggle/default tests on
+`/admin/catalog` and `/stock`, `getLatestProducts`'s new `onlyInStock`
+param, and the `/code-review`-fix regression tests — out-of-stock rows
+not linking + an Out of Stock badge, admin's Clear link preserving
+`instock`). 967 tests as of removing
 the admin catalog condition badge, 2026-08-24 (+1: asserts NEW/SECONDHAND
 text no longer renders on `/admin/catalog` rows). 966 tests as of the
 Product ↔ Genre many-to-many change, 2026-08-21 (+22 net: `lib/resolve-genres.ts`'s
