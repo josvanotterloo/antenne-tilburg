@@ -177,6 +177,12 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       Prisma bump — `docs/features/security-dependency-updates.md`.
 
 ### Code quality
+- [x] Public /stock redesign (2026-08-24) — replaced the flex-row list
+      with a sortable Type/Artist/Title/Label `<table>` per DESIGN.md's
+      "Stock Table" motif (`?sort=&order=`, aria-sort + ▲/▼ indicator);
+      removed the public In Stock Only toggle and JUST IN badge; `/stock`
+      now always in-stock-only again (out-of-stock rows have no detail
+      page). `buildCatalogOrderBy` gained `type`/`title` sort keys.
 - [x] Admin UI polish (2026-08-24) — `/admin/catalog`'s "In Stock Only"
       filter now defaults ON (was off; `?instock=false` opts out); catalog
       list rows use a fixed-column grid so quantity/price/action buttons
@@ -229,7 +235,11 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 979 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 972 tests as of the
+public /stock redesign, 2026-08-24 (net -7 vs. admin UI polish's 979 —
+the toggle/JUST IN/out-of-stock test cases it removed outnumbered the
+new sort/table-column cases it added; the removed behavior is genuinely
+gone, not undertested). 979 tests as of the
 admin UI polish, 2026-08-24 (net 0 — style-only except the default-value
 flip on `/admin/catalog`'s instock param, which updated existing
 assertions in place rather than adding new ones). 979 tests as of the
