@@ -14,6 +14,12 @@ const NAV = [
 
 const heading =
   "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
+// The three top-level column titles (Follow/Navigate/Contact) — bolder,
+// underlined, and given extra breathing room before their content so they
+// read as section headers, not just another label (the plain `heading`
+// style above stays as-is for in-column sub-labels like "Follow us").
+const columnHeading =
+  "border-b border-hairline pb-2 mb-3 font-mono text-xs font-bold uppercase tracking-[0.06em] text-ink-muted";
 const link =
   "font-mono text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-signal";
 
@@ -23,7 +29,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-5xl gap-10 px-4 py-12 md:grid-cols-3">
         {/* FOLLOW */}
         <div className="space-y-6">
-          <h2 className={heading}>Follow</h2>
+          <h2 className={columnHeading}>Follow</h2>
           <NewsletterForm />
           <div className="space-y-3">
             <p className={heading}>Follow us</p>
@@ -33,7 +39,7 @@ export function SiteFooter() {
 
         {/* NAVIGATE */}
         <nav aria-label="Footer navigation" className="space-y-4">
-          <h2 className={heading}>Navigate</h2>
+          <h2 className={columnHeading}>Navigate</h2>
           <ul className="space-y-2">
             {NAV.map((item) => (
               <li key={item.href}>
@@ -47,7 +53,7 @@ export function SiteFooter() {
 
         {/* CONTACT */}
         <div className="space-y-4">
-          <h2 className={heading}>Contact</h2>
+          <h2 className={columnHeading}>Contact</h2>
           <address className="space-y-1 font-mono text-sm not-italic text-ink-muted">
             <p className="text-ink">{SHOP.name}</p>
             <p>{SHOP.addressLine}</p>
