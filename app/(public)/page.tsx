@@ -1,13 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-import {
-  getLatestProducts,
-  isJustIn,
-  joinArtistNames,
-  joinGenreNames,
-  type CatalogProduct,
-} from "@/lib/catalog";
+import { getLatestProducts } from "@/lib/catalog";
+import { COLUMNS, ProductRow } from "@/components/stock/ProductRow";
 import { getPublishedPosts, postDateLabel } from "@/lib/blog";
 import { getOpeningHours, toOpeningHoursSpecification } from "@/lib/opening-hours";
 import { localBusinessJsonLd } from "@/lib/structured-data";
@@ -17,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   description:
-    "Antenne Recordshop — electronic-music vinyl and tape in Tilburg, inside Sam-Sam vintage. New releases, a deep second-hand section, independent Discogs stock, and the 100 latest arrivals.",
+    "Antenne Recordshop — electronic-music vinyl and tape in Tilburg, inside Sam-Sam vintage. New releases, a deep second-hand section, independent Discogs stock, and the latest arrivals.",
 };
 
 // The genre-static field — the heritage motif, a faint field of broadcast static
@@ -33,7 +28,7 @@ const GENRE_STATIC = [
 
 export default async function HomePage() {
   const [products, allPosts, hours] = await Promise.all([
-    getLatestProducts(100, true),
+    getLatestProducts(5, true),
     getPublishedPosts(),
     getOpeningHours(),
   ]);
@@ -105,13 +100,38 @@ export default async function HomePage() {
             .
           </p>
         ) : (
-          <ul className="grid gap-x-8 border-t border-hairline sm:grid-cols-2">
-            {products.map((product) => (
-              <li key={product.id} className="border-b border-hairline">
-                <JustInRow product={product} />
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="border-b border-hairline">
+                  <tr>
+                    {COLUMNS.map((col) => (
+                      <th
+                        key={col.key}
+                        scope="col"
+                        className={`px-4 py-2 font-mono text-xs uppercase tracking-[0.06em] text-ink-muted ${
+                          col.hideMobile ? "hidden sm:table-cell" : ""
+                        }`}
+                      >
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {products.map((product) => (
+                    <ProductRow key={product.id} product={product} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Link
+              href="/stock"
+              className="inline-block font-mono text-xs uppercase tracking-[0.06em] text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
+            >
+              View all new arrivals →
+            </Link>
+          </>
         )}
       </section>
 
@@ -171,29 +191,5 @@ export default async function HomePage() {
         </Link>
       </section>
     </div>
-  );
-}
-
-function JustInRow({ product }: { product: CatalogProduct }) {
-  return (
-    <Link
-      href={`/stock/${product.id}`}
-      className="group flex items-baseline justify-between gap-4 py-3"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="font-medium text-ink transition-colors duration-150 ease-out group-hover:text-signal">
-          {joinArtistNames(product.productArtists)}
-        </span>
-        <span className="text-ink-muted"> — {product.title}</span>
-        {isJustIn(product.createdAt) && (
-          <span className="ml-2 font-mono text-[0.625rem] font-bold uppercase tracking-[0.06em] text-signal">
-            New
-          </span>
-        )}
-        <span className="block truncate font-mono text-xs text-ink-muted">
-          {product.label.name} · {joinGenreNames(product.productGenres)}
-        </span>
-      </span>
-    </Link>
   );
 }

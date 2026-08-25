@@ -33,6 +33,7 @@ const PRODUCT = {
   price: "24.99",
   condition: "NEW",
   inStock: true,
+  quantity: 1,
   coverImage: null,
   description: null,
   createdAt: new Date(),
@@ -90,15 +91,38 @@ describe("home page", () => {
       "href",
       "/stock",
     );
-    expect(screen.getByRole("link", { name: /new arrivals →/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "New arrivals →" })).toHaveAttribute(
       "href",
       "/stock",
     );
   });
 
-  it("requests the 100 latest in-stock arrivals", async () => {
+  it("shows a 'View all new arrivals' link below the table, pointing to /stock", async () => {
+    render(await HomePage());
+    expect(
+      screen.getByRole("link", { name: "View all new arrivals →" }),
+    ).toHaveAttribute("href", "/stock");
+  });
+
+  it("requests the 5 latest in-stock arrivals", async () => {
     await HomePage();
-    expect(getLatestProducts).toHaveBeenCalledWith(100, true);
+    expect(getLatestProducts).toHaveBeenCalledWith(5, true);
+  });
+
+  it("renders the same Type/Artist/Title/Label table columns as /stock", async () => {
+    render(await HomePage());
+    for (const name of ["Type", "Artist", "Title", "Label"]) {
+      expect(
+        screen.getByRole("columnheader", { name: new RegExp(`^${name}$`, "i") }),
+      ).toBeInTheDocument();
+    }
+    expect(screen.getByText("LP")).toBeInTheDocument();
+    expect(screen.getByText("Zulema Records")).toBeInTheDocument();
+  });
+
+  it("does not show a JUST IN/New badge on any row", async () => {
+    render(await HomePage());
+    expect(screen.queryByText("New", { selector: "span" })).toBeNull();
   });
 
   it("teases the latest blog posts linking to each post", async () => {
