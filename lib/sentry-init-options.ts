@@ -1,3 +1,5 @@
+import type { ErrorEvent } from "@sentry/nextjs";
+
 import { scrubEmails } from "@/lib/sentry-scrub";
 
 // Shared by sentry.server.config.ts, sentry.edge.config.ts, and
@@ -9,5 +11,17 @@ import { scrubEmails } from "@/lib/sentry-scrub";
 // Node/Edge/Browser option types — those aren't part of @sentry/nextjs's
 // public export surface, and `dsn`/`beforeSend` are valid fields on all three.
 export function sentryInitOptions(dsn: string | undefined) {
-  return dsn ? { dsn, beforeSend: scrubEmails } : null;
+  if (!dsn) return null;
+  return {
+    dsn,
+    beforeSend(event: ErrorEvent): ErrorEvent | null {
+      // Local dev is noise, not a real error report — drop it before
+      // scrubbing even runs. Checked via NODE_ENV (same convention as
+      // lib/db.ts), not Sentry's own event.environment, so this doesn't
+      // depend on each runtime's (server/edge/client) auto-detection
+      // agreeing on the literal string "development".
+      if (process.env.NODE_ENV === "development") return null;
+      return scrubEmails(event);
+    },
+  };
 }
