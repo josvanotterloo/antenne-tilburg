@@ -14,19 +14,19 @@ const NAV = [
 
 const heading =
   "font-mono text-xs font-medium uppercase tracking-[0.06em] text-ink-muted";
-// The three top-level column titles (Follow/Navigate/Contact) — bolder,
-// underlined, and given extra breathing room before their content so they
-// read as section headers, not just another label (the plain `heading`
-// style above stays as-is for in-column sub-labels like "Follow us").
+// The three top-level column titles (Follow/Navigate/Contact) read as
+// labels, not headings — small, wide-tracked, with generous room below
+// the hairline before their content starts (the plain `heading` style
+// above stays as-is for in-column sub-labels like "Follow us").
 const columnHeading =
-  "border-b border-hairline pb-2 mb-3 font-mono text-xs font-bold uppercase tracking-[0.06em] text-ink-muted";
+  "border-b border-hairline pb-2 mb-5 font-mono text-[0.6875rem] font-bold uppercase tracking-[0.1em] text-ink-muted";
 const link =
-  "font-mono text-sm text-ink-muted transition-colors duration-150 ease-out hover:text-signal";
+  "font-mono text-sm leading-loose text-ink-muted transition-colors duration-150 ease-out hover:text-signal";
 
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-hairline bg-canvas">
-      <div className="mx-auto grid max-w-5xl gap-10 px-4 py-12 md:grid-cols-3">
+      <div className="mx-auto grid max-w-5xl gap-10 px-4 py-16 md:grid-cols-3">
         {/* FOLLOW */}
         <div className="space-y-6">
           <h2 className={columnHeading}>Follow</h2>
@@ -40,7 +40,7 @@ export function SiteFooter() {
         {/* NAVIGATE */}
         <nav aria-label="Footer navigation" className="space-y-4">
           <h2 className={columnHeading}>Navigate</h2>
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {NAV.map((item) => (
               <li key={item.href}>
                 <Link href={item.href} className={link}>
@@ -54,7 +54,7 @@ export function SiteFooter() {
         {/* CONTACT */}
         <div className="space-y-4">
           <h2 className={columnHeading}>Contact</h2>
-          <address className="space-y-1 font-mono text-sm not-italic text-ink-muted">
+          <address className="space-y-2 font-mono text-sm leading-relaxed not-italic text-ink-muted">
             <p className="text-ink">{SHOP.name}</p>
             <p>{SHOP.addressLine}</p>
             <p>{SHOP.addressNote}</p>
@@ -74,7 +74,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-hairline">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-4 py-4 font-mono text-xs text-ink-muted sm:flex-row">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-4 py-6 font-mono text-[0.6875rem] text-ink-muted/80 sm:flex-row">
           <span>© {new Date().getFullYear()} Antenne Recordshop</span>
           <a
             href="https://www.discogs.com/seller/antennetilburg"

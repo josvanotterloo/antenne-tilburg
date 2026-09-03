@@ -8,8 +8,8 @@ function FacebookIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="20"
-      height="20"
+      width="17"
+      height="17"
       fill="currentColor"
       aria-hidden="true"
       focusable="false"
@@ -23,8 +23,8 @@ function InstagramIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="20"
-      height="20"
+      width="17"
+      height="17"
       fill="currentColor"
       aria-hidden="true"
       focusable="false"
@@ -40,8 +40,8 @@ function SoundCloudIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="22"
-      height="22"
+      width="19"
+      height="19"
       fill="currentColor"
       aria-hidden="true"
       focusable="false"
@@ -79,7 +79,7 @@ export default function SocialLinks({ className = "" }: { className?: string }) 
             target="_blank"
             rel="noopener noreferrer"
             aria-label={label}
-            className="flex h-11 w-11 items-center justify-center border border-hairline text-ink-muted transition-colors duration-150 ease-out hover:border-signal hover:text-signal"
+            className="flex h-8 w-8 items-center justify-center text-ink-muted transition-colors duration-150 ease-out hover:text-signal"
           >
             <Icon />
           </a>
