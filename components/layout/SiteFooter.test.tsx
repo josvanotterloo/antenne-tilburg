@@ -52,6 +52,15 @@ describe("SiteFooter", () => {
     );
   });
 
+  it("renders an email-only newsletter signup (no name field)", () => {
+    render(<SiteFooter />);
+    expect(screen.queryByLabelText(/^name$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /sign up|subscribe/i }),
+    ).toBeInTheDocument();
+  });
+
   it("embeds the reusable social links", () => {
     render(<SiteFooter />);
     expect(

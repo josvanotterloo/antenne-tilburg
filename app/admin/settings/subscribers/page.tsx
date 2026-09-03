@@ -65,7 +65,9 @@ export default async function AdminSubscribersPage() {
             <tbody className="divide-y divide-admin-hairline">
               {subscribers.map((s) => (
                 <tr key={s.id}>
-                  <td className="px-3 py-2">{s.name}</td>
+                  <td className="px-3 py-2">
+                    {s.name ?? <span className="text-admin-ink-muted">—</span>}
+                  </td>
                   {/* Stored encrypted; decrypted here for the shop owner only.
                       A row from a rotated/wrong key degrades, not the page. */}
                   <td className="px-3 py-2">

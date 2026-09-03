@@ -44,6 +44,15 @@ describe("/admin/settings/subscribers", () => {
     expect(screen.getByText("bo@x.com")).toBeInTheDocument();
   });
 
+  it("shows a fallback dash for a subscriber with no name (footer's email-only signup)", async () => {
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      { id: "s1", name: null, email: encryptEmail("noname@x.com"), createdAt: new Date() },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByText("noname@x.com")).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
   it("shows a legacy (unmigrated) plaintext row as-is", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
       { id: "s1", name: "Old", email: "old@x.com", createdAt: new Date() },

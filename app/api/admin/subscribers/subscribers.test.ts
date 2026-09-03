@@ -49,6 +49,15 @@ describe("GET /api/admin/subscribers/export", () => {
     expect(body).toContain("Ada,ada@x.com");
   });
 
+  it("exports an empty name cell for a subscriber with no name (footer's email-only signup)", async () => {
+    sub.findMany.mockResolvedValue([
+      { name: null, email: encryptEmail("noname@x.com"), createdAt: new Date("2026-07-01T00:00:00Z") },
+    ]);
+    const res = await GET();
+    const body = await res.text();
+    expect(body).toContain(",noname@x.com,");
+  });
+
   it("marks an undecryptable row instead of failing the whole export", async () => {
     const stored = encryptEmail("ada@x.com");
     // Key rotated after this row was written.

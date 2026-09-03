@@ -84,3 +84,34 @@ describe("NewsletterForm", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("NewsletterForm (email-only variant)", () => {
+  it("renders only the email field, no name field", () => {
+    render(<NewsletterForm variant="email-only" />);
+    expect(screen.queryByLabelText(/^name$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /sign up|subscribe/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("posts the signup with no name field in the payload", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<NewsletterForm variant="email-only" />);
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: "jos@x.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /sign up|subscribe/i }));
+
+    expect(
+      await screen.findByText(/check your email to confirm/i),
+    ).toBeInTheDocument();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      email: "jos@x.com",
+    });
+  });
+});

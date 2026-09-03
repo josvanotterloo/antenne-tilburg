@@ -34,22 +34,24 @@ function stripControlChars(s: string): string {
 }
 
 export type NewsletterResult =
-  | { ok: true; data: { name: string; email: string } }
+  | { ok: true; data: { name: string | null; email: string } }
   | { ok: false; error: string };
 
+// Name is optional: the footer's email-only signup form never sends one, while
+// the dedicated /newsletter page still collects it when the subscriber offers
+// it. An empty/whitespace-only/control-chars-only name is stored as null, not
+// an empty string, so the admin subscriber list can tell "no name given" apart
+// from a name that happened to be blank.
 export function parseNewsletterInput(body: unknown): NewsletterResult {
   const b = (body ?? {}) as Record<string, unknown>;
-  const name =
+  const rawName =
     typeof b.name === "string" ? stripControlChars(b.name).trim() : "";
   const email =
     typeof b.email === "string"
       ? stripControlChars(b.email).trim().toLowerCase()
       : "";
 
-  if (!name) {
-    return { ok: false, error: "Your name is required" };
-  }
-  if (name.length > MAX_NAME) {
+  if (rawName.length > MAX_NAME) {
     return { ok: false, error: "That name is too long" };
   }
   if (!email || !EMAIL_RE.test(email)) {
@@ -58,5 +60,5 @@ export function parseNewsletterInput(body: unknown): NewsletterResult {
   if (email.length > MAX_EMAIL) {
     return { ok: false, error: "That email address is too long" };
   }
-  return { ok: true, data: { name, email } };
+  return { ok: true, data: { name: rawName || null, email } };
 }

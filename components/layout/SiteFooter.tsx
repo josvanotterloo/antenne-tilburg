@@ -30,7 +30,7 @@ export function SiteFooter() {
         {/* FOLLOW */}
         <div className="space-y-6">
           <h2 className={columnHeading}>Follow</h2>
-          <NewsletterForm />
+          <NewsletterForm variant="email-only" />
           <div className="space-y-3">
             <p className={heading}>Follow us</p>
             <SocialLinks />

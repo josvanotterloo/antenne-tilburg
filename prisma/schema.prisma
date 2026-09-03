@@ -293,7 +293,9 @@ enum SubscriberStatus {
 
 model NewsletterSubscriber {
   id           String           @id @default(cuid())
-  name         String
+  // Nullable: the footer's email-only signup form omits it. The dedicated
+  // /newsletter page still collects it when the subscriber offers it.
+  name         String?
   // AES-256-GCM ciphertext ("v1:iv:ct:tag" — see lib/email-crypto.ts). Rows
   // created before encryption hold legacy plaintext until the one-time
   // migration script runs; decryptEmail passes those through unchanged.

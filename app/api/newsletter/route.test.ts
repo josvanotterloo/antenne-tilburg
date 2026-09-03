@@ -79,6 +79,14 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(arg.html).toContain("/api/newsletter/confirm?token=");
   });
 
+  it("creates a subscriber with a null name when none is sent (footer's email-only signup)", async () => {
+    const res = await post({ email: "jos@x.com" });
+    expect(res.status).toBe(201);
+    expect(db.newsletterSubscriber.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ name: null }) }),
+    );
+  });
+
   it("treats a duplicate email as a silent success (201, no enumeration), without emailing", async () => {
     vi.mocked(db.newsletterSubscriber.create).mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError("dup", {

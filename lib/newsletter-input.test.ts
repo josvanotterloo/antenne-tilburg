@@ -9,9 +9,14 @@ describe("parseNewsletterInput", () => {
     expect(r).toEqual({ ok: true, data: { name: "Jos", email: "jos@x.com" } });
   });
 
-  it("rejects a missing name", () => {
+  it("accepts a missing name as null (footer's email-only signup)", () => {
+    const r = parseNewsletterInput({ email: "a@b.co" });
+    expect(r).toEqual({ ok: true, data: { name: null, email: "a@b.co" } });
+  });
+
+  it("treats a whitespace-only name the same as a missing one", () => {
     const r = parseNewsletterInput({ name: "   ", email: "a@b.co" });
-    expect(r.ok).toBe(false);
+    expect(r).toEqual({ ok: true, data: { name: null, email: "a@b.co" } });
   });
 
   it("rejects an invalid email", () => {
@@ -44,9 +49,9 @@ describe("parseNewsletterInput", () => {
     expect(r).toEqual({ ok: true, data: { name: "Jos", email: "jos@x.com" } });
   });
 
-  it("rejects a name that is only control characters (stripped to empty)", () => {
+  it("treats a name that is only control characters (stripped to empty) as null", () => {
     const r = parseNewsletterInput({ name: "\x00\x01\x02", email: "a@b.co" });
-    expect(r).toEqual({ ok: false, error: "Your name is required" });
+    expect(r).toEqual({ ok: true, data: { name: null, email: "a@b.co" } });
   });
 
   it("strips Unicode bidi-override and zero-width characters (Trojan Source-style spoofing)", () => {
