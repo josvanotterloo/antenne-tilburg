@@ -47,10 +47,9 @@ describe("AdminTopNav", () => {
       "href",
       "/admin/content/posts",
     );
-    expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute(
-      "href",
-      "/admin/orders/customers",
-    );
+    expect(
+      screen.getByRole("link", { name: "Customer Orders" }),
+    ).toHaveAttribute("href", "/admin/orders/customers");
     expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
       "/admin/settings/hours",
