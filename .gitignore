@@ -32,3 +32,6 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Operational data (admin-edited content files, not source code)
+/data/

@@ -9,6 +9,7 @@ import { signOut } from "next-auth/react";
 const SECTIONS = [
   { label: "Catalog", href: "/admin/catalog", match: "/admin/catalog" },
   { label: "Content", href: "/admin/content/posts", match: "/admin/content" },
+  { label: "Orders", href: "/admin/orders/customers", match: "/admin/orders" },
   { label: "Settings", href: "/admin/settings/hours", match: "/admin/settings" },
 ];
 

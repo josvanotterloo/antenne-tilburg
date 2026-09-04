@@ -37,7 +37,7 @@ describe("AdminTopNav", () => {
     expect(wordmark).toHaveAttribute("href", "/admin/catalog");
   });
 
-  it("renders the three section nav items with correct targets", () => {
+  it("renders the four section nav items with correct targets", () => {
     render(<AdminTopNav />);
     expect(screen.getByRole("link", { name: "Catalog" })).toHaveAttribute(
       "href",
@@ -46,6 +46,10 @@ describe("AdminTopNav", () => {
     expect(screen.getByRole("link", { name: "Content" })).toHaveAttribute(
       "href",
       "/admin/content/posts",
+    );
+    expect(screen.getByRole("link", { name: "Orders" })).toHaveAttribute(
+      "href",
+      "/admin/orders/customers",
     );
     expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
       "href",
