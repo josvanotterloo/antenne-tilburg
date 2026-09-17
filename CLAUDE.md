@@ -28,6 +28,7 @@ See `tasks/lessons.md` — mistake memory. After any correction from the user, a
 row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 
 ## Instructions
+- Authorization boundaries (every admin route checks its own session/role): see `docs/instructions/authorization-boundaries.md`
 - Branching rules: see `docs/instructions/branching.md`
 - Generate a new module/route: see `docs/instructions/generate-route.md`
 - Interrogate before generating: see `docs/instructions/interrogate.md`
