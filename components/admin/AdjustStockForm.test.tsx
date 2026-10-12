@@ -13,7 +13,7 @@ describe("AdjustStockForm", () => {
     expect(screen.queryByLabelText(/reason/i)).toBeNull();
   });
 
-  it("submits a delta + reason and calls onAdjusted with the new quantity", async () => {
+  it("submits a delta with no reason prompt and calls onAdjusted with the new quantity", async () => {
     const user = userEvent.setup();
     const onAdjusted = vi.fn();
     vi.stubGlobal(
@@ -27,7 +27,6 @@ describe("AdjustStockForm", () => {
     render(<AdjustStockForm productId="p1" onAdjusted={onAdjusted} />);
     await user.click(screen.getByRole("button", { name: /adjust stock/i }));
     await user.type(screen.getByLabelText(/quantity delta/i), "2");
-    await user.type(screen.getByLabelText(/reason/i), "recount");
     fireEvent.click(screen.getByRole("button", { name: /save adjustment/i }));
 
     await waitFor(() => expect(onAdjusted).toHaveBeenCalledWith(7));
@@ -37,15 +36,14 @@ describe("AdjustStockForm", () => {
     const user = userEvent.setup();
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "A reason is required" }) }),
+      vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "Delta must be a non-zero whole number" }) }),
     );
 
     render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /adjust stock/i }));
     await user.type(screen.getByLabelText(/quantity delta/i), "1");
-    await user.type(screen.getByLabelText(/reason/i), "x");
     fireEvent.click(screen.getByRole("button", { name: /save adjustment/i }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/reason is required/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/delta must be a non-zero whole number/i);
   });
 });

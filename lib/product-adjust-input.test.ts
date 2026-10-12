@@ -26,8 +26,13 @@ describe("parseAdjustInput", () => {
     expect(parseAdjustInput({ delta: 1.5, note: "x" }).ok).toBe(false);
   });
 
-  it("rejects a missing or blank note", () => {
-    expect(parseAdjustInput({ delta: 1 }).ok).toBe(false);
-    expect(parseAdjustInput({ delta: 1, note: "   " }).ok).toBe(false);
+  it("accepts a missing note, storing null", () => {
+    const result = parseAdjustInput({ delta: 1 });
+    expect(result).toEqual({ ok: true, data: { delta: 1, note: null } });
+  });
+
+  it("accepts a blank note, storing null", () => {
+    const result = parseAdjustInput({ delta: 1, note: "   " });
+    expect(result.ok && result.data.note).toBeNull();
   });
 });

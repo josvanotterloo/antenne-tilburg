@@ -1,13 +1,12 @@
 export interface AdjustInput {
   delta: number;
-  note: string;
+  note: string | null;
 }
 
 export type ParseResult = { ok: true; data: AdjustInput } | { ok: false; error: string };
 
-// Unlike sell-one/receive (whose amount and context are implicit in the
-// action), a manual adjustment has no other record of "why" — the note is
-// required so the ledger stays self-explanatory.
+// No reason is required (per spec-admin-stock-artist.md A2) — note is purely
+// optional free text, nullified when blank or absent.
 export function parseAdjustInput(body: unknown): ParseResult {
   const b = (body ?? {}) as Record<string, unknown>;
 
@@ -17,9 +16,6 @@ export function parseAdjustInput(body: unknown): ParseResult {
   }
 
   const note = typeof b.note === "string" ? b.note.trim() : "";
-  if (!note) {
-    return { ok: false, error: "A reason is required" };
-  }
 
-  return { ok: true, data: { delta, note } };
+  return { ok: true, data: { delta, note: note || null } };
 }
