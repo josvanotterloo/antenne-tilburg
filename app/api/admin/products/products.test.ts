@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@/lib/db", () => ({
-  db: {
+vi.mock("@/lib/db", () => {
+  const db = {
     product: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
@@ -15,8 +15,11 @@ vi.mock("@/lib/db", () => ({
     },
     artist: { findMany: vi.fn(), upsert: vi.fn() },
     genre: { findMany: vi.fn() },
-  },
-}));
+    $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(db)),
+  };
+  return { db };
+});
+vi.mock("@/lib/stock", () => ({ applyStockTransaction: vi.fn() }));
 
 import { db } from "@/lib/db";
 import { GET, POST } from "@/app/api/admin/products/route";
@@ -26,6 +29,7 @@ import {
   DELETE,
 } from "@/app/api/admin/products/[id]/route";
 import { requireAdmin } from "@/lib/api-auth";
+import { applyStockTransaction } from "@/lib/stock";
 
 const product = db.product as unknown as {
   findMany: Mock;
@@ -37,6 +41,7 @@ const product = db.product as unknown as {
 const artist = db.artist as unknown as { findMany: Mock; upsert: Mock };
 const genre = db.genre as unknown as { findMany: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockApply = applyStockTransaction as unknown as Mock;
 
 const ROW = {
   id: "p1",
@@ -86,6 +91,10 @@ beforeEach(() => {
   artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
   artist.upsert.mockResolvedValue({ id: "va1", name: "Various Artists" });
   genre.findMany.mockResolvedValue([{ id: "g1", name: "Techno" }]);
+  // Default create requests have no explicit quantity, so parseProductInput
+  // defaults to 1 — every existing POST test below implicitly exercises the
+  // initial-stock-transaction wiring unless it overrides this.
+  mockApply.mockResolvedValue({ ok: true, quantity: 1, appliedQuantity: 1 });
 });
 
 describe("GET /api/admin/products", () => {
@@ -194,6 +203,46 @@ describe("POST /api/admin/products", () => {
 
   it("rejects invalid input with 400 and does not write", async () => {
     const res = await POST(jsonReq("POST", { ...validBody, artistIds: [] }));
+    expect(res.status).toBe(400);
+    expect(product.create).not.toHaveBeenCalled();
+  });
+
+  it("writes an initial IN transaction for the default quantity (1) and returns it merged", async () => {
+    product.create.mockResolvedValue(ROW);
+    mockApply.mockResolvedValue({ ok: true, quantity: 1, appliedQuantity: 1 });
+    const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(201);
+    expect(mockApply).toHaveBeenCalledWith(expect.anything(), {
+      productId: ROW.id,
+      type: "IN",
+      requestedQuantity: 1,
+    });
+    const body = await res.json();
+    expect(body.quantity).toBe(1);
+    expect(body.inStock).toBe(true);
+  });
+
+  it("writes an initial IN transaction for an explicit quantity", async () => {
+    product.create.mockResolvedValue(ROW);
+    mockApply.mockResolvedValue({ ok: true, quantity: 5, appliedQuantity: 5 });
+    const res = await POST(jsonReq("POST", { ...validBody, quantity: 5 }));
+    expect(res.status).toBe(201);
+    expect(mockApply).toHaveBeenCalledWith(expect.anything(), {
+      productId: ROW.id,
+      type: "IN",
+      requestedQuantity: 5,
+    });
+  });
+
+  it("writes no initial transaction when quantity is 0 (intentionally hidden)", async () => {
+    product.create.mockResolvedValue(ROW);
+    const res = await POST(jsonReq("POST", { ...validBody, quantity: 0 }));
+    expect(res.status).toBe(201);
+    expect(mockApply).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid quantity with 400 and does not write", async () => {
+    const res = await POST(jsonReq("POST", { ...validBody, quantity: -1 }));
     expect(res.status).toBe(400);
     expect(product.create).not.toHaveBeenCalled();
   });

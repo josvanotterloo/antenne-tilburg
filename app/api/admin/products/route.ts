@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 import { resolveGenres } from "@/lib/resolve-genres";
+import { applyStockTransaction } from "@/lib/stock";
 
 export async function GET() {
   const denied = await requireAdmin();
@@ -60,15 +61,31 @@ export async function POST(req: Request) {
   }
 
   try {
-    const created = await db.product.create({
-      data: toProductData(
-        {
-          ...parsed.data,
-          artistIds: artists.map((a) => a.id),
-          genreIds: genres.map((g) => g.id),
-        },
-        { primaryArtistName: artists[0].name, mode: "create" },
-      ),
+    // Initial stock on create (spec-admin-stock-artist.md A1) — a product
+    // with no transaction otherwise stays invisible (quantity 0) with no
+    // indication to the operator why. Write it through the same ledger
+    // engine every other stock change uses (lib/stock.ts), inside the same
+    // transaction as the create, so quantity/inStock are never out of sync.
+    const created = await db.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: toProductData(
+          {
+            ...parsed.data,
+            artistIds: artists.map((a) => a.id),
+            genreIds: genres.map((g) => g.id),
+          },
+          { primaryArtistName: artists[0].name, mode: "create" },
+        ),
+      });
+      if (parsed.data.quantity <= 0) return product;
+
+      const result = await applyStockTransaction(tx, {
+        productId: product.id,
+        type: "IN",
+        requestedQuantity: parsed.data.quantity,
+      });
+      if (!result.ok) throw new Error(result.error);
+      return { ...product, quantity: result.quantity, inStock: result.quantity > 0 };
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {

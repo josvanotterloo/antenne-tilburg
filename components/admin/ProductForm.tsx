@@ -66,7 +66,10 @@ export function ProductForm({ product }: ProductFormProps) {
   const [price, setPrice] = useState(product?.price ?? "");
   const [description, setDescription] = useState(product?.description ?? "");
   const [coverImage, setCoverImage] = useState(product?.coverImage ?? "");
-  const [quantity, setQuantity] = useState(product?.quantity ?? 0);
+  // Default 1 on create (spec-admin-stock-artist.md A1) — a brand-new product
+  // should be visible by default; 0 is an explicit, adjustable choice for
+  // "coming soon".
+  const [quantity, setQuantity] = useState(product?.quantity ?? 1);
   const [isVariousArtists, setIsVariousArtists] = useState(
     product?.isVariousArtists ?? false,
   );
@@ -111,6 +114,19 @@ export function ProductForm({ product }: ProductFormProps) {
     });
   }
 
+  // Mirrors handleSellOne — same single-unit, no-reason stock op, just +1
+  // instead of -1 (spec-admin-stock-artist.md A3).
+  function handlePlusOne() {
+    if (!product) return;
+    sell.run(async () => {
+      const updated = await apiSend<{ quantity: number }>(
+        `/api/admin/products/${product.id}/plus-one`,
+        { method: "POST" },
+      );
+      setQuantity(updated.quantity);
+    });
+  }
+
   // Unchecking clears contents and empties the artist selection — the admin
   // must re-pick real artist(s) before saving (MultiCombobox's own
   // `required` hidden input already blocks submit until they do).
@@ -144,6 +160,7 @@ export function ProductForm({ product }: ProductFormProps) {
             coverImage,
             isVariousArtists,
             contents,
+            ...(product ? {} : { quantity }),
           }),
         },
       );
@@ -298,7 +315,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      {product && (
+      {product ? (
         <Field label="Quantity in stock">
           <p className="text-lg font-semibold tabular-nums">{quantity}</p>
           <p className="text-xs text-admin-ink-muted">
@@ -313,8 +330,31 @@ export function ProductForm({ product }: ProductFormProps) {
             >
               {selling ? "…" : "Sell one"}
             </button>
+            <button
+              type="button"
+              onClick={handlePlusOne}
+              disabled={selling}
+              className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
+            >
+              {selling ? "…" : "+1"}
+            </button>
             <AdjustStockForm productId={product.id} onAdjusted={setQuantity} />
           </div>
+        </Field>
+      ) : (
+        <Field label="Quantity" htmlFor="quantity">
+          <input
+            id="quantity"
+            type="number"
+            min="0"
+            step="1"
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(0, Number(e.target.value) || 0))}
+            className="w-24 rounded border border-admin-hairline px-2 py-1 text-sm"
+          />
+          <p className="text-xs text-admin-ink-muted">
+            0 hides the product from the shop until stock is added.
+          </p>
         </Field>
       )}
 

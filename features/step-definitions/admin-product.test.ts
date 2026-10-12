@@ -42,53 +42,55 @@ vi.mock("@/lib/db", () => {
       genre: GENRES[genreId],
     }));
   }
-  return {
-    db: {
-      artist: {
-        findMany: vi.fn(
-          async ({ where }: { where: { id: { in: string[] } } }) =>
-            where.id.in.map((id) => ARTISTS[id]).filter(Boolean),
-        ),
-      },
-      genre: {
-        findMany: vi.fn(
-          async ({ where }: { where: { id: { in: string[] } } }) =>
-            where.id.in.map((id) => GENRES[id]).filter(Boolean),
-        ),
-      },
-      product: {
-        create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
-          const now = new Date();
-          const row = {
-            id: `p${++seq}`,
-            createdAt: now,
-            updatedAt: now,
-            ...data,
-            ...ROW_RELATIONS,
-            productArtists: resolveProductArtists(data),
-            productGenres: resolveProductGenres(data),
-          };
-          store.set(row.id, row);
-          return row;
-        }),
-        findMany: vi.fn(
-          async ({ where }: { where?: { inStock?: boolean } } = {}) => {
-            const rows = [...store.values()];
-            return where?.inStock ? rows.filter((r) => r.inStock) : rows;
-          },
-        ),
-        count: vi.fn(
-          async ({ where }: { where?: { inStock?: boolean } } = {}) => {
-            const rows = [...store.values()];
-            return where?.inStock
-              ? rows.filter((r) => r.inStock).length
-              : rows.length;
-          },
-        ),
-      },
-      $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn({})),
+  const db = {
+    artist: {
+      findMany: vi.fn(
+        async ({ where }: { where: { id: { in: string[] } } }) =>
+          where.id.in.map((id) => ARTISTS[id]).filter(Boolean),
+      ),
     },
+    genre: {
+      findMany: vi.fn(
+        async ({ where }: { where: { id: { in: string[] } } }) =>
+          where.id.in.map((id) => GENRES[id]).filter(Boolean),
+      ),
+    },
+    product: {
+      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+        const now = new Date();
+        const row = {
+          id: `p${++seq}`,
+          createdAt: now,
+          updatedAt: now,
+          ...data,
+          ...ROW_RELATIONS,
+          productArtists: resolveProductArtists(data),
+          productGenres: resolveProductGenres(data),
+        };
+        store.set(row.id, row);
+        return row;
+      }),
+      findMany: vi.fn(
+        async ({ where }: { where?: { inStock?: boolean } } = {}) => {
+          const rows = [...store.values()];
+          return where?.inStock ? rows.filter((r) => r.inStock) : rows;
+        },
+      ),
+      count: vi.fn(
+        async ({ where }: { where?: { inStock?: boolean } } = {}) => {
+          const rows = [...store.values()];
+          return where?.inStock
+            ? rows.filter((r) => r.inStock).length
+            : rows.length;
+        },
+      ),
+    },
+    // Fake, threaded through the same in-memory `store` the product-create
+    // route's real $transaction wraps — tx.product.create resolves through
+    // the same mock as db.product.create.
+    $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(db)),
   };
+  return { db };
 });
 
 vi.mock("@/lib/stock", () => ({
@@ -140,16 +142,43 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
     vi.clearAllMocks();
   });
 
-  Scenario("Adding a new product", ({ Given, When, Then }) => {
+  Scenario(
+    "Adding a new product with the default quantity is visible immediately",
+    ({ Given, When, Then }) => {
+      Given("an admin is logged in", async () => {
+        expect(await requireAdmin()).toBeNull();
+      });
+
+      When("they submit a new product form with valid data", async () => {
+        const res = await POST(
+          new Request("http://localhost/api/admin/products", {
+            method: "POST",
+            body: JSON.stringify(VALID_PRODUCT),
+          }),
+        );
+        expect(res.status).toBe(201);
+      });
+
+      Then("the product appears in the public catalog", async () => {
+        const res = await GET(new Request("http://localhost/api/catalog"));
+        const body = await res.json();
+        expect(body.products).toHaveLength(1);
+        expect(body.products[0].artists).toEqual([{ id: "a1", name: "Vril" }]);
+        expect(body.products[0].title).toBe("Torus");
+      });
+    },
+  );
+
+  Scenario("Adding a new product with quantity 0 stays hidden", ({ Given, When, Then }) => {
     Given("an admin is logged in", async () => {
       expect(await requireAdmin()).toBeNull();
     });
 
-    When("they submit a new product form with valid data", async () => {
+    When("they submit a new product form with quantity 0", async () => {
       const res = await POST(
         new Request("http://localhost/api/admin/products", {
           method: "POST",
-          body: JSON.stringify(VALID_PRODUCT),
+          body: JSON.stringify({ ...VALID_PRODUCT, quantity: 0 }),
         }),
       );
       expect(res.status).toBe(201);
@@ -162,18 +191,18 @@ describeFeature(feature, ({ Scenario, BeforeEachScenario }) => {
     });
   });
 
-  Scenario("Adding stock makes a new product visible", ({ Given, When, Then }) => {
+  Scenario("Adjusting a hidden product's stock upward makes it visible", ({ Given, When, Then }) => {
     let productId = "";
 
     Given("an admin is logged in", async () => {
       expect(await requireAdmin()).toBeNull();
     });
 
-    When("they submit a new product form with valid data", async () => {
+    When("they submit a new product form with quantity 0", async () => {
       const res = await POST(
         new Request("http://localhost/api/admin/products", {
           method: "POST",
-          body: JSON.stringify(VALID_PRODUCT),
+          body: JSON.stringify({ ...VALID_PRODUCT, quantity: 0 }),
         }),
       );
       expect(res.status).toBe(201);

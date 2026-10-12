@@ -192,6 +192,29 @@ describe("parseProductInput", () => {
     if (!result.ok) return;
     expect(result.data.contents).toBeNull();
   });
+
+  it("defaults quantity to 1 when absent", () => {
+    const result = parseProductInput(VALID);
+    expect(result.ok && result.data.quantity).toBe(1);
+  });
+
+  it("accepts a quantity of 0 (intentionally hidden)", () => {
+    const result = parseProductInput({ ...VALID, quantity: 0 });
+    expect(result.ok && result.data.quantity).toBe(0);
+  });
+
+  it("accepts an explicit positive quantity", () => {
+    const result = parseProductInput({ ...VALID, quantity: 5 });
+    expect(result.ok && result.data.quantity).toBe(5);
+  });
+
+  it.each([
+    ["negative", -1],
+    ["non-integer", 1.5],
+    ["non-numeric", "abc"],
+  ])("rejects an invalid quantity: %s", (_label, quantity) => {
+    expect(parseProductInput({ ...VALID, quantity }).ok).toBe(false);
+  });
 });
 
 describe("toProductData — no longer touches quantity/inStock", () => {
@@ -209,6 +232,7 @@ describe("toProductData — no longer touches quantity/inStock", () => {
     coverImage: null,
     isVariousArtists: false,
     contents: null,
+    quantity: 1,
   };
 
   it("passes isVariousArtists and contents through to the stored data", () => {

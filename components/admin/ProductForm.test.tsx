@@ -99,6 +99,70 @@ describe("ProductForm", () => {
     expect(screen.queryByRole("button", { name: /adjust stock/i })).toBeNull();
   });
 
+  it("shows an editable quantity input, defaulting to 1, only when creating a new product", () => {
+    const { unmount } = render(<ProductForm />);
+    expect(screen.getByRole("spinbutton", { name: /quantity/i })).toHaveValue(1);
+    unmount();
+
+    render(<ProductForm product={PRODUCT} />);
+    expect(screen.queryByRole("spinbutton", { name: /quantity/i })).toBeNull();
+  });
+
+  it("shows a +1 button next to Sell one when editing, absent when creating", () => {
+    const { unmount } = render(<ProductForm product={PRODUCT} />);
+    expect(screen.getByRole("button", { name: "+1" })).toBeInTheDocument();
+    unmount();
+
+    render(<ProductForm />);
+    expect(screen.queryByRole("button", { name: "+1" })).toBeNull();
+  });
+
+  it("sends the entered quantity when creating a new product", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.startsWith("/api/admin/artists")) {
+        return new Response(JSON.stringify([{ id: "a1", name: "Vril" }]));
+      }
+      if (url.startsWith("/api/admin/labels")) {
+        return new Response(JSON.stringify([{ id: "l1", name: "Zulema Records" }]));
+      }
+      if (url.startsWith("/api/admin/genres")) {
+        return new Response(JSON.stringify([{ id: "g1", name: "Techno" }]));
+      }
+      if (url.startsWith("/api/admin/product-types")) {
+        return new Response(JSON.stringify([{ id: "t1", name: "LP" }]));
+      }
+      return new Response(JSON.stringify([]));
+    });
+
+    render(<ProductForm />);
+
+    await user.click(screen.getByRole("combobox", { name: /artists/i }));
+    await user.click(await screen.findByRole("option", { name: "Vril" }));
+    await user.type(screen.getByRole("textbox", { name: /title/i }), "Torus");
+    await user.click(screen.getByRole("combobox", { name: /label/i }));
+    await user.click(await screen.findByRole("option", { name: "Zulema Records" }));
+    await user.click(screen.getByRole("combobox", { name: /genre/i }));
+    await user.click(await screen.findByRole("option", { name: "Techno" }));
+    await user.click(screen.getByRole("combobox", { name: /product type/i }));
+    await user.click(await screen.findByRole("option", { name: "LP" }));
+    await user.type(screen.getByRole("spinbutton", { name: /price/i }), "24.99");
+
+    const quantityInput = screen.getByRole("spinbutton", { name: /quantity/i });
+    await user.clear(quantityInput);
+    await user.type(quantityInput, "3");
+
+    await user.click(screen.getByRole("button", { name: /add product/i }));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/admin/products",
+        expect.objectContaining({ body: expect.stringContaining('"quantity":3') }),
+      ),
+    );
+  });
+
   // Regression: AdjustStockForm previously rendered its own <form>, nested
   // inside this component's <form> — invalid HTML that real browsers
   // silently refuse to submit (jsdom doesn't reproduce the bug, which is why

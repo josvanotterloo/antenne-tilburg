@@ -19,6 +19,11 @@ export interface ProductInput {
   // the free-text list of who's actually on the release.
   isVariousArtists: boolean;
   contents: string | null;
+  // Initial stock on create (spec-admin-stock-artist.md A1). Defaults to 1
+  // when absent. Never flows into toProductData — Product.quantity only ever
+  // changes through lib/stock.ts's applyStockTransaction, which the route
+  // calls separately so the ledger and the quantity cache stay consistent.
+  quantity: number;
 }
 
 export type ParseResult =
@@ -92,6 +97,15 @@ export function parseProductInput(body: unknown): ParseResult {
     return { ok: false, error: "Price must be a non-negative number" };
   }
 
+  let quantity: number;
+  if (b.quantity === undefined) {
+    quantity = 1;
+  } else if (typeof b.quantity === "number" && Number.isInteger(b.quantity) && b.quantity >= 0) {
+    quantity = b.quantity;
+  } else {
+    return { ok: false, error: "Quantity must be a non-negative whole number" };
+  }
+
   return {
     ok: true,
     data: {
@@ -108,6 +122,7 @@ export function parseProductInput(body: unknown): ParseResult {
       coverImage: str(b.coverImage) || null,
       isVariousArtists,
       contents: isVariousArtists ? str(b.contents) || null : null,
+      quantity,
     },
   };
 }

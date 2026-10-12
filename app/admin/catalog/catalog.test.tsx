@@ -71,11 +71,12 @@ describe("/admin/catalog", () => {
     render(ui);
     expect(screen.getByText("Vril")).toBeInTheDocument();
     expect(screen.getByText(/120/)).toBeInTheDocument();
-    // Quantity is shown, with a single-click "Sell one" action per row.
+    // Quantity is shown, with single-click "Sell one" and "+1" actions per row.
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /sell one/i }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+1" })).toBeInTheDocument();
   });
 
   it("shows each row's key info at a glance, with relative dates and an edit link", async () => {

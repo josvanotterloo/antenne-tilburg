@@ -14,6 +14,7 @@ import { OrderButton } from "@/components/admin/OrderButton";
 
 import { DeleteProductButton } from "./DeleteProductButton";
 import { SellOneButton } from "./SellOneButton";
+import { PlusOneButton } from "./PlusOneButton";
 
 export const dynamic = "force-dynamic";
 
@@ -149,7 +150,7 @@ export default async function CatalogPage({
                   mobile. Fixed grid columns keep quantity/price/every
                   action control aligned row-to-row regardless of digit
                   count or button label length. */}
-              <div className="grid grid-cols-[104px_76px_84px_84px_32px_48px_56px] items-center gap-3 text-sm">
+              <div className="grid grid-cols-[104px_76px_84px_56px_84px_32px_48px_56px] items-center gap-3 text-sm">
                 <div className="text-right">
                   <span
                     className={`font-semibold tabular-nums ${
@@ -165,6 +166,9 @@ export default async function CatalogPage({
                 </div>
                 <div className="flex justify-center">
                   <SellOneButton id={product.id} quantity={product.quantity} />
+                </div>
+                <div className="flex justify-center">
+                  <PlusOneButton id={product.id} />
                 </div>
                 <div className="flex justify-center">
                   <OrderButton
