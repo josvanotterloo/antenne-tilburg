@@ -208,10 +208,16 @@ describe("parseProductInput", () => {
     expect(result.ok && result.data.quantity).toBe(5);
   });
 
+  it("accepts a quantity at the Postgres Int max", () => {
+    const result = parseProductInput({ ...VALID, quantity: 2147483647 });
+    expect(result.ok && result.data.quantity).toBe(2147483647);
+  });
+
   it.each([
     ["negative", -1],
     ["non-integer", 1.5],
     ["non-numeric", "abc"],
+    ["above the Postgres Int max", 2147483648],
   ])("rejects an invalid quantity: %s", (_label, quantity) => {
     expect(parseProductInput({ ...VALID, quantity }).ok).toBe(false);
   });

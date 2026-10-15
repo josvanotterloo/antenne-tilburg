@@ -7,6 +7,13 @@ import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 import { resolveGenres } from "@/lib/resolve-genres";
 import { applyStockTransaction } from "@/lib/stock";
 
+// Tags a failure from applyStockTransaction so the outer catch can map it to
+// a 400 instead of letting it fall through as an unhandled 500 — every other
+// caller of applyStockTransaction (sell-one, plus-one, adjust) already maps
+// result.error to a client response; this route's initial-stock write should
+// too.
+class StockWriteFailed extends Error {}
+
 export async function GET() {
   const denied = await requireAdmin();
   if (denied) return denied;
@@ -84,11 +91,14 @@ export async function POST(req: Request) {
         type: "IN",
         requestedQuantity: parsed.data.quantity,
       });
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) throw new StockWriteFailed(result.error);
       return { ...product, quantity: result.quantity, inStock: result.quantity > 0 };
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
+    if (error instanceof StockWriteFailed) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     // A labelId/genreId/productTypeId that doesn't exist (e.g. deleted by the
     // other admin) makes the nested connect throw P2025 — a client error, not a
     // 500 leaking Prisma internals.

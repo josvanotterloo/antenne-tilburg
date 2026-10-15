@@ -30,6 +30,11 @@ export type ParseResult =
   | { ok: true; data: ProductInput }
   | { ok: false; error: string };
 
+// Product.quantity is a Postgres 32-bit `Int`. Reject anything above its max
+// here so an oversized value gets a clean 400 instead of a DB-level overflow
+// error surfacing as a 500 from the create route.
+const MAX_QUANTITY = 2147483647;
+
 // Non-empty array of non-blank string ids, deduped preserving first-seen
 // order (a client-side bug producing a repeated id isn't malicious input,
 // just redundant — silently normalize rather than reject). Shared by
@@ -100,10 +105,15 @@ export function parseProductInput(body: unknown): ParseResult {
   let quantity: number;
   if (b.quantity === undefined) {
     quantity = 1;
-  } else if (typeof b.quantity === "number" && Number.isInteger(b.quantity) && b.quantity >= 0) {
+  } else if (
+    typeof b.quantity === "number" &&
+    Number.isInteger(b.quantity) &&
+    b.quantity >= 0 &&
+    b.quantity <= MAX_QUANTITY
+  ) {
     quantity = b.quantity;
   } else {
-    return { ok: false, error: "Quantity must be a non-negative whole number" };
+    return { ok: false, error: `Quantity must be a whole number between 0 and ${MAX_QUANTITY}` };
   }
 
   return {

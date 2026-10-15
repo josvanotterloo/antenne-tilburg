@@ -256,6 +256,18 @@ describe("POST /api/admin/products", () => {
     expect(product.create).not.toHaveBeenCalled();
   });
 
+  it("returns 400 (not an unhandled 500) when the initial stock write fails", async () => {
+    // A failure inside applyStockTransaction (e.g. "No change to apply")
+    // currently can't happen on create in practice, but this proves the
+    // route maps it to a clean 400 like every other caller of
+    // applyStockTransaction, instead of an unhandled 500.
+    product.create.mockResolvedValue(ROW);
+    mockApply.mockResolvedValue({ ok: false, error: "No change to apply" });
+    const res = await POST(jsonReq("POST", validBody));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "No change to apply" });
+  });
+
   it("returns 400 (not an unhandled 500) when a relation id does not exist (P2025)", async () => {
     // parseProductInput only checks ids are non-empty; a bogus/just-deleted
     // labelId makes the nested connect throw P2025.
