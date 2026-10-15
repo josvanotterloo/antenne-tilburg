@@ -173,6 +173,15 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       audit findings, assessed dev-only/non-exploitable, not fixed) after
       any future `eslint`, `@eslint/*`, or `eslint-config-next` bump —
       `docs/features/security-dependency-updates.md`
+- [ ] **Known transient vulnerability, not actioned:** `postcss-selector-parser`
+      <7.1.6 (`GHSA-rj75-hqrm-r3gf`, moderate) via `tailwindcss@3.4.19` →
+      `^6.1.2`, resolving to `6.1.4` (the last 6.x release — the fix only
+      shipped on the unrelated 7.x line). Only a Tailwind v4 major bump
+      resolves it. Assessed non-exploitable (build-time only, never parses
+      user input) and doesn't need a CI allowlist entry — moderate severity
+      and dev-scoped are both already outside `check-npm-audit.mjs`'s
+      `high`/`critical` + `--omit=dev` gate. Revisit alongside any future
+      Tailwind v4 migration — `docs/features/security-dependency-updates.md`.
 - [ ] **Known transient vulnerability, blocked upstream:** `deepmerge-ts`
       <8.0.0 (`GHSA-ggr8-5vv4-36mx`, high) via `prisma` → `@prisma/config`.
       Checked every Prisma release from `6.19.3` through the latest stable

@@ -143,3 +143,32 @@ as before.
 `npm view @prisma/config@<new-version> dependencies` after any Prisma
 bump, and remove the three entries from `scripts/check-npm-audit.mjs`'s
 allowlist once confirmed.
+
+## Update (2026-10-15): `postcss-selector-parser` via Tailwind 3.x — moderate, not actioned
+
+GitHub Dependabot flagged `GHSA-rj75-hqrm-r3gf` (CVE-2026-104844): quadratic
+parsing complexity in `postcss-selector-parser` <7.1.6, which can exhaust CPU
+on a crafted flat CSS selector.
+
+**Checked for a fix:** `tailwindcss@3.4.19` pins `postcss-selector-parser`
+to `^6.1.2`, resolving to `6.1.4` — the last ever release on the 6.x line
+(npm tags it `legacy-v6`). The fix only shipped on the 7.x line (`7.1.6`);
+there is no patched 6.x release. The only path to the fixed version is
+Tailwind's own v4 major, a breaking upgrade out of scope for a drive-by fix.
+
+**Exploitability assessment:** not exploitable in this project.
+`postcss-selector-parser` is a `devDependency` (via Tailwind's PostCSS
+pipeline), invoked only at build time against this repo's own trusted CSS
+source — never on user-supplied input. The advisory itself notes the real
+risk is services that parse untrusted, attacker-supplied selectors
+synchronously in a request path (CSS sanitizers, CSS-in-JS services); this
+app has no such path.
+
+**Not actioned — doesn't need an allowlist entry:** severity is `moderate`
+(CI's `scripts/check-npm-audit.mjs` only blocks on `high`/`critical`) and
+the package is dev-scoped (`--omit=dev` already excludes it). CI is
+unaffected either way.
+
+**Revisit when:** a Tailwind v4 migration happens for other reasons (it
+would resolve this as a side effect), or if a `6.1.5+` backport is ever
+published — check with `npm view postcss-selector-parser versions`.
