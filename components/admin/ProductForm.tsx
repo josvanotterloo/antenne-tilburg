@@ -75,15 +75,17 @@ export function ProductForm({ product }: ProductFormProps) {
   );
   const [contents, setContents] = useState(product?.contents ?? "");
 
-  // Independent actions: saving the product and the quick "sell one" each track
-  // their own pending/error so neither disables the other's button.
+  // Independent actions: saving the product and each quick stock op track
+  // their own pending/error so none disables another's button.
   const submit = useAsyncAction();
   const sell = useAsyncAction();
+  const plusOne = useAsyncAction();
   const upload = useAsyncAction();
   const submitting = submit.pending;
   const selling = sell.pending;
+  const addingOne = plusOne.pending;
   const uploading = upload.pending;
-  const error = submit.error ?? sell.error ?? upload.error;
+  const error = submit.error ?? sell.error ?? plusOne.error ?? upload.error;
 
   // Same upload contract as blog post images: POST the file, store the URL.
   function handleCoverUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -118,7 +120,7 @@ export function ProductForm({ product }: ProductFormProps) {
   // instead of -1 (spec-admin-stock-artist.md A3).
   function handlePlusOne() {
     if (!product) return;
-    sell.run(async () => {
+    plusOne.run(async () => {
       const updated = await apiSend<{ quantity: number }>(
         `/api/admin/products/${product.id}/plus-one`,
         { method: "POST" },
@@ -333,10 +335,10 @@ export function ProductForm({ product }: ProductFormProps) {
             <button
               type="button"
               onClick={handlePlusOne}
-              disabled={selling}
+              disabled={addingOne}
               className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
             >
-              {selling ? "…" : "+1"}
+              {addingOne ? "…" : "+1"}
             </button>
             <AdjustStockForm productId={product.id} onAdjusted={setQuantity} />
           </div>

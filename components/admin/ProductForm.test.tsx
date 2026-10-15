@@ -117,6 +117,28 @@ describe("ProductForm", () => {
     expect(screen.queryByRole("button", { name: "+1" })).toBeNull();
   });
 
+  it("keeps Sell one and +1 independently enabled while the other is pending", async () => {
+    const user = userEvent.setup();
+    let resolveSell: (value: Response) => void;
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSell = resolve;
+        }),
+    );
+
+    render(<ProductForm product={PRODUCT} />);
+    const sellButton = screen.getByRole("button", { name: /sell one/i });
+    const plusOneButton = screen.getByRole("button", { name: "+1" });
+    await user.click(sellButton);
+
+    expect(sellButton).toBeDisabled();
+    expect(plusOneButton).toBeEnabled();
+
+    resolveSell!(new Response(JSON.stringify({ quantity: 3 })));
+    await waitFor(() => expect(sellButton).toBeEnabled());
+  });
+
   it("sends the entered quantity when creating a new product", async () => {
     const user = userEvent.setup();
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
