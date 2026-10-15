@@ -108,6 +108,13 @@ describe("PATCH /api/admin/orders/lines/[id]", () => {
     expect(res.status).toBe(400);
     expect(line.findUnique).not.toHaveBeenCalled();
   });
+
+  it("returns the 401 from requireAdmin without querying the database", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await PATCH(req({ quantityOrdered: 3 }), ctx("l1"));
+    expect(res.status).toBe(401);
+    expect(line.findUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe("DELETE /api/admin/orders/lines/[id]", () => {
@@ -181,5 +188,12 @@ describe("DELETE /api/admin/orders/lines/[id]", () => {
     // touched — the guard-read and the delete both go through tx instead.
     expect(line.findUnique).not.toHaveBeenCalled();
     expect(line.delete).not.toHaveBeenCalled();
+  });
+
+  it("returns the 401 from requireAdmin without running a transaction", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await DELETE(deleteReq(), ctx("l1"));
+    expect(res.status).toBe(401);
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 });

@@ -46,4 +46,11 @@ describe("POST /api/admin/orders/quick-add", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "Product already in open order" });
   });
+
+  it("returns the 401 from requireAdmin without starting a transaction", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await POST(req({ productId: "p1" }));
+    expect(res.status).toBe(401);
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
 });

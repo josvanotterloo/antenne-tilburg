@@ -77,6 +77,25 @@ describe("generateLabelXml", () => {
     expect(xml).toContain("Techno");
   });
 
+  it("renders an empty GENRE field without throwing when a product has no genres", () => {
+    const xml = generateLabelXml(product({ productGenres: [] }));
+    const genreObject = xml.slice(xml.indexOf("<Name>GENRE</Name>"));
+    expect(genreObject).toContain("<String></String>");
+  });
+
+  it("picks the genre at position 0, not the first array element, when array order differs from position order", () => {
+    const xml = generateLabelXml(
+      product({
+        productGenres: [
+          { position: 1, genreId: "g2", genre: { id: "g2", name: "House" } },
+          { position: 0, genreId: "g1", genre: { id: "g1", name: "Techno" } },
+        ],
+      }),
+    );
+    expect(xml).toContain("Techno");
+    expect(xml).not.toContain("House");
+  });
+
   it("includes the ANTENNE TILBURG brand text", () => {
     expect(generateLabelXml(product())).toContain("ANTENNE TILBURG");
   });
