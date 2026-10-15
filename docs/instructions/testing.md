@@ -178,11 +178,13 @@ separate acceptance-test CI step exists or is needed.
 
 ### Stryker mutation testing
 
-`stryker.config.mjs` mutates `lib/`'s pure, framework-free core (currently
-`catalog.ts`, `email/render.ts`, `token.ts`, `authorize.ts`, `blog.ts`,
-`notice.ts`, `rss.ts` — the exact set asked for in the session that added
-this, not a claim that every pure `lib/` file is covered). `app/` and
-`components/` are excluded — UI mutation testing is too noisy to act on.
+`stryker.config.mjs` mutates all of `lib/` (`"lib/**/*.ts"`, test files
+excluded) — a glob, not a curated file list, so a new `lib/` file is covered
+automatically with no config edit needed. `app/` and `components/` are
+excluded — UI mutation testing is too noisy to act on. If a specific `lib/`
+file ever needs excluding (nothing meaningful to mutate, e.g. a thin
+framework singleton), add a `"!lib/..."` negation line with a comment
+explaining why — don't silently narrow the glob back to a list.
 
 - Run: `npm run test:mutate` (`stryker run`). **Not** wired into CI or
   `scripts/run-tests.sh` — a full run takes ~2 minutes and isn't a
