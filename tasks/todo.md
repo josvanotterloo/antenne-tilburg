@@ -56,6 +56,17 @@ real admin UIs.
       Artists" `Artist` entity (find-or-create, rename-guarded), admin
       `ProductForm` checkbox + contents textarea, and search matching on
       `contents` — `docs/features/various-artists-compilations.md`
+- [x] Initial stock on product create + "+1" button + drop forced
+      adjustment reason (2026-10-15, `docs/qa/spec-admin-stock-artist.md`
+      A1–A3) — creating a product now writes an initial `IN` stock
+      transaction through `applyStockTransaction` (defaults to quantity 1,
+      0 stays hidden), a "+1" button mirrors the existing "Sell one" on
+      both the catalog list and the edit page, and stock adjustments no
+      longer require a reason/note. Reviewed by both `/code-review` and
+      `@code-reviewer`; two should-fix findings (an unbounded quantity
+      input that could overflow Postgres's `Int`, and a stock-write
+      failure on create surfacing as an unhandled 500) and a UI nit
+      (Sell one/+1 sharing one busy-state tracker) fixed before merge.
 
 ### Product ↔ Genre many-to-many (2026-08-21)
 - [x] `Product.genreId` (single FK) replaced with `ProductGenre`, an
@@ -235,7 +246,9 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 972 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 1048 tests as of the
+initial-stock-visibility feature + Round 2 QA units (order management,
+customer orders, DYMO label gap), 2026-10-15. 972 tests as of the
 public /stock redesign, 2026-08-24 (net -7 vs. admin UI polish's 979 —
 the toggle/JUST IN/out-of-stock test cases it removed outnumbered the
 new sort/table-column cases it added; the removed behavior is genuinely
