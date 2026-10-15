@@ -40,4 +40,11 @@ describe("GET /api/admin/orders", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ groupBy: "flat", lines: [] });
   });
+
+  it("returns the 401 from requireAdmin without reading the overview", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await GET(req());
+    expect(res.status).toBe(401);
+    expect(mockGetOpenOrderLines).not.toHaveBeenCalled();
+  });
 });

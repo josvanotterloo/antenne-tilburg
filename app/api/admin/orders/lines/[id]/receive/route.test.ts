@@ -118,4 +118,11 @@ describe("PATCH /api/admin/orders/lines/[id]/receive", () => {
     expect(res.status).toBe(400);
     expect((await res.json()).error).toBe("Product not found");
   });
+
+  it("returns the 401 from requireAdmin without reading the line", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await PATCH(req({ quantityReceived: 1 }), ctx("l1"));
+    expect(res.status).toBe(401);
+    expect(line.findUnique).not.toHaveBeenCalled();
+  });
 });

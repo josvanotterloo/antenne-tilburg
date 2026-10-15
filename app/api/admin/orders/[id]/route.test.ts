@@ -77,6 +77,13 @@ describe("PATCH /api/admin/orders/[id]", () => {
     const res = await PATCH(patchReq({ status: "SENT" }), ctx("missing"));
     expect(res.status).toBe(404);
   });
+
+  it("returns the 401 from requireAdmin without reading the order", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await PATCH(patchReq({ status: "SENT" }), ctx("o1"));
+    expect(res.status).toBe(401);
+    expect(order.findUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe("DELETE /api/admin/orders/[id]", () => {
@@ -92,5 +99,12 @@ describe("DELETE /api/admin/orders/[id]", () => {
     const res = await DELETE(delReq(), ctx("o1"));
     expect(res.status).toBe(409);
     expect(order.delete).not.toHaveBeenCalled();
+  });
+
+  it("returns the 401 from requireAdmin without reading the order", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await DELETE(delReq(), ctx("o1"));
+    expect(res.status).toBe(401);
+    expect(order.findUnique).not.toHaveBeenCalled();
   });
 });
