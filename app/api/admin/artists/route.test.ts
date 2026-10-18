@@ -7,9 +7,11 @@ vi.mock("@/lib/api-auth", () => ({
 vi.mock("@/lib/db", () => ({
   db: { artist: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() } },
 }));
+vi.mock("@/lib/artist-fuzzy-match", () => ({ findSimilarArtists: vi.fn() }));
 
 import { db } from "@/lib/db";
 import { GET, POST } from "@/app/api/admin/artists/route";
+import { findSimilarArtists } from "@/lib/artist-fuzzy-match";
 
 describe("GET /api/admin/artists", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -42,30 +44,52 @@ describe("POST /api/admin/artists", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
+    vi.mocked(findSimilarArtists).mockResolvedValue([]); // no fuzzy match by default
   });
+
+  const postReq = (name: string) =>
+    new Request("http://test/api", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
 
   it("creates an artist from a valid name", async () => {
     vi.mocked(db.artist.create).mockResolvedValue({ id: "a1", name: "Vril" } as never);
-    const res = await POST(
-      new Request("http://test/api", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "Vril" }),
-      }),
-    );
+    const res = await POST(postReq("Vril"));
     expect(res.status).toBe(201);
   });
 
   it("rejects a normalized-duplicate artist name with 409", async () => {
     vi.mocked(db.artist.findFirst).mockResolvedValue({ id: "existing" } as never);
-    const res = await POST(
-      new Request("http://test/api", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "VRIL" }),
-      }),
-    );
+    const res = await POST(postReq("VRIL"));
     expect(res.status).toBe(409);
     expect(db.artist.create).not.toHaveBeenCalled();
+  });
+
+  it("includes fuzzy candidates in the response, without blocking the create", async () => {
+    vi.mocked(db.artist.create).mockResolvedValue({ id: "a2", name: "Jeff Milz" } as never);
+    vi.mocked(findSimilarArtists).mockResolvedValue([
+      { id: "a1", name: "Jeff Mills", productCount: 28 },
+    ]);
+
+    const res = await POST(postReq("Jeff Milz"));
+
+    expect(res.status).toBe(201);
+    expect(findSimilarArtists).toHaveBeenCalledWith("Jeff Milz", "a2");
+    expect(await res.json()).toEqual({
+      id: "a2",
+      name: "Jeff Milz",
+      candidates: [{ id: "a1", name: "Jeff Mills", productCount: 28 }],
+    });
+  });
+
+  it("omits candidates from the response when nothing is similar", async () => {
+    vi.mocked(db.artist.create).mockResolvedValue({ id: "a1", name: "Vril" } as never);
+
+    const res = await POST(postReq("Vril"));
+
+    expect(res.status).toBe(201);
+    expect(await res.json()).not.toHaveProperty("candidates");
   });
 });

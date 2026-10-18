@@ -87,6 +87,10 @@ export function ReferenceSection({
         name: string;
         supplierId?: string | null;
         supplierName?: string | null;
+        // Artists only (STEP 5c) — a non-blocking "did you mean" fuzzy
+        // match; every other entity's create response simply omits this,
+        // so this read is a harmless no-op for them.
+        candidates?: { id: string; name: string; productCount: number }[];
       }>(endpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -123,7 +127,12 @@ export function ReferenceSection({
       }
       setNewName("");
       setNewSupplier(null);
-      setSuccessMessage(`Added "${created.name}".`);
+      const fuzzyHint = created.candidates?.length
+        ? ` Did you mean: ${created.candidates
+            .map((c) => `${c.name} (${c.productCount} products)`)
+            .join(", ")}?`
+        : "";
+      setSuccessMessage(`Added "${created.name}".${fuzzyHint}`);
     });
   }
 

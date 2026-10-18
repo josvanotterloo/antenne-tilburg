@@ -131,6 +131,34 @@ describe("ReferenceSection", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/added "dub"/i);
   });
 
+  it("shows a non-blocking fuzzy 'did you mean' hint when the create response includes candidates (Artists only)", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+      if (init?.method === "POST") {
+        return new Response(
+          JSON.stringify({
+            id: "a2",
+            name: "Jeff Milz",
+            candidates: [{ id: "a1", name: "Jeff Mills", productCount: 28 }],
+          }),
+          { status: 201 },
+        );
+      }
+      return new Response(JSON.stringify([]), { status: 200 });
+    });
+    setup();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /new genres name/i }),
+      "Jeff Milz",
+    );
+    await user.click(screen.getByRole("button", { name: /^add$/i }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /added "jeff milz"\. did you mean: jeff mills \(28 products\)\?/i,
+    );
+  });
+
   it("increments the total but hides a newly-added item that doesn't match the active search", async () => {
     const user = userEvent.setup();
     setup();
