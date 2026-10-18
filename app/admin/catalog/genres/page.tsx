@@ -40,6 +40,7 @@ export default async function GenresPage() {
       endpoint="/api/admin/genres"
       initialItems={toGenreItems(genres)}
       initialTotal={total}
+      productLinkParam="genreId"
     />
   );
 }

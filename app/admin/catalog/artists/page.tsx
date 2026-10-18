@@ -40,6 +40,7 @@ export default async function ArtistsPage() {
       endpoint="/api/admin/artists"
       initialItems={toArtistItems(artists)}
       initialTotal={total}
+      productLinkParam="artistId"
     />
   );
 }

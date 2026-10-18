@@ -41,6 +41,7 @@ export default async function LabelsPage() {
       initialItems={toLabelItems(labels)}
       initialTotal={total}
       supplierEndpoint="/api/admin/suppliers"
+      productLinkParam="labelId"
     />
   );
 }

@@ -23,10 +23,19 @@ vi.mock("@/lib/catalog", async (importOriginal) => {
   return { ...actual, getCatalogPage: vi.fn() };
 });
 vi.mock("@/lib/open-order-lookup", () => ({ getOpenOrderProductIds: vi.fn() }));
+vi.mock("@/lib/db", () => ({
+  db: {
+    artist: { findUnique: vi.fn() },
+    genre: { findUnique: vi.fn() },
+    label: { findUnique: vi.fn() },
+    productType: { findUnique: vi.fn() },
+  },
+}));
 
 import AdminCatalogPage from "@/app/admin/catalog/page";
 import { getCatalogPage } from "@/lib/catalog";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
+import { db } from "@/lib/db";
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -205,5 +214,91 @@ describe("/admin/catalog", () => {
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(screen.getByRole("button", { name: /ordered/i })).toBeDisabled();
+  });
+
+  describe("reference-entity product filters", () => {
+    it("passes ?labelId= through to getCatalogPage's labelId filter", async () => {
+      vi.mocked(db.label.findUnique).mockResolvedValue({
+        name: "Zulema Records",
+      } as never);
+      await AdminCatalogPage({
+        searchParams: Promise.resolve({ labelId: "l1" }),
+      });
+      expect(getCatalogPage).toHaveBeenCalledWith(
+        expect.objectContaining({ labelId: "l1" }),
+      );
+    });
+
+    it("passes ?genreId= through to getCatalogPage's genreId filter", async () => {
+      vi.mocked(db.genre.findUnique).mockResolvedValue({
+        name: "Techno",
+      } as never);
+      await AdminCatalogPage({
+        searchParams: Promise.resolve({ genreId: "g1" }),
+      });
+      expect(getCatalogPage).toHaveBeenCalledWith(
+        expect.objectContaining({ genreId: "g1" }),
+      );
+    });
+
+    it("passes ?artistId= through to getCatalogPage's artistIds filter", async () => {
+      vi.mocked(db.artist.findUnique).mockResolvedValue({
+        name: "Vril",
+      } as never);
+      await AdminCatalogPage({
+        searchParams: Promise.resolve({ artistId: "a1" }),
+      });
+      expect(getCatalogPage).toHaveBeenCalledWith(
+        expect.objectContaining({ artistIds: ["a1"] }),
+      );
+    });
+
+    it("passes ?productTypeId= through to getCatalogPage's productTypeId filter", async () => {
+      vi.mocked(db.productType.findUnique).mockResolvedValue({
+        name: "LP",
+      } as never);
+      await AdminCatalogPage({
+        searchParams: Promise.resolve({ productTypeId: "t1" }),
+      });
+      expect(getCatalogPage).toHaveBeenCalledWith(
+        expect.objectContaining({ productTypeId: "t1" }),
+      );
+    });
+
+    it("shows a 'Filtered by' banner naming the entity, with a Clear link that drops just the filter", async () => {
+      vi.mocked(db.label.findUnique).mockResolvedValue({
+        name: "Zulema Records",
+      } as never);
+      const ui = await AdminCatalogPage({
+        searchParams: Promise.resolve({ labelId: "l1", q: "vril" }),
+      });
+      render(ui);
+
+      expect(screen.getByText(/filtered by label: zulema records/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /clear filter/i }),
+      ).toHaveAttribute("href", "/admin/catalog?q=vril");
+    });
+
+    it("preserves the active filter across pagination links", async () => {
+      vi.mocked(db.label.findUnique).mockResolvedValue({
+        name: "Zulema Records",
+      } as never);
+      const ui = await AdminCatalogPage({
+        searchParams: Promise.resolve({ labelId: "l1" }),
+      });
+      render(ui);
+
+      expect(screen.getByRole("link", { name: /^next$/i })).toHaveAttribute(
+        "href",
+        "/admin/catalog?page=3&labelId=l1",
+      );
+    });
+
+    it("does not render the banner when no entity filter is active", async () => {
+      const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+      render(ui);
+      expect(screen.queryByText(/filtered by/i)).not.toBeInTheDocument();
+    });
   });
 });

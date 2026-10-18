@@ -128,6 +128,7 @@ describe("ReferenceSection", () => {
 
     expect(await screen.findByText("Dub")).toBeInTheDocument();
     expect(screen.getByText(/91 genres/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/added "dub"/i);
   });
 
   it("increments the total but hides a newly-added item that doesn't match the active search", async () => {
@@ -171,6 +172,7 @@ describe("ReferenceSection", () => {
     await user.click(screen.getByRole("button", { name: /^save$/i }));
 
     expect(await screen.findByText("Techno Renamed")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/^saved\.$/i);
   });
 
   it("removes a deleted item and decrements the total", async () => {
@@ -292,7 +294,7 @@ describe("ReferenceSection", () => {
     expect(screen.getByText("Technics")).toBeInTheDocument();
   });
 
-  it("shows an empty-state message when a search matches nothing", async () => {
+  it("offers to add the searched term when a search matches nothing", async () => {
     const user = userEvent.setup();
     setup();
 
@@ -301,8 +303,35 @@ describe("ReferenceSection", () => {
       "zzznomatch",
     );
 
-    expect(await screen.findByText(/no matches/i)).toBeInTheDocument();
+    const addButton = await screen.findByRole("button", {
+      name: /add "zzznomatch"/i,
+    });
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+
+    await user.click(addButton);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/added "dub"/i);
+  });
+
+  it("shows a plain empty-state message when the list itself is empty", () => {
+    setup({ initialItems: [] });
+    expect(screen.getByText(/no matches/i)).toBeInTheDocument();
+  });
+
+  it("links the product count to the filtered admin catalog when productLinkParam is set", () => {
+    setup({ productLinkParam: "genreId" });
+
+    const link = screen.getByRole("link", { name: /in use by 3 products/i });
+    expect(link).toHaveAttribute("href", "/admin/catalog?genreId=2");
+  });
+
+  it("renders the product count as plain text when productLinkParam is absent", () => {
+    setup();
+
+    expect(screen.getByText(/in use by 3 products/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /in use by 3 products/i }),
+    ).toBeNull();
   });
 
   it("hints that results are truncated when the 20-result cap is hit", async () => {

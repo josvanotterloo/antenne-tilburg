@@ -10,6 +10,7 @@ import {
 import { fullDate, relativeDate } from "@/lib/relative-date";
 import { missingLabelFields } from "@/lib/dymo-label";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
+import { db } from "@/lib/db";
 import { OrderButton } from "@/components/admin/OrderButton";
 
 import { DeleteProductButton } from "./DeleteProductButton";
@@ -22,18 +23,51 @@ type SearchParams = Record<string, string | string[] | undefined>;
 const one = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v) ?? undefined;
 
+// Reached from a reference entity's "In use by N products" link
+// (components/admin/ReferenceSection.tsx's productLinkParam) — one of these
+// at a time narrows the list to that entity's products.
+type FilterParam = "artistId" | "genreId" | "labelId" | "productTypeId";
+const FILTER_ENTITIES: Record<
+  FilterParam,
+  { label: string; find: (id: string) => Promise<{ name: string } | null> }
+> = {
+  artistId: {
+    label: "Artist",
+    find: (id) => db.artist.findUnique({ where: { id }, select: { name: true } }),
+  },
+  genreId: {
+    label: "Genre",
+    find: (id) => db.genre.findUnique({ where: { id }, select: { name: true } }),
+  },
+  labelId: {
+    label: "Label",
+    find: (id) => db.label.findUnique({ where: { id }, select: { name: true } }),
+  },
+  productTypeId: {
+    label: "Product Type",
+    find: (id) =>
+      db.productType.findUnique({ where: { id }, select: { name: true } }),
+  },
+};
+
+type ActiveFilter = { param: FilterParam; id: string };
+
 // "In stock only" defaults to ON — instock is only written into the
 // querystring when explicitly turned off, keeping the (now-default) URL
-// clean.
+// clean. `filter` carries the active entity filter through pagination/search
+// links so it isn't lost by navigating; omit it to drop the filter (the
+// "Clear" link on the filter banner does this).
 function adminHref(
   q: string | undefined,
   page: number,
   instock: boolean,
+  filter?: ActiveFilter,
 ): string {
   const sp = new URLSearchParams();
   if (q) sp.set("q", q);
   if (page > 1) sp.set("page", String(page));
   if (!instock) sp.set("instock", "false");
+  if (filter) sp.set(filter.param, filter.id);
   const qs = sp.toString();
   return qs ? `/admin/catalog?${qs}` : "/admin/catalog";
 }
@@ -47,12 +81,31 @@ export default async function CatalogPage({
   const q = one(sp.q);
   const instock = one(sp.instock) !== "false";
 
-  const result = await getCatalogPage({
-    q,
-    onlyInStock: instock,
-    sort: "date",
-    page: one(sp.page),
-  });
+  // At most one entity filter is honored at a time — if more than one param
+  // is present (not reachable via this app's own links), the first match in
+  // this fixed order wins.
+  const activeFilter: ActiveFilter | undefined = (
+    ["artistId", "genreId", "labelId", "productTypeId"] as FilterParam[]
+  )
+    .map((param) => ({ param, id: one(sp[param]) }))
+    .find((f): f is ActiveFilter => !!f.id);
+
+  const [result, filterEntity] = await Promise.all([
+    getCatalogPage({
+      q,
+      onlyInStock: instock,
+      sort: "date",
+      page: one(sp.page),
+      artistIds: activeFilter?.param === "artistId" ? [activeFilter.id] : undefined,
+      genreId: activeFilter?.param === "genreId" ? activeFilter.id : undefined,
+      labelId: activeFilter?.param === "labelId" ? activeFilter.id : undefined,
+      productTypeId:
+        activeFilter?.param === "productTypeId" ? activeFilter.id : undefined,
+    }),
+    activeFilter
+      ? FILTER_ENTITIES[activeFilter.param].find(activeFilter.id)
+      : Promise.resolve(null),
+  ]);
 
   const openOrderProductIds = await getOpenOrderProductIds(
     result.products.map((p) => p.id),
@@ -91,14 +144,14 @@ export default async function CatalogPage({
         </button>
         {q && (
           <Link
-            href={adminHref(undefined, 1, instock)}
+            href={adminHref(undefined, 1, instock, activeFilter)}
             className="rounded px-3 py-2 text-sm text-admin-ink-muted underline"
           >
             Clear
           </Link>
         )}
         <Link
-          href={adminHref(q, 1, !instock)}
+          href={adminHref(q, 1, !instock, activeFilter)}
           aria-pressed={instock}
           className={`rounded border px-3 py-2 text-sm ${
             instock
@@ -109,6 +162,17 @@ export default async function CatalogPage({
           In stock only
         </Link>
       </form>
+
+      {activeFilter && (
+        <p className="text-sm text-admin-ink-muted">
+          Filtered by {FILTER_ENTITIES[activeFilter.param].label}
+          {filterEntity ? `: ${filterEntity.name}` : ""}
+          <span aria-hidden> · </span>
+          <Link href={adminHref(q, 1, instock)} className="underline">
+            Clear filter
+          </Link>
+        </p>
+      )}
 
       {result.products.length === 0 ? (
         <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
@@ -215,7 +279,7 @@ export default async function CatalogPage({
         >
           {result.page > 1 && (
             <Link
-              href={adminHref(q, result.page - 1, instock)}
+              href={adminHref(q, result.page - 1, instock, activeFilter)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Prev
@@ -227,7 +291,7 @@ export default async function CatalogPage({
                 <span className="px-1 text-admin-ink-muted">…</span>
               )}
               <Link
-                href={adminHref(q, n, instock)}
+                href={adminHref(q, n, instock, activeFilter)}
                 aria-current={n === result.page ? "page" : undefined}
                 className={`rounded px-2 py-1 ${
                   n === result.page
@@ -241,7 +305,7 @@ export default async function CatalogPage({
           ))}
           {result.page < result.pageCount && (
             <Link
-              href={adminHref(q, result.page + 1, instock)}
+              href={adminHref(q, result.page + 1, instock, activeFilter)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
               Next

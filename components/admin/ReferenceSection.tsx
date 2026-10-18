@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
@@ -23,18 +24,23 @@ export function ReferenceSection({
   initialItems,
   initialTotal,
   supplierEndpoint,
+  productLinkParam,
 }: {
   title: string;
   endpoint: string;
   initialItems: ReferenceItem[];
   initialTotal: number;
   supplierEndpoint?: string;
+  // Query param this entity's product count links to on /admin/catalog
+  // (lib/catalog.ts's CatalogFilters already supports all four).
+  productLinkParam?: "artistId" | "genreId" | "labelId" | "productTypeId";
 }) {
   const { error, run } = useAsyncAction();
   const [items, setItems] = useState(initialItems);
   const [totalCount, setTotalCount] = useState(initialTotal);
   const [query, setQuery] = useState("");
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -74,10 +80,7 @@ export function ReferenceSection({
     return () => clearTimeout(timer);
   }, [query, endpoint]);
 
-  function handleAdd(event: React.FormEvent) {
-    event.preventDefault();
-    const name = newName.trim();
-    if (!name) return;
+  function createItem(name: string) {
     run(async () => {
       const created = await apiSend<{
         id: string;
@@ -120,7 +123,15 @@ export function ReferenceSection({
       }
       setNewName("");
       setNewSupplier(null);
+      setSuccessMessage(`Added "${created.name}".`);
     });
+  }
+
+  function handleAdd(event: React.FormEvent) {
+    event.preventDefault();
+    const name = newName.trim();
+    if (!name) return;
+    createItem(name);
   }
 
   function handleSaveEdit(id: string) {
@@ -155,6 +166,7 @@ export function ReferenceSection({
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
       setEditingId(null);
+      setSuccessMessage("Saved.");
     });
   }
 
@@ -192,7 +204,12 @@ export function ReferenceSection({
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            // A stale success banner from a prior add/edit shouldn't linger
+            // once the admin starts a new search.
+            setQuery(e.target.value);
+            setSuccessMessage(null);
+          }}
           placeholder={`Search ${label}`}
           aria-label={`Search ${label}`}
           className="w-full rounded border border-admin-hairline bg-admin-bg px-2 py-1 text-sm"
@@ -230,8 +247,24 @@ export function ReferenceSection({
         </p>
       )}
 
+      {successMessage && !(error || searchError) && (
+        <p role="status" className="mt-2 text-sm text-admin-ink-muted">
+          {successMessage}
+        </p>
+      )}
+
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-admin-ink-muted">No matches.</p>
+        query.trim() ? (
+          <button
+            type="button"
+            onClick={() => createItem(query.trim())}
+            className="mt-3 text-sm text-admin-ink underline"
+          >
+            Add &quot;{query.trim()}&quot;
+          </button>
+        ) : (
+          <p className="mt-3 text-sm text-admin-ink-muted">No matches.</p>
+        )
       ) : (
         <>
           <ul className="mt-3 divide-y divide-admin-hairline">
@@ -298,9 +331,18 @@ export function ReferenceSection({
                       </div>
                       <div className="flex justify-start">
                         {item.productCount > 0 ? (
-                          <span className="text-admin-ink-muted">
-                            In use by {item.productCount} products
-                          </span>
+                          productLinkParam ? (
+                            <Link
+                              href={`/admin/catalog?${productLinkParam}=${item.id}`}
+                              className="text-admin-ink-muted hover:underline"
+                            >
+                              In use by {item.productCount} products
+                            </Link>
+                          ) : (
+                            <span className="text-admin-ink-muted">
+                              In use by {item.productCount} products
+                            </span>
+                          )
                         ) : (
                           <button
                             type="button"

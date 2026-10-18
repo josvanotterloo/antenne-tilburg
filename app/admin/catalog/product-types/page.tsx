@@ -24,6 +24,7 @@ export default async function ProductTypesPage() {
       endpoint="/api/admin/product-types"
       initialItems={toSimpleReferenceItems(productTypes)}
       initialTotal={total}
+      productLinkParam="productTypeId"
     />
   );
 }
