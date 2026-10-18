@@ -72,6 +72,23 @@ WAILERS"/"...AND..."), which would fail a unique-index migration outright.
   harmless no-op for the other three entities, whose create response never
   populates it.
 
+## `@code-reviewer` close-out pass
+Caught one real blocker before merge: `resolveVariousArtists`, `prisma/
+seed.ts`, and the (not-yet-run) legacy migration script all created rows
+without `normalizedName`, leaving them invisible to the dedupe guard —
+`resolveVariousArtists` in particular runs on every Various Artists product
+save, not just during a future migration. All three now set it.
+(`scripts/backfill-artists.ts`, a one-off script scoped between two
+already-applied 2026-07-29 migrations, was deliberately left as-is.)
+
+Also fixed: a rename that doesn't change the normalized name (e.g. editing
+only a Label's supplier) no longer gets wrongly blocked by an unrelated
+row's legacy near-duplicate; a failed fuzzy-match lookup no longer turns an
+already-successful artist create into a 500; the product-count link now
+passes `instock=false` so it can't show fewer products than the count it
+displayed; and the previously-missing unauthenticated-case tests were added
+to the changed Artist/Label routes.
+
 ## Verified live
 Manual browser click-through against the real dev DB (not just the mocked
 test suite) for both the shared-factory path (Artists) and a bespoke route
