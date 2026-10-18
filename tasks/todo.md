@@ -266,7 +266,14 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 1048 tests as of the
+Done — Vitest runner + `run-tests` skill in place; 1081 tests as of
+STEP 5 (Unit 2: reference-entity shared behaviour — search-into-add/success
+messages/product-list links, app-level near-duplicate blocking, Artists'
+fuzzy "did you mean"), 2026-10-18 (+33 net: `lib/reference-dedupe.test.ts`,
+`lib/backfill-normalized-names.test.ts`, `lib/artist-fuzzy-match.test.ts`,
+plus new/updated cases across `reference-crud.test.ts`, the Artists/Labels
+route tests, `ReferenceSection.test.tsx`, and `catalog.test.tsx` — see
+`docs/features/reference-entity-shared.md`). 1048 tests as of the
 initial-stock-visibility feature + Round 2 QA units (order management,
 customer orders, DYMO label gap), 2026-10-15. 972 tests as of the
 public /stock redesign, 2026-08-24 (net -7 vs. admin UI polish's 979 —
