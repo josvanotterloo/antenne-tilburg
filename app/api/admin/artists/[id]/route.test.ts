@@ -36,6 +36,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
   vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
+  vi.mocked(db.artist.findUnique).mockResolvedValue(null); // vi.clearAllMocks() doesn't reset mockResolvedValue
 });
 
 describe("PATCH /api/admin/artists/[id]", () => {
@@ -67,6 +68,21 @@ describe("PATCH /api/admin/artists/[id]", () => {
     vi.mocked(db.artist.update).mockRejectedValue({ code: "P2002" });
     const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
     expect(res.status).toBe(409);
+  });
+
+  it("allows an unchanged name even when another artist has a legacy normalized duplicate", async () => {
+    vi.mocked(db.artist.findUnique).mockResolvedValue({
+      name: "House",
+      normalizedName: "house",
+    } as never);
+    vi.mocked(db.artist.findFirst).mockResolvedValue({ id: "legacy-duplicate" } as never);
+    vi.mocked(db.artist.update).mockResolvedValue({ id: "1", name: "House" } as never);
+    vi.mocked(db.product.updateMany).mockResolvedValue({ count: 0 } as never);
+
+    const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
+
+    expect(res.status).toBe(200);
+    expect(db.artist.findFirst).not.toHaveBeenCalled();
   });
 
   it("rejects a normalized-duplicate rename, excluding itself, before the write", async () => {

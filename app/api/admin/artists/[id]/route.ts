@@ -36,14 +36,22 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   // lib/resolve-artists.ts's resolveVariousArtists) would make future VA
   // product saves upsert a second, disconnected entity under the fixed
   // name, silently forking existing VA products from new ones.
-  const existing = await db.artist.findUnique({ where: { id }, select: { name: true } });
+  const existing = await db.artist.findUnique({
+    where: { id },
+    select: { name: true, normalizedName: true },
+  });
   if (existing?.name === VARIOUS_ARTISTS_NAME) {
     return NextResponse.json(
       { error: "Cannot rename the shared Various Artists entity" },
       { status: 400 },
     );
   }
-  if (await findDuplicateByNormalizedName(db.artist, name, id)) {
+  const normalizedName = normalizeReferenceName(name);
+  // A rename that doesn't actually change the normalized name must never be
+  // blocked by another artist's legacy near-duplicate — see the matching
+  // comment in lib/reference-crud.ts's itemHandlers.PATCH.
+  const nameUnchanged = existing?.normalizedName === normalizedName;
+  if (!nameUnchanged && (await findDuplicateByNormalizedName(db.artist, name, id))) {
     return NextResponse.json(
       { error: `"${name}" already exists` },
       { status: 409 },
@@ -53,7 +61,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     const [updated] = await db.$transaction([
       db.artist.update({
         where: { id },
-        data: { name, normalizedName: normalizeReferenceName(name) },
+        data: { name, normalizedName },
       }),
       db.product.updateMany({
         where: { productArtists: { some: { artistId: id, position: 0 } } },

@@ -24,7 +24,15 @@ export async function POST(req: Request) {
   const res = await createArtist(req);
   if (res.status !== 201) return res;
   const created = (await res.clone().json()) as { id: string; name: string };
-  const candidates = await findSimilarArtists(created.name, created.id);
+  // The artist is already committed at this point — a failure here (e.g. a
+  // transient DB error) must never turn a successful create into an error
+  // response; it just means no fuzzy hint this time.
+  let candidates: Awaited<ReturnType<typeof findSimilarArtists>> = [];
+  try {
+    candidates = await findSimilarArtists(created.name, created.id);
+  } catch (error) {
+    console.error("findSimilarArtists failed after artist create", error);
+  }
   if (candidates.length === 0) return res;
   return NextResponse.json({ ...created, candidates }, { status: 201 });
 }

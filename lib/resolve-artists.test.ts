@@ -71,7 +71,7 @@ describe("resolveVariousArtists", () => {
     expect(delegate.upsert).toHaveBeenCalledWith({
       where: { name: VARIOUS_ARTISTS_NAME },
       update: {},
-      create: { name: VARIOUS_ARTISTS_NAME },
+      create: { name: VARIOUS_ARTISTS_NAME, normalizedName: "various artists" },
     });
     expect(result).toEqual({ id: "va1", name: VARIOUS_ARTISTS_NAME });
   });

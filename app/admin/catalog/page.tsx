@@ -176,7 +176,11 @@ export default async function CatalogPage({
 
       {result.products.length === 0 ? (
         <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-          {q ? "No products match your search." : "No products yet."}
+          {q
+            ? "No products match your search."
+            : activeFilter
+              ? "No products match this filter."
+              : "No products yet."}
         </p>
       ) : (
         <ul className="divide-y divide-admin-hairline rounded border border-admin-hairline bg-admin-surface">

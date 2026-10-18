@@ -295,6 +295,23 @@ describe("/admin/catalog", () => {
       );
     });
 
+    it("shows a filter-specific empty state when the active filter matches no products", async () => {
+      vi.mocked(db.label.findUnique).mockResolvedValue({
+        name: "Zulema Records",
+      } as never);
+      vi.mocked(getCatalogPage).mockResolvedValue({
+        products: [],
+        total: 0,
+        page: 1,
+        pageCount: 1,
+      });
+      const ui = await AdminCatalogPage({
+        searchParams: Promise.resolve({ labelId: "l1" }),
+      });
+      render(ui);
+      expect(screen.getByText(/no products match this filter/i)).toBeInTheDocument();
+    });
+
     it("does not render the banner when no entity filter is active", async () => {
       const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
       render(ui);

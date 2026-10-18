@@ -85,4 +85,11 @@ describe("POST /api/admin/labels", () => {
     });
     expect(label.create).not.toHaveBeenCalled();
   });
+
+  it("returns the 401 from requireAdmin without hitting the db", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await POST(postReq({ name: "Warp" }));
+    expect(res.status).toBe(401);
+    expect(label.create).not.toHaveBeenCalled();
+  });
 });

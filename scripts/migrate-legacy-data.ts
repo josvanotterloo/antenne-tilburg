@@ -27,6 +27,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { extractInsertRows, type SqlValue } from "../lib/mysql-dump-parser";
 import { resolveVariousArtists, VARIOUS_ARTISTS_NAME } from "../lib/resolve-artists";
+import { normalizeReferenceName } from "../lib/reference-dedupe";
 
 const prisma = new PrismaClient();
 const BATCH_SIZE = 500;
@@ -727,7 +728,10 @@ async function main() {
       label: "genres",
       nameColumn: "name",
       findExistingByName: () => prisma.genre.findMany({ select: { id: true, name: true } }),
-      createMany: (names) => prisma.genre.createMany({ data: names.map((name) => ({ name })) }),
+      createMany: (names) =>
+        prisma.genre.createMany({
+          data: names.map((name) => ({ name, normalizedName: normalizeReferenceName(name) })),
+        }),
     },
     dryRun,
     skips,
@@ -740,7 +744,10 @@ async function main() {
       label: "product types",
       nameColumn: "name",
       findExistingByName: () => prisma.productType.findMany({ select: { id: true, name: true } }),
-      createMany: (names) => prisma.productType.createMany({ data: names.map((name) => ({ name })) }),
+      createMany: (names) =>
+        prisma.productType.createMany({
+          data: names.map((name) => ({ name, normalizedName: normalizeReferenceName(name) })),
+        }),
     },
     dryRun,
     skips,
@@ -753,7 +760,10 @@ async function main() {
       label: "labels",
       nameColumn: "name",
       findExistingByName: () => prisma.label.findMany({ select: { id: true, name: true } }),
-      createMany: (names) => prisma.label.createMany({ data: names.map((name) => ({ name })) }),
+      createMany: (names) =>
+        prisma.label.createMany({
+          data: names.map((name) => ({ name, normalizedName: normalizeReferenceName(name) })),
+        }),
     },
     dryRun,
     skips,
@@ -767,7 +777,10 @@ async function main() {
       nameColumn: "name",
       normalizeName: (raw) => raw.toUpperCase(),
       findExistingByName: () => prisma.artist.findMany({ select: { id: true, name: true } }),
-      createMany: (names) => prisma.artist.createMany({ data: names.map((name) => ({ name })) }),
+      createMany: (names) =>
+        prisma.artist.createMany({
+          data: names.map((name) => ({ name, normalizedName: normalizeReferenceName(name) })),
+        }),
     },
     dryRun,
     skips,

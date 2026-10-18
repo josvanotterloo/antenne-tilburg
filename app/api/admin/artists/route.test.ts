@@ -12,6 +12,7 @@ vi.mock("@/lib/artist-fuzzy-match", () => ({ findSimilarArtists: vi.fn() }));
 import { db } from "@/lib/db";
 import { GET, POST } from "@/app/api/admin/artists/route";
 import { findSimilarArtists } from "@/lib/artist-fuzzy-match";
+import { requireAdmin } from "@/lib/api-auth";
 
 describe("GET /api/admin/artists", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -43,6 +44,7 @@ describe("GET /api/admin/artists", () => {
 describe("POST /api/admin/artists", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(requireAdmin).mockResolvedValue(null);
     vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
     vi.mocked(findSimilarArtists).mockResolvedValue([]); // no fuzzy match by default
   });
@@ -84,6 +86,17 @@ describe("POST /api/admin/artists", () => {
     });
   });
 
+  it("still returns 201 (without candidates) when the fuzzy lookup itself fails", async () => {
+    vi.mocked(db.artist.create).mockResolvedValue({ id: "a1", name: "Vril" } as never);
+    vi.mocked(findSimilarArtists).mockRejectedValue(new Error("pg_trgm unavailable"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(postReq("Vril"));
+
+    expect(res.status).toBe(201);
+    expect(await res.json()).not.toHaveProperty("candidates");
+  });
+
   it("omits candidates from the response when nothing is similar", async () => {
     vi.mocked(db.artist.create).mockResolvedValue({ id: "a1", name: "Vril" } as never);
 
@@ -91,5 +104,15 @@ describe("POST /api/admin/artists", () => {
 
     expect(res.status).toBe(201);
     expect(await res.json()).not.toHaveProperty("candidates");
+  });
+
+  it("returns the 401 from requireAdmin without creating or checking for fuzzy matches", async () => {
+    vi.mocked(requireAdmin).mockResolvedValue(new Response(null, { status: 401 }) as never);
+
+    const res = await POST(postReq("Vril"));
+
+    expect(res.status).toBe(401);
+    expect(db.artist.create).not.toHaveBeenCalled();
+    expect(findSimilarArtists).not.toHaveBeenCalled();
   });
 });

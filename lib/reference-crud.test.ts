@@ -177,6 +177,23 @@ describe("itemHandlers", () => {
     });
   });
 
+  it("PATCH allows an unchanged name even when another row has a legacy normalized duplicate", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findUnique.mockResolvedValue({ normalizedName: "house" });
+    fns.findFirst.mockResolvedValue({ id: "legacy-duplicate" });
+    fns.update.mockResolvedValue({ id: "1", name: "House" });
+    const { PATCH } = itemHandlers(delegate);
+
+    const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
+
+    expect(res.status).toBe(200);
+    expect(fns.findFirst).not.toHaveBeenCalled();
+    expect(fns.update).toHaveBeenCalledWith({
+      where: { id: "1" },
+      data: { name: "House", normalizedName: "house" },
+    });
+  });
+
   it("PATCH rejects a normalized-duplicate rename, excluding itself", async () => {
     const { fns, delegate } = makeDelegate();
     fns.findFirst.mockResolvedValue({ id: "other" });

@@ -342,7 +342,12 @@ export function ReferenceSection({
                         {item.productCount > 0 ? (
                           productLinkParam ? (
                             <Link
-                              href={`/admin/catalog?${productLinkParam}=${item.id}`}
+                              // instock=false: productCount below counts every
+                              // linked product, but the catalog defaults to
+                              // in-stock-only — without this the admin can
+                              // land on a page showing fewer products than
+                              // the count just said (or none at all).
+                              href={`/admin/catalog?${productLinkParam}=${item.id}&instock=false`}
                               className="text-admin-ink-muted hover:underline"
                             >
                               In use by {item.productCount} products

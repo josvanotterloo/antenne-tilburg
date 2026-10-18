@@ -37,6 +37,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
   label.findFirst.mockResolvedValue(null); // no normalized-name duplicate
+  label.findUnique.mockResolvedValue(null); // vi.clearAllMocks() doesn't reset mockResolvedValue
 });
 
 describe("PATCH /api/admin/labels/[id]", () => {
@@ -69,6 +70,39 @@ describe("PATCH /api/admin/labels/[id]", () => {
     label.update.mockRejectedValue({ code: "P2025" });
     const res = await PATCH(patchReq({ name: "X" }), ctx("missing"));
     expect(res.status).toBe(404);
+  });
+
+  it("409s when the DB's own unique constraint rejects the write (P2002)", async () => {
+    label.update.mockRejectedValue({ code: "P2002" });
+    const res = await PATCH(patchReq({ name: "Warp" }), ctx("l1"));
+    expect(res.status).toBe(409);
+  });
+
+  it("returns the 401 from requireAdmin without hitting the db", async () => {
+    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+    const res = await PATCH(patchReq({ name: "Warp" }), ctx("l1"));
+    expect(res.status).toBe(401);
+    expect(label.update).not.toHaveBeenCalled();
+  });
+
+  it("allows a supplier-only edit (unchanged name) even when another label has a legacy normalized duplicate", async () => {
+    label.findFirst.mockResolvedValue({ id: "legacy-duplicate" });
+    label.findUnique.mockResolvedValue({ normalizedName: "warp" });
+    label.update.mockResolvedValue({
+      id: "l1",
+      name: "Warp",
+      supplier: { id: "s2", name: "Gamma" },
+    });
+
+    const res = await PATCH(patchReq({ name: "Warp", supplierId: "s2" }), ctx("l1"));
+
+    expect(res.status).toBe(200);
+    expect(label.findFirst).not.toHaveBeenCalled();
+    expect(label.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { name: "Warp", normalizedName: "warp", supplierId: "s2" },
+      include: { supplier: true },
+    });
   });
 
   it("409s a normalized-duplicate rename, excluding itself, without writing", async () => {

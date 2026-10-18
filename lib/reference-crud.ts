@@ -38,6 +38,10 @@ export interface ReferenceDelegate {
     where: { id: string };
     include: { _count: { select: Record<string, true> } };
   }): Promise<(ReferenceRecord & { _count: Record<string, number> }) | null>;
+  findUnique(args: {
+    where: { id: string };
+    select: { normalizedName: true };
+  }): Promise<{ normalizedName: string } | null>;
   update(args: {
     where: { id: string };
     data: { name: string; normalizedName: string };
@@ -134,13 +138,23 @@ export function itemHandlers(
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
-    if (await findDuplicateByNormalizedName(delegate, name, id)) {
+    const normalizedName = normalizeReferenceName(name);
+    // A rename that doesn't actually change the normalized name (e.g. only
+    // casing/whitespace changed, or the admin re-submitted the same name)
+    // must never be blocked by another row's legacy near-duplicate — that
+    // row's existence has nothing to do with this save.
+    const current = await delegate.findUnique({
+      where: { id },
+      select: { normalizedName: true },
+    });
+    const nameUnchanged = current?.normalizedName === normalizedName;
+    if (!nameUnchanged && (await findDuplicateByNormalizedName(delegate, name, id))) {
       return duplicateNameResponse(name);
     }
     try {
       const updated = await delegate.update({
         where: { id },
-        data: { name, normalizedName: normalizeReferenceName(name) },
+        data: { name, normalizedName },
       });
       return NextResponse.json(updated);
     } catch (error) {

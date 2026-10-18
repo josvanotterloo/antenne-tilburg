@@ -3,6 +3,7 @@ import { hash } from "bcrypt";
 
 import { resolveAdminSeedUsers } from "../lib/seed-users";
 import { resolveVariousArtists } from "../lib/resolve-artists";
+import { normalizeReferenceName } from "../lib/reference-dedupe";
 
 const prisma = new PrismaClient();
 
@@ -143,16 +144,24 @@ async function main() {
 
   // --- Managed reference lists (idempotent on unique name) ---
   for (const name of LABELS) {
-    await prisma.label.upsert({ where: { name }, update: {}, create: { name } });
+    await prisma.label.upsert({
+      where: { name },
+      update: {},
+      create: { name, normalizedName: normalizeReferenceName(name) },
+    });
   }
   for (const name of GENRES) {
-    await prisma.genre.upsert({ where: { name }, update: {}, create: { name } });
+    await prisma.genre.upsert({
+      where: { name },
+      update: {},
+      create: { name, normalizedName: normalizeReferenceName(name) },
+    });
   }
   for (const name of PRODUCT_TYPES) {
     await prisma.productType.upsert({
       where: { name },
       update: {},
-      create: { name },
+      create: { name, normalizedName: normalizeReferenceName(name) },
     });
   }
 
@@ -183,7 +192,7 @@ async function main() {
         const artist = await prisma.artist.upsert({
           where: { name },
           update: {},
-          create: { name },
+          create: { name, normalizedName: normalizeReferenceName(name) },
         });
         return { artistId: artist.id, position };
       }),

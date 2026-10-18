@@ -290,7 +290,7 @@ describe("POST /api/admin/products", () => {
     expect(artist.upsert).toHaveBeenCalledWith({
       where: { name: "Various Artists" },
       update: {},
-      create: { name: "Various Artists" },
+      create: { name: "Various Artists", normalizedName: "various artists" },
     });
     expect(artist.findMany).not.toHaveBeenCalled();
     expect(product.create).toHaveBeenCalledWith({

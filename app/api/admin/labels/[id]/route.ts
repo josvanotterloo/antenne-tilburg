@@ -22,7 +22,17 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-  if (await findDuplicateByNormalizedName(db.label, parsed.data.name, id)) {
+  const normalizedName = normalizeReferenceName(parsed.data.name);
+  // A rename that doesn't actually change the normalized name (e.g. editing
+  // only the supplier) must never be blocked by another label's legacy
+  // near-duplicate — see the matching comment in lib/reference-crud.ts's
+  // itemHandlers.PATCH.
+  const current = await db.label.findUnique({ where: { id }, select: { normalizedName: true } });
+  const nameUnchanged = current?.normalizedName === normalizedName;
+  if (
+    !nameUnchanged &&
+    (await findDuplicateByNormalizedName(db.label, parsed.data.name, id))
+  ) {
     return NextResponse.json(
       { error: `"${parsed.data.name}" already exists` },
       { status: 409 },
@@ -33,7 +43,7 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       where: { id },
       data: {
         name: parsed.data.name,
-        normalizedName: normalizeReferenceName(parsed.data.name),
+        normalizedName,
         supplierId: parsed.data.supplierId,
       },
       include: { supplier: true },

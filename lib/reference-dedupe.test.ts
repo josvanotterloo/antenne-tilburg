@@ -30,6 +30,16 @@ describe("normalizeReferenceName", () => {
       normalizeReferenceName("Simon and Garfunkel"),
     );
   });
+
+  it("unifies '&' with no surrounding spaces", () => {
+    expect(normalizeReferenceName("Drum&Bass")).toBe(
+      normalizeReferenceName("Drum and Bass"),
+    );
+  });
+
+  it("unifies every '&' when a name has more than one", () => {
+    expect(normalizeReferenceName("A & B & C")).toBe("a and b and c");
+  });
 });
 
 describe("findDuplicateByNormalizedName", () => {

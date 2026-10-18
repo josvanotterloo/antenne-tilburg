@@ -350,7 +350,7 @@ describe("ReferenceSection", () => {
     setup({ productLinkParam: "genreId" });
 
     const link = screen.getByRole("link", { name: /in use by 3 products/i });
-    expect(link).toHaveAttribute("href", "/admin/catalog?genreId=2");
+    expect(link).toHaveAttribute("href", "/admin/catalog?genreId=2&instock=false");
   });
 
   it("renders the product count as plain text when productLinkParam is absent", () => {
