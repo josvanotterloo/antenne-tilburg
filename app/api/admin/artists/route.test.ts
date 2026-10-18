@@ -5,7 +5,7 @@ vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
 }));
 vi.mock("@/lib/db", () => ({
-  db: { artist: { findMany: vi.fn(), create: vi.fn() } },
+  db: { artist: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() } },
 }));
 
 import { db } from "@/lib/db";
@@ -39,7 +39,10 @@ describe("GET /api/admin/artists", () => {
 });
 
 describe("POST /api/admin/artists", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
+  });
 
   it("creates an artist from a valid name", async () => {
     vi.mocked(db.artist.create).mockResolvedValue({ id: "a1", name: "Vril" } as never);
@@ -51,5 +54,18 @@ describe("POST /api/admin/artists", () => {
       }),
     );
     expect(res.status).toBe(201);
+  });
+
+  it("rejects a normalized-duplicate artist name with 409", async () => {
+    vi.mocked(db.artist.findFirst).mockResolvedValue({ id: "existing" } as never);
+    const res = await POST(
+      new Request("http://test/api", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "VRIL" }),
+      }),
+    );
+    expect(res.status).toBe(409);
+    expect(db.artist.create).not.toHaveBeenCalled();
   });
 });

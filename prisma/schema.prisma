@@ -46,6 +46,10 @@ model User {
 model Label {
   id         String    @id @default(cuid())
   name       String    @unique
+  // Lookup-only (non-unique) — see lib/reference-dedupe.ts. A unique index
+  // is a parked follow-up task (tasks/todo.md Backlog) until existing
+  // case-variant duplicates are merged.
+  normalizedName String @default("")
   products   Product[]
   supplierId String?
   supplier   Supplier? @relation(fields: [supplierId], references: [id])
@@ -53,22 +57,35 @@ model Label {
   updatedAt  DateTime  @updatedAt
 
   @@index([supplierId])
+  @@index([normalizedName])
 }
 
 model Genre {
   id             String         @id @default(cuid())
   name           String         @unique
+  // Lookup-only (non-unique) — see lib/reference-dedupe.ts. A unique index
+  // is a parked follow-up task (tasks/todo.md Backlog) until existing
+  // case-variant duplicates are merged.
+  normalizedName String         @default("")
   productGenres  ProductGenre[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  @@index([normalizedName])
 }
 
 model ProductType {
   id        String    @id @default(cuid())
   name      String    @unique
+  // Lookup-only (non-unique) — see lib/reference-dedupe.ts. A unique index
+  // is a parked follow-up task (tasks/todo.md Backlog) until existing
+  // case-variant duplicates are merged.
+  normalizedName String @default("")
   products  Product[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([normalizedName])
 }
 
 // Artists are many-to-many with Product (splits, compilations,
@@ -78,9 +95,15 @@ model ProductType {
 model Artist {
   id             String          @id @default(cuid())
   name           String          @unique
+  // Lookup-only (non-unique) — see lib/reference-dedupe.ts. A unique index
+  // is a parked follow-up task (tasks/todo.md Backlog) until existing
+  // case-variant duplicates are merged.
+  normalizedName String          @default("")
   productArtists ProductArtist[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([normalizedName])
 }
 
 model ProductArtist {

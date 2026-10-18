@@ -146,6 +146,17 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       are found.
 
 ### Platform / tech debt
+- [ ] **Reference-entity normalized-name unique index (parked).** Artist/Genre/
+      Label/ProductType got a non-unique `normalizedName` lookup column +
+      app-level dedupe check (`lib/reference-dedupe.ts`) in STEP 5b
+      (`docs/qa/claude-code-prompts-revised-5-6.md`) — a real DB unique index
+      can't be added yet because existing data already has case/`&`-variant
+      duplicates (confirmed via the backfill: e.g. "BIOSPHERE" / "Biosphere",
+      "BOB MARLEY & THE WAILERS" / "BOB MARLEY AND THE WAILERS"). Once the
+      separate existing-duplicate merge task has run and verified zero
+      remaining normalized collisions, add `@@unique([normalizedName])` to
+      all four models and drop the app-level check (or keep it as a
+      pre-check for a friendlier 409 message ahead of the DB error).
 - [ ] **Pre-scale task** — Move blog/post uploads from `public/uploads` to Hetzner Object
       Storage (only the `/api/admin/uploads` handler changes; the returned URL is the
       contract). Fine on a single instance for now; needed before scaling out / a real

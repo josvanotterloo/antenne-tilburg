@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
+import {
+  normalizeReferenceName,
+  findDuplicateByNormalizedName,
+} from "@/lib/reference-dedupe";
 
 // Labels, Genres and Product Types are managed lists with identical shape and
 // behaviour ({ id, name } + a relation guarding deletes — Labels/Product
@@ -23,16 +27,29 @@ export interface ReferenceDelegate {
     take: number;
     include: { _count: { select: Record<string, true> } };
   }): Promise<(ReferenceRecord & { _count: Record<string, number> })[]>;
-  create(args: { data: { name: string } }): Promise<ReferenceRecord>;
+  findFirst(args: {
+    where: { normalizedName: string; id?: { not: string } };
+    select: { id: true };
+  }): Promise<{ id: string } | null>;
+  create(args: {
+    data: { name: string; normalizedName: string };
+  }): Promise<ReferenceRecord>;
   findUnique(args: {
     where: { id: string };
     include: { _count: { select: Record<string, true> } };
   }): Promise<(ReferenceRecord & { _count: Record<string, number> }) | null>;
   update(args: {
     where: { id: string };
-    data: { name: string };
+    data: { name: string; normalizedName: string };
   }): Promise<ReferenceRecord>;
   delete(args: { where: { id: string } }): Promise<ReferenceRecord>;
+}
+
+function duplicateNameResponse(name: string) {
+  return NextResponse.json(
+    { error: `"${name}" already exists` },
+    { status: 409 },
+  );
 }
 
 function readName(body: unknown): string {
@@ -85,15 +102,17 @@ export function collectionHandlers(
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
+    if (await findDuplicateByNormalizedName(delegate, name)) {
+      return duplicateNameResponse(name);
+    }
     try {
-      const created = await delegate.create({ data: { name } });
+      const created = await delegate.create({
+        data: { name, normalizedName: normalizeReferenceName(name) },
+      });
       return NextResponse.json(created, { status: 201 });
     } catch (error) {
       if (isUniqueViolation(error)) {
-        return NextResponse.json(
-          { error: `"${name}" already exists` },
-          { status: 409 },
-        );
+        return duplicateNameResponse(name);
       }
       throw error;
     }
@@ -115,15 +134,18 @@ export function itemHandlers(
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
+    if (await findDuplicateByNormalizedName(delegate, name, id)) {
+      return duplicateNameResponse(name);
+    }
     try {
-      const updated = await delegate.update({ where: { id }, data: { name } });
+      const updated = await delegate.update({
+        where: { id },
+        data: { name, normalizedName: normalizeReferenceName(name) },
+      });
       return NextResponse.json(updated);
     } catch (error) {
       if (isUniqueViolation(error)) {
-        return NextResponse.json(
-          { error: `"${name}" already exists` },
-          { status: 409 },
-        );
+        return duplicateNameResponse(name);
       }
       throw error;
     }

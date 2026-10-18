@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseLabelInput } from "@/lib/label-input";
+import {
+  normalizeReferenceName,
+  findDuplicateByNormalizedName,
+} from "@/lib/reference-dedupe";
 
 const SEARCH_LIMIT = 20;
 
@@ -40,9 +44,19 @@ export async function POST(req: Request) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  if (await findDuplicateByNormalizedName(db.label, parsed.data.name)) {
+    return NextResponse.json(
+      { error: `"${parsed.data.name}" already exists` },
+      { status: 409 },
+    );
+  }
   try {
     const created = await db.label.create({
-      data: { name: parsed.data.name, supplierId: parsed.data.supplierId },
+      data: {
+        name: parsed.data.name,
+        normalizedName: normalizeReferenceName(parsed.data.name),
+        supplierId: parsed.data.supplierId,
+      },
       include: { supplier: true },
     });
     return NextResponse.json(

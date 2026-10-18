@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { parseLabelInput } from "@/lib/label-input";
+import {
+  normalizeReferenceName,
+  findDuplicateByNormalizedName,
+} from "@/lib/reference-dedupe";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,10 +22,20 @@ export async function PATCH(req: Request, ctx: RouteContext) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
+  if (await findDuplicateByNormalizedName(db.label, parsed.data.name, id)) {
+    return NextResponse.json(
+      { error: `"${parsed.data.name}" already exists` },
+      { status: 409 },
+    );
+  }
   try {
     const updated = await db.label.update({
       where: { id },
-      data: { name: parsed.data.name, supplierId: parsed.data.supplierId },
+      data: {
+        name: parsed.data.name,
+        normalizedName: normalizeReferenceName(parsed.data.name),
+        supplierId: parsed.data.supplierId,
+      },
       include: { supplier: true },
     });
     return NextResponse.json({

@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { VARIOUS_ARTISTS_NAME } from "@/lib/resolve-artists";
+import {
+  normalizeReferenceName,
+  findDuplicateByNormalizedName,
+} from "@/lib/reference-dedupe";
 
 // Bespoke rename/delete for Artist: unlike the generic reference-crud
 // factory, rename must also refresh the denormalized primaryArtistName on
@@ -39,9 +43,18 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       { status: 400 },
     );
   }
+  if (await findDuplicateByNormalizedName(db.artist, name, id)) {
+    return NextResponse.json(
+      { error: `"${name}" already exists` },
+      { status: 409 },
+    );
+  }
   try {
     const [updated] = await db.$transaction([
-      db.artist.update({ where: { id }, data: { name } }),
+      db.artist.update({
+        where: { id },
+        data: { name, normalizedName: normalizeReferenceName(name) },
+      }),
       db.product.updateMany({
         where: { productArtists: { some: { artistId: id, position: 0 } } },
         data: { primaryArtistName: name },

@@ -15,6 +15,7 @@ const mockRequireAdmin = vi.mocked(requireAdmin);
 function makeDelegate() {
   const fns = {
     findMany: vi.fn(),
+    findFirst: vi.fn().mockResolvedValue(null), // no normalized-name duplicate by default
     create: vi.fn(),
     findUnique: vi.fn(),
     update: vi.fn(),
@@ -115,7 +116,24 @@ describe("collectionHandlers", () => {
     const res = await POST(jsonRequest({ name: "  Techno  " }));
 
     expect(res.status).toBe(201);
-    expect(fns.create).toHaveBeenCalledWith({ data: { name: "Techno" } });
+    expect(fns.create).toHaveBeenCalledWith({
+      data: { name: "Techno", normalizedName: "techno" },
+    });
+  });
+
+  it("POST rejects a normalized-duplicate name (case/whitespace/& variant) with 409", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findFirst.mockResolvedValue({ id: "existing" });
+    const { POST } = collectionHandlers(delegate);
+
+    const res = await POST(jsonRequest({ name: "TECHNO" }));
+
+    expect(res.status).toBe(409);
+    expect(fns.findFirst).toHaveBeenCalledWith({
+      where: { normalizedName: "techno" },
+      select: { id: true },
+    });
+    expect(fns.create).not.toHaveBeenCalled();
   });
 
   it("POST rejects a blank name with 400", async () => {
@@ -155,8 +173,23 @@ describe("itemHandlers", () => {
     expect(res.status).toBe(200);
     expect(fns.update).toHaveBeenCalledWith({
       where: { id: "1" },
-      data: { name: "House" },
+      data: { name: "House", normalizedName: "house" },
     });
+  });
+
+  it("PATCH rejects a normalized-duplicate rename, excluding itself", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findFirst.mockResolvedValue({ id: "other" });
+    const { PATCH } = itemHandlers(delegate);
+
+    const res = await PATCH(jsonRequest({ name: "HOUSE" }), ctx("1"));
+
+    expect(res.status).toBe(409);
+    expect(fns.findFirst).toHaveBeenCalledWith({
+      where: { normalizedName: "house", id: { not: "1" } },
+      select: { id: true },
+    });
+    expect(fns.update).not.toHaveBeenCalled();
   });
 
   it("PATCH rejects a blank name with 400", async () => {

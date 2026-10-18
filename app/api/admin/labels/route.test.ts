@@ -2,13 +2,15 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
-vi.mock("@/lib/db", () => ({ db: { label: { findMany: vi.fn(), create: vi.fn() } } }));
+vi.mock("@/lib/db", () => ({
+  db: { label: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() } },
+}));
 
 import { db } from "@/lib/db";
 import { GET, POST } from "@/app/api/admin/labels/route";
 import { requireAdmin } from "@/lib/api-auth";
 
-const label = db.label as unknown as { findMany: Mock; create: Mock };
+const label = db.label as unknown as { findMany: Mock; findFirst: Mock; create: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const getReq = (q = "") => new Request(`http://t/x?q=${q}`);
 const postReq = (body: unknown) =>
@@ -21,6 +23,7 @@ const postReq = (body: unknown) =>
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  label.findFirst.mockResolvedValue(null); // no normalized-name duplicate
 });
 
 describe("GET /api/admin/labels", () => {
@@ -49,7 +52,7 @@ describe("POST /api/admin/labels", () => {
     const res = await POST(postReq({ name: "Warp", supplierId: "s1" }));
     expect(res.status).toBe(201);
     expect(label.create).toHaveBeenCalledWith({
-      data: { name: "Warp", supplierId: "s1" },
+      data: { name: "Warp", normalizedName: "warp", supplierId: "s1" },
       include: { supplier: true },
     });
     expect(await res.json()).toEqual({
@@ -70,5 +73,16 @@ describe("POST /api/admin/labels", () => {
     label.create.mockRejectedValue({ code: "P2002" });
     const res = await POST(postReq({ name: "Warp" }));
     expect(res.status).toBe(409);
+  });
+
+  it("409s a normalized-duplicate name (case/whitespace/& variant) without writing", async () => {
+    label.findFirst.mockResolvedValue({ id: "existing" });
+    const res = await POST(postReq({ name: "WARP" }));
+    expect(res.status).toBe(409);
+    expect(label.findFirst).toHaveBeenCalledWith({
+      where: { normalizedName: "warp" },
+      select: { id: true },
+    });
+    expect(label.create).not.toHaveBeenCalled();
   });
 });

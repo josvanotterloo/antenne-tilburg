@@ -3,14 +3,26 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/lib/db", () => ({
-  db: { label: { update: vi.fn(), findUnique: vi.fn(), delete: vi.fn() } },
+  db: {
+    label: {
+      update: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      delete: vi.fn(),
+    },
+  },
 }));
 
 import { db } from "@/lib/db";
 import { PATCH, DELETE } from "@/app/api/admin/labels/[id]/route";
 import { requireAdmin } from "@/lib/api-auth";
 
-const label = db.label as unknown as { update: Mock; findUnique: Mock; delete: Mock };
+const label = db.label as unknown as {
+  update: Mock;
+  findFirst: Mock;
+  findUnique: Mock;
+  delete: Mock;
+};
 const mockRequireAdmin = vi.mocked(requireAdmin);
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const patchReq = (body: unknown) =>
@@ -24,6 +36,7 @@ const delReq = () => new Request("http://t/x", { method: "DELETE" });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  label.findFirst.mockResolvedValue(null); // no normalized-name duplicate
 });
 
 describe("PATCH /api/admin/labels/[id]", () => {
@@ -37,7 +50,11 @@ describe("PATCH /api/admin/labels/[id]", () => {
     expect(res.status).toBe(200);
     expect(label.update).toHaveBeenCalledWith({
       where: { id: "l1" },
-      data: { name: "Warp Records", supplierId: "s1" },
+      data: {
+        name: "Warp Records",
+        normalizedName: "warp records",
+        supplierId: "s1",
+      },
       include: { supplier: true },
     });
     expect(await res.json()).toEqual({
@@ -52,6 +69,17 @@ describe("PATCH /api/admin/labels/[id]", () => {
     label.update.mockRejectedValue({ code: "P2025" });
     const res = await PATCH(patchReq({ name: "X" }), ctx("missing"));
     expect(res.status).toBe(404);
+  });
+
+  it("409s a normalized-duplicate rename, excluding itself, without writing", async () => {
+    label.findFirst.mockResolvedValue({ id: "other" });
+    const res = await PATCH(patchReq({ name: "WARP" }), ctx("l1"));
+    expect(res.status).toBe(409);
+    expect(label.findFirst).toHaveBeenCalledWith({
+      where: { normalizedName: "warp", id: { not: "l1" } },
+      select: { id: true },
+    });
+    expect(label.update).not.toHaveBeenCalled();
   });
 });
 

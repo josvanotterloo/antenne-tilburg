@@ -4,7 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {
-    artist: { update: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
+    artist: {
+      update: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      delete: vi.fn(),
+    },
     product: { updateMany: vi.fn() },
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   },
@@ -30,6 +35,7 @@ const delReq = () => new Request("http://test", { method: "DELETE" });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
 });
 
 describe("PATCH /api/admin/artists/[id]", () => {
@@ -43,7 +49,7 @@ describe("PATCH /api/admin/artists/[id]", () => {
     expect(await res.json()).toEqual({ id: "1", name: "House" });
     expect(db.artist.update).toHaveBeenCalledWith({
       where: { id: "1" },
-      data: { name: "House" },
+      data: { name: "House", normalizedName: "house" },
     });
     expect(db.product.updateMany).toHaveBeenCalledWith({
       where: { productArtists: { some: { artistId: "1", position: 0 } } },
@@ -61,6 +67,19 @@ describe("PATCH /api/admin/artists/[id]", () => {
     vi.mocked(db.artist.update).mockRejectedValue({ code: "P2002" });
     const res = await PATCH(jsonRequest({ name: "House" }), ctx("1"));
     expect(res.status).toBe(409);
+  });
+
+  it("rejects a normalized-duplicate rename, excluding itself, before the write", async () => {
+    vi.mocked(db.artist.findFirst).mockResolvedValue({ id: "other" } as never);
+
+    const res = await PATCH(jsonRequest({ name: "HOUSE" }), ctx("1"));
+
+    expect(res.status).toBe(409);
+    expect(db.artist.findFirst).toHaveBeenCalledWith({
+      where: { normalizedName: "house", id: { not: "1" } },
+      select: { id: true },
+    });
+    expect(db.artist.update).not.toHaveBeenCalled();
   });
 
   it("returns the 401 from requireAdmin without hitting the db", async () => {
