@@ -89,6 +89,20 @@ Every feature branch must complete these steps before the session ends:
     decide — it saves tokens.
 11. Commit and push docs changes
 
+## Migrations
+
+Any migration touching the hand-written search infra (trigram GIN indexes,
+the `search_vector` GENERATED column — not modeled in `schema.prisma`) must
+go through `prisma migrate dev --create-only`, never bare `migrate dev` (see
+`tasks/lessons.md` 2026-07-08 / 2026-07-17 / 2026-07-29b).
+
+After generating, run `npx tsx scripts/clean-migration.ts
+prisma/migrations/<name>/migration.sql` to strip the known-spurious drift
+lines (trigram index drops, `search_vector ... DROP DEFAULT`) — it prints
+what it stripped. **This assists the hand-verify step — it does not replace
+it.**
+Always read the remaining diff yourself before `prisma migrate deploy`.
+
 ## Verification shortcuts
 
 Use `/goal` to run autonomous verification loops instead of manually checking after
