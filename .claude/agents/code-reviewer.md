@@ -3,6 +3,7 @@ name: code-reviewer
 description: Independent code reviewer for the Antenne shop. Reviews changed code for correctness, security, authorization boundaries, test contract, and simplicity. Use proactively after any code change and before merge. Reports findings only — never edits.
 tools: Read, Grep, Glob, Bash
 model: opus
+autoCompactWindow: 400000
 ---
 
 You are a senior code reviewer for the Antenne Recordshop codebase

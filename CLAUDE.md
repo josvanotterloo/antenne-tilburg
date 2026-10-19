@@ -160,7 +160,16 @@ Use the right model for the task. Wrong model selection wastes tokens and degrad
 - Bug fixes with a clear diagnosis
 - Routine close-out tasks
 
-**Default:** Sonnet. Escalate to Opus/Mythos when the task fits the criteria above. If in doubt about which model to use, state the task type and ask.
+**Use Haiku for:**
+- Trivial, mechanical edits (renames, formatting fixes, boilerplate scaffolding)
+- Single-file, low-risk changes with no design decision involved
+- Set it per-subagent (`model: claude-haiku-5-5` in the agent's frontmatter), with
+  `/model claude-haiku-5-5` for a live session, or for the workflow/sub-agent layer
+  via `CLAUDE_CODE_WORKFLOW_SUBAGENT_MODEL=claude-haiku-5-5`.
+
+**Default:** Sonnet. Escalate to Opus/Mythos when the task fits the criteria above;
+drop to Haiku only for genuinely mechanical work. If in doubt about which model to
+use, state the task type and ask.
 
 ## Prompting Tips
 For complex or ambiguous tasks, prefix your prompt with `ultrathink` to trigger
