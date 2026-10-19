@@ -8,7 +8,18 @@
 // (scripts/clean-migration.ts) stays a thin wrapper. Assists the mandatory
 // hand-verify step before `prisma migrate deploy`; does not replace it —
 // patterns here are an allowlist of exactly the two recurring drift shapes,
-// not a general-purpose migration sanitizer.
+// not a general-purpose migration sanitizer. Two known gaps, both left
+// unhandled on purpose (fail safe — a missed drift line is caught by the
+// still-mandatory hand-verify step, not silently shipped):
+//   - A combined `ALTER TABLE ... ADD COLUMN x, ALTER COLUMN "search_vector"
+//     DROP DEFAULT;` (multiple clauses on one statement, which Prisma does
+//     emit when a migration also touches other columns on the same table)
+//     is not matched — only a standalone DROP DEFAULT statement is. That
+//     clause still needs a manual edit in that case.
+//   - Only meant to run once, directly on raw `migrate dev --create-only`
+//     output, before any hand-editing. A block containing both a spurious
+//     DROP and an unrelated statement you added yourself would be removed
+//     as a whole.
 const SPURIOUS_LINE_PATTERNS = [
   // Drops a hand-written trigram (pg_trgm) GIN index.
   /^DROP INDEX "[A-Za-z0-9_]*_trgm_idx";$/,
