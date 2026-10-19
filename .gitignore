@@ -38,3 +38,6 @@ next-env.d.ts
 
 # Operational data (admin-edited content files, not source code)
 /data/
+strix_runs/
+# Contains a live admin credential in plaintext — never commit.
+docs/security/strix-instruction.md
