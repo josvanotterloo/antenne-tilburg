@@ -49,14 +49,30 @@ boundaries — the file does.
 
 Every feature branch must complete these steps before the session ends:
 
-1. **STOP. Type /code-review in the prompt bar now. Wait for it to
-   complete. Fix all Medium+ findings. Only then continue the close-out.**
+1. **STOP. Type `/code-review <base>..<branch>` (e.g.
+   `/code-review master..feature/my-branch`) in the prompt bar now — never
+   bare `/code-review`. Wait for it to complete. Fix all Medium+ findings.
+   Only then continue the close-out.**
+   **Why the scoped form is mandatory:** bare `/code-review` reviews
+   `git diff HEAD` — the uncommitted working tree — not the branch's
+   committed diff against its base. If everything on the branch is already
+   committed (the normal state once work is done), the working tree is
+   clean and bare `/code-review` silently reviews nothing, or reviews
+   unrelated stray uncommitted files if any happen to be lying around, and
+   still reports back as if it reviewed the branch. This is an invisible
+   failure — worse than no gate, because it gives false assurance that
+   close-out's mandatory review happened. Confirmed in the
+   `feature/reference-entity-shared` session (2026-10-19): bare
+   `/code-review`, run twice, reviewed only stray uncommitted config files
+   both times and never touched the branch's actual commits; rescoping to
+   `master..feature/reference-entity-shared` was what finally reviewed the
+   real diff.
 2. **Run `/code-review` when the change warrants it** — see `CLAUDE.md`
    (## When to run /code-review) for exactly which changes require it and
-   which can rely on CI instead. When it applies, run it after the tests
-   pass and before merging (step 4). **All Medium+ findings must be fixed
-   before merging** — never merge with an open Medium or higher finding. (Lower-
-   severity findings are fixed at your discretion.)
+   which can rely on CI instead. When it applies, run it (scoped per step 1)
+   after the tests pass and before merging (step 4). **All Medium+ findings
+   must be fixed before merging** — never merge with an open Medium or
+   higher finding. (Lower-severity findings are fixed at your discretion.)
 3. For frontend changes, do a visual consistency check: open the app and compare any
    states that must stay in sync (e.g. before/after an action, empty/filled, mobile/
    desktop) side by side before merging.
