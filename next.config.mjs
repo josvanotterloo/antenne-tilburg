@@ -46,6 +46,10 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Don't let `next dev` generate/maintain its own AGENTS.md — CLAUDE.md is
+  // this project's single deliberately-authored instruction surface for
+  // agents; an auto-regenerated second one at the repo root isn't.
+  agentRules: false,
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
