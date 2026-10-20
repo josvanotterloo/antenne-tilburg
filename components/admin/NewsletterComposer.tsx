@@ -5,8 +5,8 @@ import { useState } from "react";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
+import { markdownToHtml } from "@/lib/email/render";
 import { SHOP } from "@/lib/shop-info";
-import { PostBody } from "@/components/PostBody";
 import { Field } from "@/components/admin/Field";
 
 type Status = "idle" | "sending" | "sent" | "error";
@@ -238,7 +238,7 @@ export function NewsletterComposer({
           <p className="text-xs uppercase tracking-wide text-ink-muted">
             Email preview
           </p>
-          <PostBody body={header} />
+          <div dangerouslySetInnerHTML={{ __html: markdownToHtml(header) }} />
           <h2 className="text-lg font-semibold text-ink">New arrivals</h2>
           {arrivalsBlock ? (
             <pre className="overflow-x-auto font-mono text-xs leading-5 text-ink">
@@ -249,7 +249,7 @@ export function NewsletterComposer({
               No arrivals loaded — use Load arrivals above.
             </p>
           )}
-          <PostBody body={footer} />
+          <div dangerouslySetInnerHTML={{ __html: markdownToHtml(footer) }} />
           <p className="border-t border-hairline pt-3 text-xs text-ink-muted">
             {SHOP.name} · {SHOP.addressLine} · {SHOP.addressNote} · {SHOP.phone}
           </p>

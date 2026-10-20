@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { NewsletterComposer } from "@/components/admin/NewsletterComposer";
+import { markdownToHtml } from "@/lib/email/render";
 
 // Structured composer (contract migrated deliberately, 2026-07-17): three
 // parts — header (template), auto-loaded arrivals, footer (template) — plus
@@ -137,6 +138,21 @@ describe("NewsletterComposer (structured)", () => {
     expect(preview).toHaveTextContent("VRIL [Zulema Records ZR-001] *");
     expect(preview).toHaveTextContent("See you at the shop"); // footer
     expect(preview).toHaveTextContent("Noordstraat 82"); // contact block
+  });
+
+  // N5 (2026-10-20): the preview used to render through react-markdown
+  // (PostBody) while the real send used a different renderer (markdownToHtml)
+  // — matching output was coincidental, not guaranteed. The preview must now
+  // literally call the same function, so a real test send can never drift
+  // from what the admin already approved in preview.
+  it("renders the header preview through the exact same renderer used for sending", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole("button", { name: /preview/i }));
+
+    const preview = screen.getByTestId("newsletter-preview");
+    expect(preview.innerHTML).toContain(markdownToHtml("Hello **diggers**"));
   });
 
   // Bug fix (2026-07-20): the preview used to fabricate its own social-links
