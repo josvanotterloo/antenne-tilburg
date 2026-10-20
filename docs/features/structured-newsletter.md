@@ -71,21 +71,57 @@ regex as mismatched emphasis pairs instead of eight literal asterisks.
 `ESCAPED_CHAR` is stashed via the same sentinel mechanism as built
 links/images, before any emphasis parsing runs, in `formatEmphasis`.
 
-Known, unchanged limitation: consecutive non-blank lines within one
-markdown block still join into a single paragraph with a space (soft-wrap,
-matching CommonMark's default) — an escaped divider line, its content, and
-a closing divider line render as one line (`******** discogs ********`),
-not three stacked lines, unless separated by a blank line. Not in scope
-for the escape fix; flagged in case a shop owner expects a visual line
-break.
+**Superseded (2026-10-20, Unit 3/N5):** consecutive non-blank lines within
+one markdown block used to join into a single paragraph with a space
+(soft-wrap) — an escaped divider line, its content, and a closing divider
+line rendered as one line, not three stacked lines, unless separated by a
+blank line. Fixed below (N2): line breaks are now structural (`<br>`).
 
-**Note:** the *composer's live preview* (in-browser "Preview" button) uses
-`react-markdown` via `PostBody`, a fully spec-compliant CommonMark parser
-that already supported backslash escapes correctly before this fix — the
-bug only ever affected the actual sent email (`lib/email/render.ts`), not
-what the admin sees in the browser. Verified by calling
-`markdownToHtml` directly (the real send-time code path) rather than
-through the browser preview, which would not have exercised the bug.
+**Superseded (2026-10-20, Unit 3/N5):** the *composer's live preview* used
+`react-markdown` via `PostBody` — a different renderer than the actual send
+path (`markdownToHtml`), so matching output between the two was
+coincidental, not guaranteed. The preview now renders through
+`markdownToHtml` directly (same section below).
+
+### Unit 3 (2026-10-20): preview/send parity, autolink, structural line
+breaks, stacked footer
+
+Found via manual QA (`docs/qa/qa-findings-newsletter.md`) and fixed in
+order:
+
+- **N5 — parity.** The compose preview (`NewsletterComposer.tsx`) now calls
+  `markdownToHtml` directly for header and footer, injected via
+  `dangerouslySetInnerHTML` (the function escapes all raw HTML in its input
+  before building any tags, so this carries no new injection surface beyond
+  what already ships in the real email). Preview and sent email are
+  byte-identical by construction, not by luck.
+- **N2 — autolink + robust line breaks.** Bare `https://` URLs now
+  autolink (`BARE_URL_RE` in `lib/email/render.ts`, a boundary-aware regex
+  that stops before a trailing emphasis marker, an unbalanced closing `)`,
+  or an escaped `&lt;`/`&gt;`/`&quot;` entity, re-pairing the trimmed-off
+  trailing text with whatever markdown surrounds it — `splitUrlTrailing`).
+  Paragraph lines join via a sentinel line-break marker, swapped for a real
+  `<br>` only after inline rendering completes (not a blanket `\n` → `<br>`
+  replace, which would also corrupt a literal newline surviving inside a
+  restored attribute, e.g. multi-line image alt text) — structural, with no
+  dependence on the old, fragile trailing-double-space hard-break
+  convention.
+- **N1 — footer, stacked.** The footer address block (name, address, note,
+  phone) is centralised in `footerAddressHtml()` (`lib/email/render.ts`),
+  used by both the send renderer and the preview — previously hand-
+  duplicated in both places. Stacked one line per field instead of the old
+  single `·`-joined line, which wrapped awkwardly. Kept, not removed: a
+  physical sender address in bulk mail is legally advisable, and the
+  unsubscribe link is unaffected either way.
+
+**Security note (@code-reviewer finding, 2026-10-20):** `escapeHtml`
+prevents breaking out of an HTML attribute/tag, but cannot stop a dangerous
+URL *scheme* — a stored `[click](javascript:...)` would survive escaping
+unchanged and execute when clicked. `isSafeUrl()` (`lib/email/render.ts`)
+allowlists `http(s)`/`mailto`/`tel`/relative URLs for the explicit
+`[label](url)`/`![alt](url)` syntax; anything else renders as the original
+literal markdown text instead of becoming a link. (The bare-URL autolink
+needs no such check — its own regex only ever matches an `http(s)` prefix.)
 
 ## Verified end-to-end (dev)
 

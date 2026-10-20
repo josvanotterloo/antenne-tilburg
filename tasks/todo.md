@@ -266,10 +266,14 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 1101 tests as of
-`chore/migration-cleanup-and-lessons` (+9 net: `lib/clean-migration.test.ts`
-— the Prisma migration drift auto-strip tool from the 2026-10-18/19
-self-audit), 2026-10-19. 1092 tests as of
+Done — Vitest runner + `run-tests` skill in place; 1125 tests as of
+`fix/newsletter-parity-gfm` (+24 net: Unit 3 — newsletter preview/send parity
+(N5), autolink + structural line breaks (N2), stacked footer address block
+(N1) — plus CO1, GFM task lists/autolink on `PostBody`. See
+`docs/features/newsletter-parity-and-postbody-gfm.md`), 2026-10-20. 1101
+tests as of `chore/migration-cleanup-and-lessons` (+9 net:
+`lib/clean-migration.test.ts` — the Prisma migration drift auto-strip tool
+from the 2026-10-18/19 self-audit), 2026-10-19. 1092 tests as of
 STEP 5 (Unit 2: reference-entity shared behaviour — search-into-add/success
 messages/product-list links, app-level near-duplicate blocking, Artists'
 fuzzy "did you mean"), 2026-10-18 (+44 net: `lib/reference-dedupe.test.ts`,
