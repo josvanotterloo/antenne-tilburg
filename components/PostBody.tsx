@@ -1,4 +1,5 @@
 import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // Markdown → DESIGN.md-styled elements. react-markdown does not render raw HTML by
 // default, so post bodies (admin-authored markdown) have no HTML-injection surface.
@@ -46,6 +47,15 @@ const components: Components = {
   ol: ({ children }) => (
     <ol className="list-decimal space-y-1 pl-6">{children}</ol>
   ),
+  // GFM task list items (remarkGfm) come through as a plain <li> carrying
+  // "task-list-item" — without this, they'd show both the ul's bullet AND
+  // the checkbox. Cancel just the bullet/indent for those, leaving every
+  // other <li> (ordinary list items) unstyled, as before.
+  li: ({ children, className }) => (
+    <li className={className?.includes("task-list-item") ? "-ml-6 list-none" : undefined}>
+      {children}
+    </li>
+  ),
   blockquote: ({ children }) => (
     <blockquote className="italic text-ink-muted">{children}</blockquote>
   ),
@@ -67,7 +77,9 @@ const components: Components = {
 export function PostBody({ body }: { body: string }) {
   return (
     <div className="space-y-6 text-pretty text-ink">
-      <ReactMarkdown components={components}>{body}</ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {body}
+      </ReactMarkdown>
     </div>
   );
 }
