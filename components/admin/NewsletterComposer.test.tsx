@@ -3,7 +3,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { NewsletterComposer } from "@/components/admin/NewsletterComposer";
-import { markdownToHtml } from "@/lib/email/render";
 
 // Structured composer (contract migrated deliberately, 2026-07-17): three
 // parts — header (template), auto-loaded arrivals, footer (template) — plus
@@ -145,14 +144,25 @@ describe("NewsletterComposer (structured)", () => {
   // — matching output was coincidental, not guaranteed. The preview must now
   // literally call the same function, so a real test send can never drift
   // from what the admin already approved in preview.
-  it("renders the header preview through the exact same renderer used for sending", async () => {
+  //
+  // This asserts a behavior only the real send renderer produces — not a
+  // generic "renders markdown" check, which react-markdown would also pass.
+  // A line break with no blank line between it and the next line is a
+  // structural <br> in markdownToHtml (N2), but a plain space in
+  // react-markdown's default CommonMark soft-break — if this preview ever
+  // regressed back to rendering through PostBody, this test would catch it
+  // without needing to call markdownToHtml itself to know what to expect.
+  it("renders the header preview with the send renderer's line-break handling, not react-markdown's default", async () => {
     const user = userEvent.setup();
     setup();
 
+    const header = screen.getByLabelText(/header/i);
+    await user.clear(header);
+    await user.type(header, "Line one{Enter}Line two");
     await user.click(screen.getByRole("button", { name: /preview/i }));
 
     const preview = screen.getByTestId("newsletter-preview");
-    expect(preview.innerHTML).toContain(markdownToHtml("Hello **diggers**"));
+    expect(preview.innerHTML).toMatch(/Line one<br>\s*Line two/);
   });
 
   // Bug fix (2026-07-20): the preview used to fabricate its own social-links

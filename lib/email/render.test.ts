@@ -309,6 +309,87 @@ describe("markdownToHtml — bare URL autolinking (N2)", () => {
     expect(out).not.toContain("<a ");
     expect(out).toContain("https://example.com");
   });
+
+  // @code-reviewer finding (2026-10-20): the first version of this regex had
+  // no boundary awareness and swallowed a trailing emphasis marker straight
+  // into the href, losing the bold/italic entirely — a regression from
+  // master, where this rendered as bold text (just not a link, pre-N2).
+  it("re-applies bold around a bare URL wrapped in **", () => {
+    const out = markdownToHtml("**https://example.com**");
+    expect(out).toContain('<strong style="');
+    expect(out).toContain('<a href="https://example.com"');
+    expect(out).toMatch(/<a [^>]*>https:\/\/example\.com<\/a><\/strong>/);
+  });
+
+  it("re-applies italic around a bare URL wrapped in _", () => {
+    const out = markdownToHtml("_https://example.com_");
+    expect(out).toContain("<em>");
+    expect(out).toContain('<a href="https://example.com"');
+    expect(out).toMatch(/<a [^>]*>https:\/\/example\.com<\/a><\/em>/);
+  });
+
+  it("does not swallow an unbalanced closing ) from the surrounding prose", () => {
+    const out = markdownToHtml("(see https://example.com)");
+    expect(out).toContain('href="https://example.com"');
+    expect(out).toMatch(/<\/a>\)<\/p>/);
+  });
+
+  it("keeps a balanced parenthetical that's part of the URL itself", () => {
+    const out = markdownToHtml(
+      "https://en.wikipedia.org/wiki/Foo_(bar) is the page",
+    );
+    expect(out).toContain('href="https://en.wikipedia.org/wiki/Foo_(bar)"');
+  });
+
+  // @code-reviewer finding: escapeHtml runs before this regex, so a literal
+  // "<...>"/'"..."' around a URL in the source is already "&lt;...&gt;"/
+  // "&quot;...&quot;" by the time this regex sees it — without a boundary
+  // check, the greedy match swallowed the closing entity straight into the
+  // href and left a corrupted, dangling fragment of it behind.
+  it("stops the match before a trailing &gt;/&quot; entity instead of swallowing it", () => {
+    const angle = markdownToHtml("<https://example.com>");
+    expect(angle).toContain('href="https://example.com"');
+    expect(angle).not.toContain("&gt\"");
+    expect(angle).toMatch(/<\/a>&gt;<\/p>/);
+
+    const quoted = markdownToHtml('"https://example.com"');
+    expect(quoted).toContain('href="https://example.com"');
+    expect(quoted).toMatch(/<\/a>&quot;<\/p>/);
+  });
+
+  // @code-reviewer finding: a URL sitting directly against an
+  // already-stashed escaped character nested this pass's stash entry inside
+  // that earlier one — the single, non-recursive final restore pass could
+  // never reach the inner reference, leaking a raw placeholder character
+  // into the output.
+  it("does not corrupt the href when a bare URL sits directly against an escaped character", () => {
+    const out = markdownToHtml("https://example.com\\*");
+    expect(out).toContain('href="https://example.com"');
+    expect(out).toMatch(/<\/a>\*<\/p>/);
+  });
+});
+
+describe("markdownToHtml — rejects dangerous URL schemes (@code-reviewer finding)", () => {
+  // escapeHtml alone cannot stop this: a "javascript:" scheme survives
+  // escaping unchanged (it has no &, <, >, ", or ' in it), and the browser
+  // runs it on click regardless of how the rest of the href is escaped.
+  it("does not turn a javascript: link into a clickable <a>", () => {
+    const out = markdownToHtml("[click me](javascript:alert(1))");
+    expect(out).not.toContain("<a ");
+    expect(out).toContain("[click me](javascript:alert(1))");
+  });
+
+  it("does not turn a javascript: image source into an <img>", () => {
+    const out = markdownToHtml("![x](javascript:alert(1))");
+    expect(out).not.toContain("<img ");
+  });
+
+  it("still allows http(s), mailto, tel, and relative links", () => {
+    expect(markdownToHtml("[a](https://x.test)")).toContain("<a ");
+    expect(markdownToHtml("[a](mailto:shop@x.test)")).toContain("<a ");
+    expect(markdownToHtml("[a](tel:+3112345678)")).toContain("<a ");
+    expect(markdownToHtml("[a](/admin/catalog)")).toContain("<a ");
+  });
 });
 
 describe("markdownToHtml — line breaks within a paragraph (N5/N2)", () => {
@@ -322,6 +403,20 @@ describe("markdownToHtml — line breaks within a paragraph (N5/N2)", () => {
     const withTrailingSpaces = markdownToHtml("Line one  \nLine two");
     const withoutTrailingSpaces = markdownToHtml("Line one\nLine two");
     expect(withTrailingSpaces).toBe(withoutTrailingSpaces);
+  });
+
+  // @code-reviewer finding: an image/link split across a hard line break (no
+  // blank line between the two lines) used to swallow the line-break marker
+  // into its alt/label text, then have the marker→<br> swap corrupt the
+  // attribute it was already sitting inside. Rather than try to repair a
+  // corrupted tag, the image/link regexes simply don't match across a line
+  // break at all now — this renders as plain text (still correctly broken
+  // onto two lines), never a broken <img>/<a>.
+  it("does not build a corrupted <img> when image syntax spans a hard line break", () => {
+    const out = markdownToHtml("![a\nb](https://x.test/img.png)");
+    expect(out).not.toContain("<img");
+    expect(out).not.toContain('alt="');
+    expect(out).toMatch(/!\[a<br>\s*b\]/);
   });
 });
 

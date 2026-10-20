@@ -13,13 +13,17 @@ export const EMAIL = {
   sans: "ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
 } as const;
 
-// Escape a plain string for safe interpolation into HTML markup.
+// Escape a plain string for safe interpolation into HTML markup. Every
+// attribute this renderer builds uses double quotes, so escaping `"` is what
+// actually matters today — `'` is escaped too as defence in depth, in case a
+// future single-quoted attribute is ever added here.
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Wrap inner HTML in a centered, dark, 600px-max email shell.

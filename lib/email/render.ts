@@ -5,8 +5,11 @@ import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
 // A small, email-safe markdown → HTML renderer built as plain strings. Runs in an
 // App Router route handler, so it must NOT depend on react-dom/server. Supports the
 // same subset PostBody renders (headings, bold, italic, code, links, images, lists,
-// blockquotes, rules) with inline styles, and escapes raw HTML so admin-authored
-// markdown has no injection surface.
+// blockquotes, rules) with inline styles. Two independent protections, not one:
+// escapeHtml prevents breaking out of an attribute/tag, and isSafeUrl (below)
+// rejects a dangerous URL scheme (e.g. "javascript:") in a link/image target —
+// escaping alone does not stop that, since the scheme itself is just ordinary
+// characters that survive escaping unchanged.
 
 // Base text size shared by ordinary body copy (paragraphs) and the new-
 // arrivals <pre> block, so the two never visually drift apart again — the
@@ -33,6 +36,92 @@ const styles = {
 const STASH_OPEN = "";
 const STASH_CLOSE = "";
 const STASH_RE = /(\d+)/g;
+
+// A paragraph line-boundary marker, built from the same sentinel characters
+// (letters, not digits — STASH_RE only ever matches a digit run, so this
+// survives its restore pass completely untouched; see the paragraph
+// line-break code below).
+const LINE_BREAK_MARKER = `${STASH_OPEN}BR${STASH_CLOSE}`;
+
+// Image/link regexes, excluding LINE_BREAK_MARKER from the alt/label capture
+// group. Without this, "![a<marker>b](url)" (an image split across two
+// paragraph lines with no blank line between them) would absorb the marker
+// into its alt text, and the paragraph code's later marker→<br> swap would
+// then corrupt the alt attribute it's already sitting inside — found by
+// @code-reviewer for a literal "\n" before LINE_BREAK_MARKER replaced it;
+// excluding the marker here removes the whole class of bug rather than
+// trying to special-case it after the fact. The regex simply doesn't match
+// across a line break now — that text renders as plain paragraph text
+// instead of a corrupted tag.
+const NOT_MARKER_OR_BRACKET = `(?:(?!${LINE_BREAK_MARKER})[^\\]])`;
+const IMAGE_RE = new RegExp(
+  `!\\[(${NOT_MARKER_OR_BRACKET}*)\\]\\(([^)\\s]+)\\)`,
+  "g",
+);
+const LINK_RE = new RegExp(
+  `\\[(${NOT_MARKER_OR_BRACKET}+)\\]\\(([^)\\s]+)\\)`,
+  "g",
+);
+
+// Rejects a "javascript:"/"data:"/"vbscript:"/etc. scheme in an explicit
+// [label](url) or ![alt](url). Markdown has no URL sanitisation of its own —
+// without this, a stored "[click](javascript:...)" would execute when
+// clicked. (The old PostBody/react-markdown preview this replaced filtered
+// this by default; this hand-written renderer must do so explicitly.)
+// Relative URLs (no scheme) and the schemes real content actually uses are
+// allowed; anything else renders as the original literal markdown text
+// instead of becoming a link. The bare-URL autolink below needs no such
+// check — its own regex only ever matches an http(s) prefix to begin with.
+const SAFE_URL_SCHEME = /^(?:https?|mailto|tel):/i;
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+function isSafeUrl(url: string): boolean {
+  return SAFE_URL_SCHEME.test(url) || !HAS_SCHEME.test(url);
+}
+
+// Matches a bare http(s) URL for autolinking. Deliberately excludes the two
+// stash sentinel characters (STASH_OPEN/STASH_CLOSE, interpolated below) —
+// without that, a URL sitting directly against an already-stashed
+// placeholder (e.g. "https://x.test\*", where "\*" was just stashed by the
+// escaped-char pass below) would swallow that sentinel into the match, nest
+// it inside this pass's OWN stash entry, and the single, non-recursive
+// final restore pass could never reach it. The lookahead stops the match
+// before a trailing &lt;/&gt;/&quot; entity — escapeHtml has already run by
+// this point, so a literal "<https://x.test>" in the source is
+// "&lt;https://x.test&gt;" here, and without the lookahead the greedy match
+// would swallow the closing "&gt;" straight into the href.
+const BARE_URL_RE = new RegExp(
+  `https?:\\/\\/(?:(?!&(?:lt|gt|quot);)[^\\s"'${STASH_OPEN}${STASH_CLOSE}])+`,
+  "g",
+);
+
+// Splits a matched bare URL into the part that's really the URL and a
+// trailing part that almost certainly isn't: sentence punctuation, or a
+// closing bold/italic marker that will now sit right after the built <a>
+// (so it still re-pairs with the opening marker before it, same as if the
+// URL were plain text) — and an unbalanced closing ) that closes a
+// surrounding parenthetical in the prose rather than the URL itself; a
+// Wikipedia-style "https://en.wikipedia.org/wiki/Foo_(bar)" stays balanced
+// and keeps its ")".
+function splitUrlTrailing(rawMatch: string): { url: string; trailing: string } {
+  let url = rawMatch;
+  let trailing = "";
+
+  const punct = /[.,!?;:*_]+$/.exec(url)?.[0] ?? "";
+  if (punct) {
+    url = url.slice(0, -punct.length);
+    trailing = punct;
+  }
+
+  while (url.endsWith(")")) {
+    const opens = (url.match(/\(/g) ?? []).length;
+    const closes = (url.match(/\)/g) ?? []).length;
+    if (closes <= opens) break;
+    url = url.slice(0, -1);
+    trailing = ")" + trailing;
+  }
+
+  return { url, trailing };
+}
 
 // Backslash-escaped punctuation: `\X` for any of `\ * _` renders as a
 // literal X and must be invisible to the bold/italic regexes below —
@@ -69,25 +158,26 @@ function formatEmphasis(escaped: string): string {
 
   const withTags = withEscapes
     .replace(
-      /!\[([^\]]*)\]\(([^)\s]+)\)/g,
-      (_, alt: string, url: string) =>
-        keep(`<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`),
+      IMAGE_RE,
+      (match, alt: string, url: string) =>
+        isSafeUrl(url)
+          ? keep(`<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;" />`)
+          : match,
     )
     .replace(
-      /\[([^\]]+)\]\(([^)\s]+)\)/g,
-      (_, label: string, url: string) =>
-        keep(`<a href="${url}" style="${styles.a}">${applyEmphasis(label)}</a>`),
+      LINK_RE,
+      (match, label: string, url: string) =>
+        isSafeUrl(url)
+          ? keep(`<a href="${url}" style="${styles.a}">${applyEmphasis(label)}</a>`)
+          : match,
     )
     // Bare-URL autolink (GFM-style). Runs after the explicit [label](url) and
     // image passes above, so by now any URL that was part of one of those is
     // already stashed behind a sentinel — this only ever sees literal
-    // leftover text, never double-links an already-built link/image.
-    .replace(/https?:\/\/[^\s<>"']+/g, (match: string) => {
-      // Trailing sentence punctuation almost never belongs to the URL
-      // itself ("see https://x.test." shouldn't swallow the period into
-      // the href) — trim it off and keep it outside the built <a>.
-      const trailing = /[.,!?;:]+$/.exec(match)?.[0] ?? "";
-      const url = trailing ? match.slice(0, -trailing.length) : match;
+    // leftover text, never double-links an already-built link/image. No
+    // isSafeUrl check needed: BARE_URL_RE only ever matches an http(s) URL.
+    .replace(BARE_URL_RE, (match: string) => {
+      const { url, trailing } = splitUrlTrailing(match);
       return `${keep(`<a href="${url}" style="${styles.a}">${url}</a>`)}${trailing}`;
     });
 
@@ -167,7 +257,10 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Blockquote (consecutive `>` lines)
+    // Blockquote (consecutive `>` lines). Deliberately still joined with a
+    // space, not <br> — unlike a paragraph, a quoted passage is one flowing
+    // run of text; @code-reviewer flagged this divergence from paragraphs
+    // (N2) for a decision, and this is it.
     if (/^>\s?/.test(line)) {
       const quote: string[] = [];
       while (i < lines.length && /^>\s?/.test(lines[i])) {
@@ -221,7 +314,17 @@ export function markdownToHtml(markdown: string): string {
       para.push(lines[i].replace(/\s+$/, ""));
       i += 1;
     }
-    const paraHtml = renderInline(para.join("\n")).replace(/\n/g, "<br>\n");
+    // A sentinel marker, not a literal "\n", carries the line boundary
+    // through renderInline — @code-reviewer found that a blanket "\n" →
+    // "<br>" replace run AFTER renderInline would also corrupt a literal
+    // newline that happened to survive inside a restored attribute (e.g. a
+    // multi-line image alt text). Letters, not digits, so STASH_RE's
+    // restore pass (which only matches digit runs between sentinels) never
+    // touches it — it passes through untouched and is swapped for a real
+    // <br> only at the very end, nowhere near attribute content.
+    const paraHtml = renderInline(para.join(LINE_BREAK_MARKER))
+      .split(LINE_BREAK_MARKER)
+      .join("<br>\n");
     blocks.push(`<p style="${styles.p}">${paraHtml}</p>`);
   }
 
