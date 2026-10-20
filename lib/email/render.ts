@@ -77,7 +77,19 @@ function formatEmphasis(escaped: string): string {
       /\[([^\]]+)\]\(([^)\s]+)\)/g,
       (_, label: string, url: string) =>
         keep(`<a href="${url}" style="${styles.a}">${applyEmphasis(label)}</a>`),
-    );
+    )
+    // Bare-URL autolink (GFM-style). Runs after the explicit [label](url) and
+    // image passes above, so by now any URL that was part of one of those is
+    // already stashed behind a sentinel — this only ever sees literal
+    // leftover text, never double-links an already-built link/image.
+    .replace(/https?:\/\/[^\s<>"']+/g, (match: string) => {
+      // Trailing sentence punctuation almost never belongs to the URL
+      // itself ("see https://x.test." shouldn't swallow the period into
+      // the href) — trim it off and keep it outside the built <a>.
+      const trailing = /[.,!?;:]+$/.exec(match)?.[0] ?? "";
+      const url = trailing ? match.slice(0, -trailing.length) : match;
+      return `${keep(`<a href="${url}" style="${styles.a}">${url}</a>`)}${trailing}`;
+    });
 
   return applyEmphasis(withTags).replace(
     STASH_RE,
@@ -190,17 +202,27 @@ export function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // Paragraph (consecutive plain lines, soft-wrapped)
+    // Paragraph (consecutive plain lines). Each source line becomes its own
+    // visual line via <br> — structural, driven by the line breaks that are
+    // already there, never by a fragile trailing-double-space convention
+    // (easily stripped by editors/copy-paste; see tasks/lessons.md and
+    // docs/qa/qa-findings-newsletter.md N5 for the bug this caused: breaks
+    // survived in the preview but silently died before the real send).
     const para: string[] = [];
     while (
       i < lines.length &&
       lines[i].trim() !== "" &&
       !BLOCK_START.test(lines[i])
     ) {
-      para.push(lines[i]);
+      // Trailing whitespace is dropped per line, not preserved — a legacy
+      // "two trailing spaces = hard break" source must render identically
+      // to the same text without them, so nothing here depends on that
+      // fragile, easily-stripped convention.
+      para.push(lines[i].replace(/\s+$/, ""));
       i += 1;
     }
-    blocks.push(`<p style="${styles.p}">${renderInline(para.join(" "))}</p>`);
+    const paraHtml = renderInline(para.join("\n")).replace(/\n/g, "<br>\n");
+    blocks.push(`<p style="${styles.p}">${paraHtml}</p>`);
   }
 
   return blocks.join("\n");

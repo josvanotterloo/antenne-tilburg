@@ -285,6 +285,45 @@ describe("markdownToHtml — double-digit stash indices", () => {
   });
 });
 
+describe("markdownToHtml — bare URL autolinking (N2)", () => {
+  it("turns a bare URL into a real link", () => {
+    const out = markdownToHtml("Check out https://example.com for more");
+    expect(out).toContain('<a href="https://example.com"');
+    expect(out).toContain("https://example.com</a>");
+  });
+
+  it("does not swallow trailing sentence punctuation into the href", () => {
+    const out = markdownToHtml("See https://example.com/page.");
+    expect(out).toContain('href="https://example.com/page"');
+    expect(out).toMatch(/<\/a>\.<\/p>/);
+  });
+
+  it("does not double-link a URL already inside an explicit [label](url) link", () => {
+    const out = markdownToHtml("[the shop](https://example.com)");
+    expect(out.match(/<a /g)).toHaveLength(1);
+  });
+
+  it("does not autolink a URL inside inline code", () => {
+    const out = markdownToHtml("run `curl https://example.com`");
+    expect(out).not.toContain("<a ");
+    expect(out).toContain("https://example.com");
+  });
+});
+
+describe("markdownToHtml — line breaks within a paragraph (N5/N2)", () => {
+  it("renders a <br> between two lines with no blank line between them", () => {
+    const out = markdownToHtml("Line one\nLine two");
+    expect(out.match(/<p /g)).toHaveLength(1);
+    expect(out).toMatch(/Line one<br>\s*Line two/);
+  });
+
+  it("produces the identical result whether or not the source used legacy trailing double-space hard breaks", () => {
+    const withTrailingSpaces = markdownToHtml("Line one  \nLine two");
+    const withoutTrailingSpaces = markdownToHtml("Line one\nLine two");
+    expect(withTrailingSpaces).toBe(withoutTrailingSpaces);
+  });
+});
+
 describe("renderConfirmEmail", () => {
   const html = renderConfirmEmail({
     confirmUrl: "https://antenne.test/api/newsletter/confirm?token=xyz",
@@ -360,8 +399,12 @@ describe("renderStructuredNewsletterEmail", () => {
       footer: "See you _soon_ at the shop.",
       unsubscribeUrl: "https://example.com/u?token=t1",
     });
+    // N2 autolinks the bare URL, so it legitimately appears twice in the
+    // output (once in href, once as the link text) — count <a> elements,
+    // not raw substring occurrences, to assert "not a second, separately
+    // appended social-links block" without being thrown off by that.
     const occurrences = html.split(
-      "https://www.facebook.com/antennerecordshop/",
+      '<a href="https://www.facebook.com/antennerecordshop/"',
     ).length - 1;
     expect(occurrences).toBe(1);
   });
