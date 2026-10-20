@@ -246,6 +246,28 @@ ${markdownToHtml(body)}
   return wrapEmail(inner);
 }
 
+// Shared footer contact block (N1) — the single place this markup lives,
+// used by both the send renderer below and the compose preview
+// (components/admin/NewsletterComposer.tsx), which used to hand-duplicate
+// the same literal HTML. Stacked one line per field rather than the old
+// single "·"-joined line (which wrapped awkwardly) — kept, not removed: a
+// sender's physical address in bulk mail is legally advisable and the
+// unsubscribe link is legally required either way (see
+// docs/qa/qa-findings-newsletter.md N1).
+export function footerAddressHtml(): string {
+  const line = (html: string, marginBottom: number) =>
+    `<p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0 0 ${marginBottom}px;">${html}</p>`;
+  return [
+    line(escapeHtml(SHOP.name), 4),
+    line(escapeHtml(SHOP.addressLine), 4),
+    line(escapeHtml(SHOP.addressNote), 4),
+    line(
+      `<a href="${SHOP.phoneHref}" style="color:${EMAIL.accent};">${escapeHtml(SHOP.phone)}</a>`,
+      12,
+    ),
+  ].join("\n");
+}
+
 // Render the structured newsletter (header md → grouped new arrivals →
 // footer md → contact block → unsubscribe) to email-safe HTML. Social links
 // are NOT auto-appended — the shop owner includes them in their header
@@ -274,7 +296,7 @@ ${markdownToHtml(header)}
 ${arrivalsBlock}
 ${markdownToHtml(footer)}
 <hr style="border:none;border-top:1px solid ${EMAIL.hairline};margin:32px 0 16px;" />
-<p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0 0 12px;">${escapeHtml(SHOP.name)} · ${escapeHtml(SHOP.addressLine)} · ${escapeHtml(SHOP.addressNote)} · <a href="${SHOP.phoneHref}" style="color:${EMAIL.accent};">${escapeHtml(SHOP.phone)}</a></p>
+${footerAddressHtml()}
 <p style="color:${EMAIL.muted};font-size:12px;line-height:1.5;margin:0;">You are receiving this because you subscribed to the Antenne Tilburg newsletter. <a href="${unsubscribeUrl}" style="color:${EMAIL.accent};">Unsubscribe</a>.</p>`;
   return wrapEmail(inner);
 }

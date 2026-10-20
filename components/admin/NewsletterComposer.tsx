@@ -5,8 +5,7 @@ import { useState } from "react";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
-import { markdownToHtml } from "@/lib/email/render";
-import { SHOP } from "@/lib/shop-info";
+import { markdownToHtml, footerAddressHtml } from "@/lib/email/render";
 import { Field } from "@/components/admin/Field";
 
 type Status = "idle" | "sending" | "sent" | "error";
@@ -250,9 +249,10 @@ export function NewsletterComposer({
             </p>
           )}
           <div dangerouslySetInnerHTML={{ __html: markdownToHtml(footer) }} />
-          <p className="border-t border-hairline pt-3 text-xs text-ink-muted">
-            {SHOP.name} · {SHOP.addressLine} · {SHOP.addressNote} · {SHOP.phone}
-          </p>
+          <div
+            className="border-t border-hairline pt-3"
+            dangerouslySetInnerHTML={{ __html: footerAddressHtml() }}
+          />
         </div>
       )}
     </form>

@@ -6,6 +6,7 @@ import {
   markdownToHtml,
   renderNewsletterEmail,
   renderStructuredNewsletterEmail,
+  footerAddressHtml,
 } from "@/lib/email/render";
 import { renderConfirmEmail } from "@/lib/email/confirm";
 
@@ -417,6 +418,19 @@ describe("renderStructuredNewsletterEmail", () => {
     expect(preStyle).toBeDefined();
     expect(pStyle).toContain("font-size:16px");
     expect(preStyle).toContain("font-size:16px");
+  });
+
+  // N1: the single-line "·"-joined footer wrapped awkwardly. footerAddressHtml
+  // now stacks each component on its own line instead — this asserts the
+  // stack, not just that the text is present somewhere (that's the next test).
+  it("stacks each footer address component on its own line, not joined by ·", () => {
+    const html = footerAddressHtml();
+    expect(html).not.toContain("·");
+    expect(html.match(/<p /g)).toHaveLength(4);
+    expect(html).toContain("Antenne Recordshop");
+    expect(html).toContain("Noordstraat 82, 5038 EK Tilburg");
+    expect(html).toContain("Inside Sam-Sam vintage clothing store");
+    expect(html).toContain('href="tel:+31135421708"');
   });
 
   it("ends with the contact block and the personalised unsubscribe link", () => {
