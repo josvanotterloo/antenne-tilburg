@@ -154,8 +154,8 @@ unit test and its implementation in one sitting.
 
 ## Additional Testing Layers
 
-Three layers on top of the core Vitest unit/integration/contract suite above,
-inspired by Uncle Bob's Acceptance→Unit pipeline. All three principles above
+Four layers on top of the core Vitest unit/integration/contract suite above,
+inspired by Uncle Bob's Acceptance→Unit pipeline. All the principles above
 (behavior not implementation, full behavioural coverage, never weaken an
 existing test) apply to these exactly as they do to ordinary unit tests.
 
@@ -198,6 +198,47 @@ explaining why — don't silently narrow the glob back to a list.
   realistic scenario that exercises the same code path instead.
 - See `docs/features/mutation-testing.md`, including a documented
   Stryker↔Vitest 4 runner discrepancy found while chasing one file's score.
+
+### CRAP (Change Risk Analyzer and Predictor)
+
+`scripts/crap-report.mjs` — a small in-repo script, not the third-party
+`crapper` CLI (running that would mean executing an unreviewed tool as a
+subprocess of `npm install` and the test suite; see the script's own header
+comment for the reasoning). It computes the same formula using tooling
+already in this project's trust boundary: TypeScript's compiler API for
+cyclomatic complexity, Vitest's own v8 coverage for the coverage fraction.
+
+- **What it measures**: a per-function score, `CRAP = complexity² × (1 −
+  coverage)³ + complexity` (complexity = cyclomatic complexity, coverage =
+  the 0–1 fraction of that function's lines covered). High only when a
+  function is **both** complex **and** under-tested — the combination that
+  makes it genuinely risky to change. A complex function with full coverage
+  scores low (the `(1 − coverage)³` term drops to 0, leaving just
+  `complexity` as a floor); a trivial, uncovered function also scores low
+  (complexity near 1).
+- **How it differs from Stryker, and why both exist.** Stryker proves
+  whether the tests that already exist actually catch a bug (deep, slow,
+  `lib/`-only, periodic). CRAP is a fast, whole-surface triage that points
+  at *where* coverage is missing on complex code — it's how you decide what
+  to write a behavioral test for next, or where to aim the next mutation
+  run. Complementary, not redundant: CRAP finds the gap, Stryker verifies
+  the fix actually closes it.
+- **How we use it: advisory, not a gate.** Not wired into CI or
+  `scripts/run-tests.sh`, and not a close-out blocker — the same reasoning
+  that keeps Stryker out of CI. A high score is a prompt to add a
+  *behavioral* test for that function — never a test shaped around the
+  score itself. Intentionally complex code will score high regardless of
+  coverage (e.g. `markdownToHtml`, already a known hotspot — see the Debt
+  note in `docs/qa/claude-code-prompts-revised-5-6.md`); a hard
+  threshold-gate on this metric would just be noise.
+- Run: `node scripts/crap-report.mjs` (`lib/` by default; pass a different
+  directory as the one argument). Run periodically — alongside a mutation
+  run, or whenever deciding what to test next — not on every push.
+- Scope: `lib/` only, same as Stryker.
+- **Look-at-this threshold: 30** — CRAP's conventional cutoff, carried over
+  unconfirmed. Flagging this specifically as a number to agree on, not an
+  established rule for this repo yet. A score above it is worth a look, not
+  an automatic action.
 
 ### fast-check property tests
 
