@@ -2,6 +2,8 @@ import { compare } from "bcrypt";
 
 import { db } from "@/lib/db";
 import { createRateLimiter } from "@/lib/rate-limit";
+import { getRequestId } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
 
 // A valid cost-12 bcrypt hash (of a random string). Used only to spend the same
 // hashing time when the email is unknown, so login response timing can't be used
@@ -32,6 +34,12 @@ export async function authorizeCredentials(
   ip = "unknown",
 ) {
   if (!credentials?.email || !credentials.password) {
+    logEvent({
+      event: "auth.login",
+      requestId: getRequestId(),
+      outcome: "failed",
+      reason: "bad_credentials",
+    });
     return null;
   }
 
@@ -42,6 +50,12 @@ export async function authorizeCredentials(
   );
   const ipOk = loginIpLimiter.check(ip);
   if (!emailOk || !ipOk) {
+    logEvent({
+      event: "auth.login",
+      requestId: getRequestId(),
+      outcome: "failed",
+      reason: "rate_limited",
+    });
     return null;
   }
 
@@ -57,14 +71,32 @@ export async function authorizeCredentials(
       user?.passwordHash ?? DUMMY_HASH,
     );
     if (!user || !valid) {
+      logEvent({
+        event: "auth.login",
+        requestId: getRequestId(),
+        outcome: "failed",
+        reason: "bad_credentials",
+      });
       return null;
     }
 
+    logEvent({
+      event: "auth.login",
+      requestId: getRequestId(),
+      outcome: "ok",
+      userId: user.id,
+    });
     return { id: user.id, email: user.email };
   } catch (error) {
     // DB unreachable / query failure: log for operators and fail closed as
     // invalid credentials instead of surfacing a 500.
     console.error("authorize: login check failed", error);
+    logEvent({
+      event: "error",
+      requestId: getRequestId(),
+      where: "lib/authorize.ts",
+      errorKind: error instanceof Error ? error.constructor.name : "unknown",
+    });
     return null;
   }
 }
