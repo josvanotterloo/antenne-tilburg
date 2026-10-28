@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 import { clientIp } from "@/lib/client-ip";
 import { db } from "@/lib/db";
 import { emailHash, encryptEmail } from "@/lib/email-crypto";
+import { getRequestId, withRequestContext } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
 import { parseNewsletterInput } from "@/lib/newsletter-input";
 import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
@@ -15,6 +17,10 @@ const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 // Public newsletter signup (double opt-in). No auth: anyone may subscribe with a
 // name + email, but they are created PENDING and must confirm via emailed link.
 export async function POST(req: Request) {
+  return withRequestContext(req, async () => postNewsletterSignup(req));
+}
+
+async function postNewsletterSignup(req: Request) {
   const parsed = parseNewsletterInput(await req.json().catch(() => null));
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
@@ -88,6 +94,7 @@ export async function POST(req: Request) {
       to: parsed.data.email,
       subject: "Confirm your Antenne Tilburg subscription",
       html: renderConfirmEmail({ confirmUrl }),
+      kind: "confirmation",
     });
     await db.newsletterSubscriber.update({
       where: { id: subscriber.id },
@@ -99,6 +106,16 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error("newsletter confirm email failed (queued for retry)", subscriber.id, error);
+    // Sentry never sees this: it's caught and the response below is still a
+    // 201, so onRequestError's auto-capture (unhandled errors only) never
+    // fires. Log-only fix (the swallowed-failure response itself, still
+    // returning 201 here, is unrelated, out-of-scope behavior).
+    logEvent({
+      event: "error",
+      requestId: getRequestId(),
+      where: "app/api/newsletter/route.ts",
+      errorKind: error instanceof Error ? error.constructor.name : "unknown",
+    });
     return NextResponse.json(
       {
         ok: true,

@@ -82,6 +82,7 @@ export async function POST(req: Request) {
           footer: parsed.data.footer,
           unsubscribeUrl,
         }),
+        kind: "newsletter",
       });
       sent += 1;
     } catch (error) {

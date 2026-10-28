@@ -46,6 +46,7 @@ export async function POST() {
         to: decryptEmail(subscriber.email),
         subject: "Confirm your Antenne Tilburg subscription",
         html: renderConfirmEmail({ confirmUrl }),
+        kind: "confirmation",
       });
       sent = true;
       succeeded += 1;

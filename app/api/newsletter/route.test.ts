@@ -143,6 +143,34 @@ describe("POST /api/newsletter (double opt-in)", () => {
     expect(db.newsletterSubscriber.update).not.toHaveBeenCalled();
   });
 
+  it("logs a structured error event (no email, no message text) when the send fails", async () => {
+    // This failure is caught and the response above is still a 201, so
+    // Sentry's onRequestError auto-capture never sees it — this structured
+    // event is the only record that it happened.
+    vi.mocked(sendEmail).mockRejectedValue(new Error("resend down"));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await post({ name: "Jos", email: "jos@x.com" });
+
+    const event = [...logSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((call) => {
+        try {
+          return JSON.parse(call[0]);
+        } catch {
+          return null;
+        }
+      })
+      .find((e) => e?.event === "error");
+    expect(event).toMatchObject({
+      event: "error",
+      where: "app/api/newsletter/route.ts",
+      errorKind: "Error",
+    });
+    expect(JSON.stringify(event)).not.toContain("jos@x.com");
+    vi.restoreAllMocks();
+  });
+
   it("rate-limits repeated signups from the same IP (429)", async () => {
     const fromIp = (email: string) =>
       POST(
