@@ -4,6 +4,7 @@ import { vi, expect } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 
 const { store } = vi.hoisted(() => ({

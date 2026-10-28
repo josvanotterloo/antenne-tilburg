@@ -2,7 +2,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
-vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/api-auth", () => ({ requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }) }));
 vi.mock("@/lib/stock", () => ({ applyStockTransaction: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: { supplyOrderLine: { findUnique: vi.fn() }, $transaction: vi.fn() },
@@ -11,12 +11,12 @@ vi.mock("@/lib/db", () => ({
 import { db } from "@/lib/db";
 import { applyStockTransaction } from "@/lib/stock";
 import { PATCH } from "@/app/api/admin/orders/lines/[id]/receive/route";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdminUserId } from "@/lib/api-auth";
 
 const line = db.supplyOrderLine as unknown as { findUnique: Mock };
 const mockTransaction = db.$transaction as unknown as Mock;
 const mockApply = applyStockTransaction as unknown as Mock;
-const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockRequireAdminUserId = vi.mocked(requireAdminUserId);
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const req = (body: unknown) =>
   new Request("http://t/x", {
@@ -35,7 +35,7 @@ const tx = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockRequireAdmin.mockResolvedValue(null);
+  mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
   mockTransaction.mockImplementation((fn: (tx: unknown) => unknown) => fn(tx));
 });
 
@@ -64,6 +64,7 @@ describe("PATCH /api/admin/orders/lines/[id]/receive", () => {
       requestedQuantity: 3,
       note: "Received from supply order",
       supplyOrderLineId: "l1",
+      actorUserId: "u1",
     });
     expect(tx.supplyOrderLine.update).toHaveBeenCalledWith({
       where: { id: "l1" },
@@ -119,8 +120,10 @@ describe("PATCH /api/admin/orders/lines/[id]/receive", () => {
     expect((await res.json()).error).toBe("Product not found");
   });
 
-  it("returns the 401 from requireAdmin without reading the line", async () => {
-    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+  it("returns the 401 from requireAdminUserId without reading the line", async () => {
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
     const res = await PATCH(req({ quantityReceived: 1 }), ctx("l1"));
     expect(res.status).toBe(401);
     expect(line.findUnique).not.toHaveBeenCalled();

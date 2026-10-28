@@ -4,6 +4,7 @@ import { vi, expect } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 
 // In-memory relational store shared by the fake `db` and the fake

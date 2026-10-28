@@ -1,5 +1,8 @@
 import { Prisma, type StockTransaction, type StockTransactionType } from "@prisma/client";
 
+import { getRequestId } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
+
 // The one code path allowed to change Product.quantity. Floors at zero, and
 // — critically — records the ACTUALLY-APPLIED delta (never the raw request)
 // so that summing a product's transactions chronologically always equals its
@@ -13,6 +16,11 @@ export interface ApplyStockTransactionInput {
   requestedQuantity: number;
   note?: string | null;
   supplyOrderLineId?: string | null;
+  // Required, never optional — a caller with no session user (a seed or
+  // migration script) must pass SYSTEM_ACTOR_ID explicitly (see
+  // lib/log/events.ts) so an admin.mutation log never has "who did this"
+  // silently absent.
+  actorUserId: string;
 }
 
 export type ApplyStockTransactionResult =
@@ -37,10 +45,30 @@ export async function applyStockTransaction(
   );
 
   const row = rows[0];
-  if (!row) return { ok: false, error: "Product not found" };
+  if (!row) {
+    logEvent({
+      event: "admin.mutation",
+      requestId: getRequestId(),
+      outcome: "failed",
+      entity: "stock",
+      action: input.type,
+      entityId: input.productId,
+      actorUserId: input.actorUserId,
+    });
+    return { ok: false, error: "Product not found" };
+  }
 
   const appliedQuantity = row.newQuantity - row.previousQuantity;
   if (appliedQuantity === 0) {
+    logEvent({
+      event: "admin.mutation",
+      requestId: getRequestId(),
+      outcome: "failed",
+      entity: "stock",
+      action: input.type,
+      entityId: input.productId,
+      actorUserId: input.actorUserId,
+    });
     return {
       ok: false,
       error: input.requestedQuantity < 0 ? "Stock is already at zero" : "No change to apply",
@@ -55,6 +83,16 @@ export async function applyStockTransaction(
       note: input.note ?? null,
       supplyOrderLineId: input.supplyOrderLineId ?? null,
     },
+  });
+
+  logEvent({
+    event: "admin.mutation",
+    requestId: getRequestId(),
+    outcome: "ok",
+    entity: "stock",
+    action: input.type,
+    entityId: input.productId,
+    actorUserId: input.actorUserId,
   });
 
   return { ok: true, transaction, quantity: row.newQuantity, appliedQuantity };

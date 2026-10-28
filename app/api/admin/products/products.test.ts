@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 vi.mock("@/lib/db", () => {
   const db = {
@@ -28,7 +29,7 @@ import {
   PATCH,
   DELETE,
 } from "@/app/api/admin/products/[id]/route";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 import { applyStockTransaction } from "@/lib/stock";
 
 const product = db.product as unknown as {
@@ -41,6 +42,7 @@ const product = db.product as unknown as {
 const artist = db.artist as unknown as { findMany: Mock; upsert: Mock };
 const genre = db.genre as unknown as { findMany: Mock };
 const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockRequireAdminUserId = vi.mocked(requireAdminUserId);
 const mockApply = applyStockTransaction as unknown as Mock;
 
 const ROW = {
@@ -88,6 +90,7 @@ const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
   artist.findMany.mockResolvedValue([{ id: "a1", name: "Vril" }]);
   artist.upsert.mockResolvedValue({ id: "va1", name: "Various Artists" });
   genre.findMany.mockResolvedValue([{ id: "g1", name: "Techno" }]);
@@ -216,6 +219,7 @@ describe("POST /api/admin/products", () => {
       productId: ROW.id,
       type: "IN",
       requestedQuantity: 1,
+      actorUserId: "u1",
     });
     const body = await res.json();
     expect(body.quantity).toBe(1);
@@ -231,6 +235,7 @@ describe("POST /api/admin/products", () => {
       productId: ROW.id,
       type: "IN",
       requestedQuantity: 5,
+      actorUserId: "u1",
     });
   });
 
@@ -247,10 +252,10 @@ describe("POST /api/admin/products", () => {
     expect(product.create).not.toHaveBeenCalled();
   });
 
-  it("returns the 401 from requireAdmin", async () => {
-    mockRequireAdmin.mockResolvedValue(
-      new Response(null, { status: 401 }) as never,
-    );
+  it("returns the 401 from requireAdminUserId", async () => {
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
     const res = await POST(jsonReq("POST", validBody));
     expect(res.status).toBe(401);
     expect(product.create).not.toHaveBeenCalled();

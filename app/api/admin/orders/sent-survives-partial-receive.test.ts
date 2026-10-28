@@ -10,7 +10,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
-vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/api-auth", () => ({
+  requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
+}));
 vi.mock("@/lib/stock", () => ({ applyStockTransaction: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   db: {

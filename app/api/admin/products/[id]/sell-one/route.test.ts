@@ -2,23 +2,23 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({
-  requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 vi.mock("@/lib/db", () => ({ db: { $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn({})) } }));
 vi.mock("@/lib/stock", () => ({ applyStockTransaction: vi.fn() }));
 
 import { POST } from "@/app/api/admin/products/[id]/sell-one/route";
 import { applyStockTransaction } from "@/lib/stock";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdminUserId } from "@/lib/api-auth";
 
 const mockApply = applyStockTransaction as unknown as Mock;
-const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockRequireAdminUserId = vi.mocked(requireAdminUserId);
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 const req = () => new Request("http://test", { method: "POST" });
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockRequireAdmin.mockResolvedValue(null);
+  mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
 });
 
 describe("POST /api/admin/products/[id]/sell-one", () => {
@@ -31,6 +31,7 @@ describe("POST /api/admin/products/[id]/sell-one", () => {
       productId: "p1",
       type: "OUT",
       requestedQuantity: -1,
+      actorUserId: "u1",
     });
   });
 
@@ -47,8 +48,10 @@ describe("POST /api/admin/products/[id]/sell-one", () => {
     expect(await res.json()).toEqual({ error: "Stock is already at zero" });
   });
 
-  it("returns the 401 from requireAdmin without applying anything", async () => {
-    mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
+  it("returns the 401 from requireAdminUserId without applying anything", async () => {
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
     const res = await POST(req(), ctx("p1"));
     expect(res.status).toBe(401);
     expect(mockApply).not.toHaveBeenCalled();
