@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 vi.mock("@/lib/db", () => ({
   db: { artist: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() } },
@@ -12,7 +13,7 @@ vi.mock("@/lib/artist-fuzzy-match", () => ({ findSimilarArtists: vi.fn() }));
 import { db } from "@/lib/db";
 import { GET, POST } from "@/app/api/admin/artists/route";
 import { findSimilarArtists } from "@/lib/artist-fuzzy-match";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 
 describe("GET /api/admin/artists", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -45,6 +46,7 @@ describe("POST /api/admin/artists", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(requireAdmin).mockResolvedValue(null);
+    vi.mocked(requireAdminUserId).mockResolvedValue({ userId: "u1" });
     vi.mocked(db.artist.findFirst).mockResolvedValue(null); // no normalized-name duplicate
     vi.mocked(findSimilarArtists).mockResolvedValue([]); // no fuzzy match by default
   });
@@ -106,8 +108,10 @@ describe("POST /api/admin/artists", () => {
     expect(await res.json()).not.toHaveProperty("candidates");
   });
 
-  it("returns the 401 from requireAdmin without creating or checking for fuzzy matches", async () => {
-    vi.mocked(requireAdmin).mockResolvedValue(new Response(null, { status: 401 }) as never);
+  it("returns the 401 from requireAdminUserId without creating or checking for fuzzy matches", async () => {
+    vi.mocked(requireAdminUserId).mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
 
     const res = await POST(postReq("Vril"));
 

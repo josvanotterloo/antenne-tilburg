@@ -14,6 +14,7 @@ type MockModel = {
 // Allow all requests; the auth gate itself is covered in lib/api-auth.test.ts.
 vi.mock("@/lib/api-auth", () => ({
   requireAdmin: vi.fn().mockResolvedValue(null),
+  requireAdminUserId: vi.fn().mockResolvedValue({ userId: "u1" }),
 }));
 
 function model() {

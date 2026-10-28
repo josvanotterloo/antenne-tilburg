@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn(), requireAdminUserId: vi.fn() }));
 
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 import {
   collectionHandlers,
   itemHandlers,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/reference-crud";
 
 const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockRequireAdminUserId = vi.mocked(requireAdminUserId);
 
 function makeDelegate() {
   const fns = {
@@ -39,6 +40,7 @@ describe("collectionHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireAdmin.mockResolvedValue(null); // allowed by default
+    mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
   });
 
   it("GET returns the first page ordered by name, with each item's product count", async () => {
@@ -155,12 +157,26 @@ describe("collectionHandlers", () => {
 
     expect(res.status).toBe(409);
   });
+
+  it("POST returns the 401 from requireAdminUserId without creating", async () => {
+    const { fns, delegate } = makeDelegate();
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
+    const { POST } = collectionHandlers(delegate);
+
+    const res = await POST(jsonRequest({ name: "Techno" }));
+
+    expect(res.status).toBe(401);
+    expect(fns.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("itemHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireAdmin.mockResolvedValue(null);
+    mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
   });
 
   it("PATCH updates a valid rename", async () => {
@@ -289,5 +305,111 @@ describe("itemHandlers", () => {
 
     expect(res.status).toBe(200);
     expect(fns.delete).toHaveBeenCalledWith({ where: { id: "1" } });
+  });
+
+  it("DELETE returns the 401 from requireAdminUserId without reading the item", async () => {
+    const { fns, delegate } = makeDelegate();
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: new Response(null, { status: 401 }) as never,
+    });
+    const { DELETE } = itemHandlers(delegate);
+
+    const res = await DELETE(delReq(), ctx("1"));
+
+    expect(res.status).toBe(401);
+    expect(fns.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin.mutation logging", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
+  });
+
+  function captureLogs() {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    return { logSpy, errorSpy };
+  }
+
+  it("logs admin.mutation ok with action create and the new row's id on POST", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.create.mockResolvedValue({ id: "new1", name: "Techno" });
+    const { POST } = collectionHandlers(delegate);
+    const { logSpy } = captureLogs();
+
+    await POST(jsonRequest({ name: "Techno" }));
+
+    const event = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(event).toMatchObject({
+      event: "admin.mutation",
+      outcome: "ok",
+      entity: "reference_entity",
+      action: "create",
+      entityId: "new1",
+      actorUserId: "u1",
+    });
+    vi.restoreAllMocks();
+  });
+
+  it("logs admin.mutation ok with action update and the row's id on PATCH", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.update.mockResolvedValue({ id: "1", name: "House" });
+    const { PATCH } = itemHandlers(delegate);
+    const { logSpy } = captureLogs();
+
+    await PATCH(jsonRequest({ name: "House" }), ctx("1"));
+
+    const event = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(event).toMatchObject({
+      event: "admin.mutation",
+      outcome: "ok",
+      entity: "reference_entity",
+      action: "update",
+      entityId: "1",
+      actorUserId: "u1",
+    });
+    vi.restoreAllMocks();
+  });
+
+  it("logs admin.mutation ok with action delete on DELETE", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findUnique.mockResolvedValue({ id: "1", name: "Techno", _count: { products: 0 } });
+    const { DELETE } = itemHandlers(delegate);
+    const { logSpy } = captureLogs();
+
+    await DELETE(delReq(), ctx("1"));
+
+    const event = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(event).toMatchObject({
+      event: "admin.mutation",
+      outcome: "ok",
+      entity: "reference_entity",
+      action: "delete",
+      entityId: "1",
+      actorUserId: "u1",
+    });
+    vi.restoreAllMocks();
+  });
+
+  it("logs admin.mutation failed when DELETE is blocked by attached products", async () => {
+    const { fns, delegate } = makeDelegate();
+    fns.findUnique.mockResolvedValue({ id: "1", name: "Techno", _count: { products: 3 } });
+    const { DELETE } = itemHandlers(delegate);
+    const { errorSpy } = captureLogs();
+
+    await DELETE(delReq(), ctx("1"));
+
+    const event = JSON.parse(errorSpy.mock.calls[0][0]);
+    expect(event).toMatchObject({
+      event: "admin.mutation",
+      outcome: "failed",
+      entity: "reference_entity",
+      action: "delete",
+      entityId: "1",
+      actorUserId: "u1",
+    });
+    vi.restoreAllMocks();
   });
 });

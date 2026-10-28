@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
+import { getRequestId, withRequestContext } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
 import {
   normalizeReferenceName,
   findDuplicateByNormalizedName,
@@ -100,26 +102,53 @@ export function collectionHandlers(
   }
 
   async function POST(req: Request) {
-    const denied = await requireAdmin();
-    if (denied) return denied;
-    const name = readName(await req.json().catch(() => null));
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
-    if (await findDuplicateByNormalizedName(delegate, name)) {
-      return duplicateNameResponse(name);
-    }
-    try {
-      const created = await delegate.create({
-        data: { name, normalizedName: normalizeReferenceName(name) },
-      });
-      return NextResponse.json(created, { status: 201 });
-    } catch (error) {
-      if (isUniqueViolation(error)) {
+    return withRequestContext(req, async () => {
+      const adminCheck = await requireAdminUserId();
+      if (adminCheck.denied) return adminCheck.denied;
+      const name = readName(await req.json().catch(() => null));
+      if (!name) {
+        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      }
+      if (await findDuplicateByNormalizedName(delegate, name)) {
+        logEvent({
+          event: "admin.mutation",
+          requestId: getRequestId(),
+          outcome: "failed",
+          entity: "reference_entity",
+          action: "create",
+          actorUserId: adminCheck.userId,
+        });
         return duplicateNameResponse(name);
       }
-      throw error;
-    }
+      try {
+        const created = await delegate.create({
+          data: { name, normalizedName: normalizeReferenceName(name) },
+        });
+        logEvent({
+          event: "admin.mutation",
+          requestId: getRequestId(),
+          outcome: "ok",
+          entity: "reference_entity",
+          action: "create",
+          entityId: created.id,
+          actorUserId: adminCheck.userId,
+        });
+        return NextResponse.json(created, { status: 201 });
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          logEvent({
+            event: "admin.mutation",
+            requestId: getRequestId(),
+            outcome: "failed",
+            entity: "reference_entity",
+            action: "create",
+            actorUserId: adminCheck.userId,
+          });
+          return duplicateNameResponse(name);
+        }
+        throw error;
+      }
+    });
   }
 
   return { GET, POST };
@@ -131,61 +160,110 @@ export function itemHandlers(
 ) {
   const countField = options.countField ?? "products";
   async function PATCH(req: Request, ctx: RouteContext) {
-    const denied = await requireAdmin();
-    if (denied) return denied;
-    const { id } = await ctx.params;
-    const name = readName(await req.json().catch(() => null));
-    if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
-    }
-    const normalizedName = normalizeReferenceName(name);
-    // A rename that doesn't actually change the normalized name (e.g. only
-    // casing/whitespace changed, or the admin re-submitted the same name)
-    // must never be blocked by another row's legacy near-duplicate — that
-    // row's existence has nothing to do with this save.
-    const current = await delegate.findUnique({
-      where: { id },
-      select: { normalizedName: true },
-    });
-    const nameUnchanged = current?.normalizedName === normalizedName;
-    if (!nameUnchanged && (await findDuplicateByNormalizedName(delegate, name, id))) {
-      return duplicateNameResponse(name);
-    }
-    try {
-      const updated = await delegate.update({
+    return withRequestContext(req, async () => {
+      const adminCheck = await requireAdminUserId();
+      if (adminCheck.denied) return adminCheck.denied;
+      const { id } = await ctx.params;
+      const name = readName(await req.json().catch(() => null));
+      if (!name) {
+        return NextResponse.json({ error: "Name is required" }, { status: 400 });
+      }
+      const normalizedName = normalizeReferenceName(name);
+      // A rename that doesn't actually change the normalized name (e.g. only
+      // casing/whitespace changed, or the admin re-submitted the same name)
+      // must never be blocked by another row's legacy near-duplicate — that
+      // row's existence has nothing to do with this save.
+      const current = await delegate.findUnique({
         where: { id },
-        data: { name, normalizedName },
+        select: { normalizedName: true },
       });
-      return NextResponse.json(updated);
-    } catch (error) {
-      if (isUniqueViolation(error)) {
+      const nameUnchanged = current?.normalizedName === normalizedName;
+      if (!nameUnchanged && (await findDuplicateByNormalizedName(delegate, name, id))) {
+        logEvent({
+          event: "admin.mutation",
+          requestId: getRequestId(),
+          outcome: "failed",
+          entity: "reference_entity",
+          action: "update",
+          entityId: id,
+          actorUserId: adminCheck.userId,
+        });
         return duplicateNameResponse(name);
       }
-      throw error;
-    }
+      try {
+        const updated = await delegate.update({
+          where: { id },
+          data: { name, normalizedName },
+        });
+        logEvent({
+          event: "admin.mutation",
+          requestId: getRequestId(),
+          outcome: "ok",
+          entity: "reference_entity",
+          action: "update",
+          entityId: id,
+          actorUserId: adminCheck.userId,
+        });
+        return NextResponse.json(updated);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          logEvent({
+            event: "admin.mutation",
+            requestId: getRequestId(),
+            outcome: "failed",
+            entity: "reference_entity",
+            action: "update",
+            entityId: id,
+            actorUserId: adminCheck.userId,
+          });
+          return duplicateNameResponse(name);
+        }
+        throw error;
+      }
+    });
   }
 
-  async function DELETE(_req: Request, ctx: RouteContext) {
-    const denied = await requireAdmin();
-    if (denied) return denied;
-    const { id } = await ctx.params;
-    const item = await delegate.findUnique({
-      where: { id },
-      include: { _count: { select: { [countField]: true } } },
+  async function DELETE(req: Request, ctx: RouteContext) {
+    return withRequestContext(req, async () => {
+      const adminCheck = await requireAdminUserId();
+      if (adminCheck.denied) return adminCheck.denied;
+      const { id } = await ctx.params;
+      const item = await delegate.findUnique({
+        where: { id },
+        include: { _count: { select: { [countField]: true } } },
+      });
+      if (!item) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+      const count = item._count[countField];
+      if (count > 0) {
+        logEvent({
+          event: "admin.mutation",
+          requestId: getRequestId(),
+          outcome: "failed",
+          entity: "reference_entity",
+          action: "delete",
+          entityId: id,
+          actorUserId: adminCheck.userId,
+        });
+        // Server-enforced delete guard — never trust the UI to hide the button.
+        return NextResponse.json(
+          { error: `In use by ${count} products`, count },
+          { status: 409 },
+        );
+      }
+      await delegate.delete({ where: { id } });
+      logEvent({
+        event: "admin.mutation",
+        requestId: getRequestId(),
+        outcome: "ok",
+        entity: "reference_entity",
+        action: "delete",
+        entityId: id,
+        actorUserId: adminCheck.userId,
+      });
+      return NextResponse.json({ ok: true });
     });
-    if (!item) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    const count = item._count[countField];
-    if (count > 0) {
-      // Server-enforced delete guard — never trust the UI to hide the button.
-      return NextResponse.json(
-        { error: `In use by ${count} products`, count },
-        { status: 409 },
-      );
-    }
-    await delegate.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
   }
 
   return { PATCH, DELETE };
