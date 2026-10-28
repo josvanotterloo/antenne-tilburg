@@ -3,6 +3,8 @@ import { Condition } from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { buildCatalogWhere, isRestock, CATALOG_INCLUDE } from "@/lib/catalog";
+import { getRequestId, withRequestContext } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
 
 const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 const DEFAULT_LIMIT = 100;
@@ -21,67 +23,84 @@ function parseCondition(raw: string | null): Condition | undefined {
 // Public, unauthenticated catalog feed for AI shopping agents / discoverability.
 // Read-only: only in-stock products, no PII, cache-friendly.
 export async function GET(req: Request) {
-  const params = new URL(req.url).searchParams;
-  const genre = params.get("genre");
-  const condition = parseCondition(params.get("condition"));
-  const limit = parseLimit(params.get("limit"));
+  return withRequestContext(req, async () => {
+    const start = Date.now();
+    const params = new URL(req.url).searchParams;
+    const genre = params.get("genre");
+    const condition = parseCondition(params.get("condition"));
+    const limit = parseLimit(params.get("limit"));
 
-  const where = {
-    ...buildCatalogWhere({ onlyInStock: true, condition }),
-    ...(genre && {
-      productGenres: {
-        some: { genre: { name: { equals: genre, mode: "insensitive" as const } } },
-      },
-    }),
-  };
-
-  try {
-    const [products, total] = await Promise.all([
-      db.product.findMany({
-        where,
-        // id tiebreaker keeps ordering stable across requests when several
-        // products share a createdAt (bulk import, same-millisecond inserts).
-        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-        take: limit,
-        include: CATALOG_INCLUDE,
+    const where = {
+      ...buildCatalogWhere({ onlyInStock: true, condition }),
+      ...(genre && {
+        productGenres: {
+          some: { genre: { name: { equals: genre, mode: "insensitive" as const } } },
+        },
       }),
-      db.product.count({ where }),
-    ]);
+    };
 
-    return NextResponse.json(
-      {
-        products: products.map((p) => ({
-          id: p.id,
-          // Deliberate interface change: ordered artists, not a single string
-          // — a release can have multiple (splits, comps, collaborations).
-          artists: [...p.productArtists]
-            .sort((a, b) => a.position - b.position)
-            .map((pa) => ({ id: pa.artist.id, name: pa.artist.name })),
-          title: p.title,
-          label: p.label.name,
-          catalogNumber: p.catalogNumber,
-          // Deliberate interface change: ordered genres, not a single string
-          // — a release can belong to more than one.
-          genres: [...p.productGenres]
-            .sort((a, b) => a.position - b.position)
-            .map((pg) => pg.genre.name),
-          productType: p.productType.name,
-          condition: p.condition,
-          inStock: p.inStock,
-          isRestock: isRestock(p),
-          url: `${baseUrl}/stock/${p.id}`,
-          createdAt: p.createdAt.toISOString(),
-        })),
-        total,
-        generatedAt: new Date().toISOString(),
-      },
-      { headers: { "Cache-Control": "public, max-age=300" } },
-    );
-  } catch (error) {
-    console.error("GET /api/catalog failed", error);
-    return NextResponse.json(
-      { error: "Could not load the catalog. Please try again." },
-      { status: 500 },
-    );
-  }
+    try {
+      const [products, total] = await Promise.all([
+        db.product.findMany({
+          where,
+          // id tiebreaker keeps ordering stable across requests when several
+          // products share a createdAt (bulk import, same-millisecond inserts).
+          orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+          take: limit,
+          include: CATALOG_INCLUDE,
+        }),
+        db.product.count({ where }),
+      ]);
+
+      logEvent({
+        event: "catalog.search",
+        requestId: getRequestId(),
+        outcome: "ok",
+        resultCount: total,
+        durationMs: Date.now() - start,
+      });
+
+      return NextResponse.json(
+        {
+          products: products.map((p) => ({
+            id: p.id,
+            // Deliberate interface change: ordered artists, not a single string
+            // — a release can have multiple (splits, comps, collaborations).
+            artists: [...p.productArtists]
+              .sort((a, b) => a.position - b.position)
+              .map((pa) => ({ id: pa.artist.id, name: pa.artist.name })),
+            title: p.title,
+            label: p.label.name,
+            catalogNumber: p.catalogNumber,
+            // Deliberate interface change: ordered genres, not a single string
+            // — a release can belong to more than one.
+            genres: [...p.productGenres]
+              .sort((a, b) => a.position - b.position)
+              .map((pg) => pg.genre.name),
+            productType: p.productType.name,
+            condition: p.condition,
+            inStock: p.inStock,
+            isRestock: isRestock(p),
+            url: `${baseUrl}/stock/${p.id}`,
+            createdAt: p.createdAt.toISOString(),
+          })),
+          total,
+          generatedAt: new Date().toISOString(),
+        },
+        { headers: { "Cache-Control": "public, max-age=300" } },
+      );
+    } catch (error) {
+      console.error("GET /api/catalog failed", error);
+      logEvent({
+        event: "catalog.search",
+        requestId: getRequestId(),
+        outcome: "failed",
+        durationMs: Date.now() - start,
+      });
+      return NextResponse.json(
+        { error: "Could not load the catalog. Please try again." },
+        { status: 500 },
+      );
+    }
+  });
 }

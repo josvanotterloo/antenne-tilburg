@@ -154,4 +154,60 @@ describe("GET /api/catalog", () => {
     const body = await res.json();
     expect(body.error).toBeTruthy();
   });
+
+  describe("catalog.search logging", () => {
+    function captureLogs() {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      return { logSpy, errorSpy };
+    }
+
+    it("logs catalog.search ok with the result count on success", async () => {
+      vi.mocked(db.product.count).mockResolvedValue(7 as never);
+      const { logSpy, errorSpy } = captureLogs();
+
+      await get();
+
+      const event = JSON.parse(
+        logSpy.mock.calls.map((c) => c[0]).find((line) => line.includes("catalog.search")),
+      );
+      expect(event).toMatchObject({ event: "catalog.search", outcome: "ok", resultCount: 7 });
+      expect(typeof event.durationMs).toBe("number");
+      expect(typeof event.requestId).toBe("string");
+      expect(errorSpy).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    });
+
+    it("logs catalog.search failed, without a result count, when the DB fails", async () => {
+      vi.mocked(db.product.findMany).mockRejectedValue(new Error("db down"));
+      const { errorSpy } = captureLogs();
+
+      await get();
+
+      const event = JSON.parse(
+        errorSpy.mock.calls
+          .map((c) => c[0])
+          .find((line) => typeof line === "string" && line.includes("catalog.search")),
+      );
+      expect(event).toMatchObject({ event: "catalog.search", outcome: "failed" });
+      expect(event).not.toHaveProperty("resultCount");
+      vi.restoreAllMocks();
+    });
+
+    it("carries a caller-supplied x-request-id through to the logged event", async () => {
+      const { logSpy } = captureLogs();
+
+      await GET(
+        new Request("http://localhost/api/catalog", {
+          headers: { "x-request-id": "caller-id-42" },
+        }),
+      );
+
+      const event = JSON.parse(
+        logSpy.mock.calls.map((c) => c[0]).find((line) => line.includes("catalog.search")),
+      );
+      expect(event.requestId).toBe("caller-id-42");
+      vi.restoreAllMocks();
+    });
+  });
 });
