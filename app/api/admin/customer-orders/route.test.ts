@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("@/lib/api-auth", () => ({ requireAdmin: vi.fn() }));
+vi.mock("@/lib/api-auth", () => ({
+  requireAdmin: vi.fn(),
+  requireAdminUserId: vi.fn(),
+}));
 vi.mock("@/lib/customer-orders", async () => {
   const actual = await vi.importActual<typeof import("@/lib/customer-orders")>(
     "@/lib/customer-orders",
@@ -14,7 +17,7 @@ vi.mock("@/lib/customer-orders", async () => {
 });
 
 import { GET, POST } from "@/app/api/admin/customer-orders/route";
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 import {
   readCustomerOrders,
   writeCustomerOrders,
@@ -23,6 +26,7 @@ import {
 import { NextResponse } from "next/server";
 
 const mockRequireAdmin = vi.mocked(requireAdmin);
+const mockRequireAdminUserId = vi.mocked(requireAdminUserId);
 const mockReadCustomerOrders = vi.mocked(readCustomerOrders);
 const mockWriteCustomerOrders = vi.mocked(writeCustomerOrders);
 
@@ -38,6 +42,7 @@ function post(body: unknown) {
 beforeEach(() => {
   vi.clearAllMocks();
   mockRequireAdmin.mockResolvedValue(null);
+  mockRequireAdminUserId.mockResolvedValue({ userId: "u1" });
   mockWriteCustomerOrders.mockResolvedValue(undefined);
 });
 
@@ -71,7 +76,7 @@ describe("POST /api/admin/customer-orders", () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });
-    expect(mockWriteCustomerOrders).toHaveBeenCalledWith("## updated notes");
+    expect(mockWriteCustomerOrders).toHaveBeenCalledWith("## updated notes", "u1");
   });
 
   it("400s when content is not a string, without writing", async () => {
@@ -103,7 +108,7 @@ describe("POST /api/admin/customer-orders", () => {
     const res = await post({ content: atCap });
 
     expect(res.status).toBe(200);
-    expect(mockWriteCustomerOrders).toHaveBeenCalledWith(atCap);
+    expect(mockWriteCustomerOrders).toHaveBeenCalledWith(atCap, "u1");
   });
 
   it("400s gracefully on unparseable JSON, without crashing or writing", async () => {
@@ -114,9 +119,9 @@ describe("POST /api/admin/customer-orders", () => {
   });
 
   it("401s when not an admin, without writing anything", async () => {
-    mockRequireAdmin.mockResolvedValue(
-      NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    );
+    mockRequireAdminUserId.mockResolvedValue({
+      denied: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    });
 
     const res = await post({ content: "sneaky write" });
 

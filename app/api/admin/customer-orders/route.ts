@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/api-auth";
+import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
+import { withRequestContext } from "@/lib/log/context";
 import {
   MAX_CUSTOMER_ORDERS_BYTES,
   readCustomerOrders,
@@ -15,20 +16,22 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
+  return withRequestContext(req, async () => {
+    const adminCheck = await requireAdminUserId();
+    if (adminCheck.denied) return adminCheck.denied;
 
-  const body = await req.json().catch(() => null);
-  if (typeof body?.content !== "string") {
-    return NextResponse.json({ error: "content is required" }, { status: 400 });
-  }
-  if (Buffer.byteLength(body.content, "utf-8") > MAX_CUSTOMER_ORDERS_BYTES) {
-    return NextResponse.json(
-      { error: "content is too large (max 500 KB)" },
-      { status: 400 },
-    );
-  }
+    const body = await req.json().catch(() => null);
+    if (typeof body?.content !== "string") {
+      return NextResponse.json({ error: "content is required" }, { status: 400 });
+    }
+    if (Buffer.byteLength(body.content, "utf-8") > MAX_CUSTOMER_ORDERS_BYTES) {
+      return NextResponse.json(
+        { error: "content is too large (max 500 KB)" },
+        { status: 400 },
+      );
+    }
 
-  await writeCustomerOrders(body.content);
-  return NextResponse.json({ ok: true });
+    await writeCustomerOrders(body.content, adminCheck.userId);
+    return NextResponse.json({ ok: true });
+  });
 }

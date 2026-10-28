@@ -2,6 +2,9 @@ import { randomUUID } from "crypto";
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import { dirname, join } from "path";
 
+import { getRequestId } from "@/lib/log/context";
+import { logEvent } from "@/lib/log/log";
+
 // Operational data, not source code — gitignored (see .gitignore), created on
 // first read/write. No DB model for this: it's free-form staff notes, not a
 // managed entity.
@@ -37,14 +40,39 @@ export async function readCustomerOrders(): Promise<string> {
   }
 }
 
-export async function writeCustomerOrders(content: string): Promise<void> {
+// actorUserId is required, never optional — see SYSTEM_ACTOR_ID in
+// lib/log/events.ts for a caller with no session user.
+export async function writeCustomerOrders(
+  content: string,
+  actorUserId: string,
+): Promise<void> {
   const dir = dirname(CUSTOMER_ORDERS_PATH);
-  await mkdir(dir, { recursive: true });
-  // Write to a sibling temp file then rename over the target — rename is
-  // atomic on the same filesystem, so a crash mid-write can never leave
-  // data/customer-orders.md truncated/corrupted. This file is the sole copy
-  // of the data (gitignored, no DB row), so that guarantee matters here.
-  const tmpPath = join(dir, `.customer-orders.${randomUUID()}.tmp`);
-  await writeFile(tmpPath, content, "utf-8");
-  await rename(tmpPath, CUSTOMER_ORDERS_PATH);
+  try {
+    await mkdir(dir, { recursive: true });
+    // Write to a sibling temp file then rename over the target — rename is
+    // atomic on the same filesystem, so a crash mid-write can never leave
+    // data/customer-orders.md truncated/corrupted. This file is the sole copy
+    // of the data (gitignored, no DB row), so that guarantee matters here.
+    const tmpPath = join(dir, `.customer-orders.${randomUUID()}.tmp`);
+    await writeFile(tmpPath, content, "utf-8");
+    await rename(tmpPath, CUSTOMER_ORDERS_PATH);
+  } catch (error) {
+    logEvent({
+      event: "admin.mutation",
+      requestId: getRequestId(),
+      outcome: "failed",
+      entity: "customer_order",
+      action: "update",
+      actorUserId,
+    });
+    throw error;
+  }
+  logEvent({
+    event: "admin.mutation",
+    requestId: getRequestId(),
+    outcome: "ok",
+    entity: "customer_order",
+    action: "update",
+    actorUserId,
+  });
 }

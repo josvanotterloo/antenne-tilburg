@@ -61,7 +61,7 @@ describe("readCustomerOrders", () => {
 
 describe("writeCustomerOrders", () => {
   it("creates the containing directory recursively", async () => {
-    await writeCustomerOrders("some content");
+    await writeCustomerOrders("some content", "u1");
 
     expect(mockMkdir).toHaveBeenCalledWith(
       expect.stringContaining("data"),
@@ -70,7 +70,7 @@ describe("writeCustomerOrders", () => {
   });
 
   it("writes to a temp path distinct from the real path, then renames it over the real path", async () => {
-    await writeCustomerOrders("some content");
+    await writeCustomerOrders("some content", "u1");
 
     expect(mockWriteFile).toHaveBeenCalledTimes(1);
     const [writtenPath, writtenContent] = mockWriteFile.mock.calls[0];
@@ -84,7 +84,7 @@ describe("writeCustomerOrders", () => {
   });
 
   it("never passes the real path directly to writeFile", async () => {
-    await writeCustomerOrders("anything");
+    await writeCustomerOrders("anything", "u1");
 
     expect(mockWriteFile).not.toHaveBeenCalledWith(
       CUSTOMER_ORDERS_PATH,
@@ -102,8 +102,50 @@ describe("writeCustomerOrders", () => {
       order.push("rename");
     });
 
-    await writeCustomerOrders("content");
+    await writeCustomerOrders("content", "u1");
 
     expect(order).toEqual(["write", "rename"]);
+  });
+
+  describe("admin.mutation logging", () => {
+    function captureLogs() {
+      const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      return { logSpy, errorSpy };
+    }
+
+    it("logs admin.mutation ok with the actor id on a successful write", async () => {
+      const { logSpy, errorSpy } = captureLogs();
+
+      await writeCustomerOrders("content", "u1");
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      const event = JSON.parse(logSpy.mock.calls[0][0]);
+      expect(event).toMatchObject({
+        event: "admin.mutation",
+        outcome: "ok",
+        entity: "customer_order",
+        action: "update",
+        actorUserId: "u1",
+      });
+      vi.restoreAllMocks();
+    });
+
+    it("logs admin.mutation failed and re-throws when the write fails", async () => {
+      mockWriteFile.mockRejectedValue(new Error("disk full"));
+      const { errorSpy } = captureLogs();
+
+      await expect(writeCustomerOrders("content", "u1")).rejects.toThrow("disk full");
+
+      const event = JSON.parse(errorSpy.mock.calls[0][0]);
+      expect(event).toMatchObject({
+        event: "admin.mutation",
+        outcome: "failed",
+        entity: "customer_order",
+        action: "update",
+        actorUserId: "u1",
+      });
+      vi.restoreAllMocks();
+    });
   });
 });
