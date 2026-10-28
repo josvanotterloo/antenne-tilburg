@@ -276,14 +276,17 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 1173 tests as of
-`feature/observability-logging` (+48 net: structured logging groundwork —
+Done — Vitest runner + `run-tests` skill in place; 1179 tests as of
+`feature/observability-logging` (+54 net: structured logging groundwork —
 `proxy.test.ts`, `lib/log/{events,log,context,redact}.test.ts`, plus new
 logging-behavior cases added to `lib/authorize.test.ts`,
 `app/api/catalog/route.test.ts`, `lib/stock.test.ts`,
 `lib/reference-crud.test.ts`, `lib/customer-orders.test.ts`,
-`lib/email/send.test.ts`, `app/api/newsletter/route.test.ts`. See
-`docs/features/observability-logging.md`), 2026-10-28. 1125 tests as of
+`lib/email/send.test.ts`, `app/api/newsletter/route.test.ts`, plus a
+`proxy.test.ts` cross-check guarding against `proxy.ts`'s matcher and
+`isProtectedAdminPath` drifting apart (a multi-angle `/code-review`
+finding). See `docs/features/observability-logging.md`), 2026-10-28.
+1125 tests as of
 `fix/newsletter-parity-gfm` (+24 net: Unit 3 — newsletter preview/send parity
 (N5), autolink + structural line breaks (N2), stacked footer address block
 (N1) — plus CO1, GFM task lists/autolink on `PostBody`. See
