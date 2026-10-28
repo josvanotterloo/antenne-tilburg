@@ -7,7 +7,8 @@ vi.mock("next-auth/jwt", () => ({
 }));
 
 import { getToken } from "next-auth/jwt";
-import proxy from "./proxy";
+import proxy, { config } from "./proxy";
+import { isProtectedAdminPath } from "@/lib/auth.config";
 
 const mockGetToken = vi.mocked(getToken);
 
@@ -82,5 +83,40 @@ describe("proxy", () => {
     );
 
     expect(response.headers.get("x-request-id")).toBe("caller-id-123");
+  });
+});
+
+describe("proxy.ts's matcher stays in sync with isProtectedAdminPath", () => {
+  // config.matcher is what Next.js uses to decide whether proxy() runs at
+  // all; isProtectedAdminPath is a separate, hand-maintained check used
+  // inside proxy() to decide whether to redirect. If a future edit widens
+  // the matcher's "exclude /admin/login" lookahead (e.g. to exempt a new
+  // public admin subpath) without updating isProtectedAdminPath to match,
+  // that subpath would never reach proxy() at all — no login redirect, and
+  // nothing else would catch it, since every other test here calls
+  // isProtectedAdminPath/proxy() directly rather than through Next's real
+  // route matcher. This re-derives the matcher's own embedded regex (not
+  // isProtectedAdminPath's logic) and cross-checks the two independently.
+  const adminPageMatcher = config.matcher.find((m) => m.startsWith("/admin/("));
+  if (!adminPageMatcher) {
+    throw new Error("admin-page matcher entry not found in config.matcher — update this test");
+  }
+  const parsed = /^\/admin\/\((.*)\)$/.exec(adminPageMatcher);
+  if (!parsed) {
+    throw new Error("admin-page matcher shape changed — update this test's parsing");
+  }
+  const matcherExcludesLogin = new RegExp(`^${parsed[1]}$`);
+
+  it.each([
+    "/admin",
+    "/admin/login",
+    "/admin/login/",
+    "/admin/loginx",
+    "/admin/catalog",
+    "/admin/catalog/123",
+  ])("agrees with the matcher's own pattern for %s", (path) => {
+    const matcherSaysProtected =
+      path === "/admin" || matcherExcludesLogin.test(path.slice("/admin/".length));
+    expect(isProtectedAdminPath(path)).toBe(matcherSaysProtected);
   });
 });

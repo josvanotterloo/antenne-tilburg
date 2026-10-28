@@ -31,7 +31,12 @@ export type LogEvent =
       requestId: string;
       outcome: "ok" | "failed";
       entity: "stock" | "customer_order" | "reference_entity";
-      action: string;
+      // "IN" | "OUT" | "ADJUSTMENT" (StockTransactionType, lib/stock.ts) or
+      // "create" | "update" | "delete" (lib/reference-crud.ts,
+      // lib/customer-orders.ts) — closed to match every real call site, so
+      // this field gets the same tsc-enforced guardrail as the rest of the
+      // union instead of accepting arbitrary text.
+      action: "IN" | "OUT" | "ADJUSTMENT" | "create" | "update" | "delete";
       entityId?: string;
       actorUserId: string;
     }
