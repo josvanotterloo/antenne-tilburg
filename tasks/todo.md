@@ -146,6 +146,16 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       are found.
 
 ### Platform / tech debt
+- [ ] **Go-live: configure stdout log retention.** `lib/log/log.ts`
+      (`feature/observability-logging`) writes structured JSON to
+      `console.log`/`console.error` only — no app-side file I/O, by design
+      (see `docs/features/observability-logging.md`'s "Log destination").
+      On the eventual self-hosted VPS/Docker deploy, set the Docker
+      `json-file` logging driver's `max-size`/`max-file` (e.g. `--log-opt
+      max-size=10m --log-opt max-file=10`), or the journald equivalent if
+      running under systemd directly, so retention is long enough to be
+      useful before logs roll off. No deploy config exists in this repo
+      yet (CI only runs tests) — do this when one is written.
 - [ ] **Reference-entity normalized-name unique index (parked).** Artist/Genre/
       Label/ProductType got a non-unique `normalizedName` lookup column +
       app-level dedupe check (`lib/reference-dedupe.ts`) in STEP 5b
@@ -266,7 +276,14 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
 - [ ] Mollie checkout (iDEAL first, PayPal later)
 
 ### Testing
-Done — Vitest runner + `run-tests` skill in place; 1125 tests as of
+Done — Vitest runner + `run-tests` skill in place; 1173 tests as of
+`feature/observability-logging` (+48 net: structured logging groundwork —
+`proxy.test.ts`, `lib/log/{events,log,context,redact}.test.ts`, plus new
+logging-behavior cases added to `lib/authorize.test.ts`,
+`app/api/catalog/route.test.ts`, `lib/stock.test.ts`,
+`lib/reference-crud.test.ts`, `lib/customer-orders.test.ts`,
+`lib/email/send.test.ts`, `app/api/newsletter/route.test.ts`. See
+`docs/features/observability-logging.md`), 2026-10-28. 1125 tests as of
 `fix/newsletter-parity-gfm` (+24 net: Unit 3 — newsletter preview/send parity
 (N5), autolink + structural line breaks (N2), stacked footer address block
 (N1) — plus CO1, GFM task lists/autolink on `PostBody`. See
