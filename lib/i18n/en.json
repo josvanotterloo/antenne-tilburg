@@ -1,0 +1,9 @@
+{
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.saving": "Saving…",
+  "common.delete": "Delete",
+  "common.edit": "Edit",
+  "common.confirm": "Confirm",
+  "test.fallbackOnly": "fallback works"
+}
