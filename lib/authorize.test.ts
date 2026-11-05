@@ -19,6 +19,7 @@ const USER = {
   id: "u1",
   email: "shop@antenne-tilburg.nl",
   passwordHash: "$2b$12$examplehash",
+  locale: "NL" as const,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

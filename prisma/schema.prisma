@@ -34,11 +34,12 @@ enum StockTransactionType {
 
 // Two equal admin accounts (shop owner + builder). No role tiers.
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String      @id @default(cuid())
+  email        String      @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  locale       AdminLocale @default(NL)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 }
 
 // --- Managed reference lists (each has its own admin CRUD) ---
@@ -312,6 +313,11 @@ model PageSeo {
 enum SubscriberStatus {
   PENDING
   CONFIRMED
+}
+
+enum AdminLocale {
+  NL
+  EN
 }
 
 model NewsletterSubscriber {
