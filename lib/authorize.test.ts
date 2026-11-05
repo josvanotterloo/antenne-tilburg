@@ -46,7 +46,7 @@ describe("authorizeCredentials", () => {
       password: "changeme123",
     });
 
-    expect(result).toEqual({ id: "u1", email: USER.email });
+    expect(result).toEqual({ id: "u1", email: USER.email, locale: "NL" });
     expect(mockCompare).toHaveBeenCalledWith("changeme123", USER.passwordHash);
   });
 
@@ -239,7 +239,7 @@ describe("authorizeCredentials", () => {
         { email: "other@antenne-tilburg.nl", password: "correct" },
         "203.0.113.50",
       );
-      expect(result).toEqual({ id: "u1", email: USER.email });
+      expect(result).toEqual({ id: "u1", email: USER.email, locale: "NL" });
     });
 
     it("successful logins within the limit are unaffected", async () => {
@@ -248,7 +248,7 @@ describe("authorizeCredentials", () => {
         { email: USER.email, password: "right" },
         "203.0.113.7",
       );
-      expect(result).toEqual({ id: "u1", email: USER.email });
+      expect(result).toEqual({ id: "u1", email: USER.email, locale: "NL" });
     });
   });
 });
