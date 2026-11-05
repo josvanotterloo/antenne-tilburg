@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password.");
+      setError("Ongeldige e-mail of wachtwoord.");
       return;
     }
 
@@ -36,12 +36,12 @@ export default function AdminLoginPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
       <h1 className="text-2xl font-bold tracking-tight">Antenne Admin</h1>
-      <p className="mt-1 text-sm text-admin-ink-muted">Sign in to continue.</p>
+      <p className="mt-1 text-sm text-admin-ink-muted">Log in om door te gaan.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div className="space-y-1">
           <label htmlFor="email" className="text-sm font-medium">
-            Email
+            E-mail
           </label>
           <input
             id="email"
@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
 
         <div className="space-y-1">
           <label htmlFor="password" className="text-sm font-medium">
-            Password
+            Wachtwoord
           </label>
           <input
             id="password"
@@ -76,7 +76,7 @@ export default function AdminLoginPage() {
           disabled={loading}
           className="w-full rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
-          {loading ? "Signing in…" : "Sign in"}
+          {loading ? "Inloggen…" : "Inloggen"}
         </button>
       </form>
     </div>
