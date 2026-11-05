@@ -1,4 +1,8 @@
-// Validation for admin account changes (email + password).
+// Validation for admin account changes (email + password + locale preference).
+
+import type { AdminLocale } from "@prisma/client";
+
+const ADMIN_LOCALES: readonly AdminLocale[] = ["NL", "EN"];
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MIN_PASSWORD = 8;
@@ -37,4 +41,16 @@ export function parsePasswordChange(body: unknown): PasswordResult {
     };
   }
   return { ok: true, data: { currentPassword, newPassword } };
+}
+
+export type LocaleResult =
+  | { ok: true; data: { locale: AdminLocale } }
+  | { ok: false; error: string };
+
+export function parseLocaleChange(body: unknown): LocaleResult {
+  const raw = (body as { locale?: unknown } | null)?.locale;
+  if (typeof raw !== "string" || !ADMIN_LOCALES.includes(raw as AdminLocale)) {
+    return { ok: false, error: "A valid locale is required" };
+  }
+  return { ok: true, data: { locale: raw as AdminLocale } };
 }

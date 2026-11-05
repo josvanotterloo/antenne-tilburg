@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 
-import { parseEmailChange, parsePasswordChange } from "@/lib/user-input";
+import { parseEmailChange, parsePasswordChange, parseLocaleChange } from "@/lib/user-input";
 
 describe("parseEmailChange", () => {
   it("accepts and normalizes a valid email", () => {
@@ -40,4 +40,20 @@ describe("parsePasswordChange", () => {
       parsePasswordChange({ currentPassword: "x", newPassword: "short" }).ok,
     ).toBe(false);
   });
+});
+
+describe("parseLocaleChange", () => {
+  it("accepts a valid AdminLocale value", () => {
+    const r = parseLocaleChange({ locale: "EN" });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.locale).toBe("EN");
+  });
+
+  it.each([["invalid", { locale: "FR" }], ["missing", {}], ["non-string", { locale: 1 }]])(
+    "rejects %s locale",
+    (_f, body) => {
+      expect(parseLocaleChange(body).ok).toBe(false);
+    },
+  );
 });
