@@ -1,14 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 // Mock the Next.js + next-auth bits the nav depends on so it renders in jsdom.
 const pathname = { current: "/admin/catalog" };
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
 }));
+const mockUpdate = vi.fn();
+const session = { current: { user: { locale: "NL" as const } } };
 vi.mock("next-auth/react", () => ({
   signOut: vi.fn(),
+  useSession: () => ({ data: session.current, update: mockUpdate }),
 }));
+
+const originalFetch = global.fetch;
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -29,6 +35,16 @@ import { AdminTopNav } from "@/components/layout/AdminTopNav";
 describe("AdminTopNav", () => {
   beforeEach(() => {
     pathname.current = "/admin/catalog";
+    session.current = { user: { locale: "NL" } };
+    mockUpdate.mockClear();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    }) as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
   });
 
   it("renders the wordmark linking to /admin/catalog", () => {
@@ -80,5 +96,36 @@ describe("AdminTopNav", () => {
     const { container } = render(<AdminTopNav />);
     expect(container).toBeEmptyDOMElement();
     expect(screen.queryByRole("button", { name: /sign out/i })).toBeNull();
+  });
+
+  describe("language switch", () => {
+    it("highlights the current locale", () => {
+      render(<AdminTopNav />);
+      expect(screen.getByRole("button", { name: "NL" })).toHaveAttribute(
+        "aria-current",
+        "true",
+      );
+      expect(screen.getByRole("button", { name: "EN" })).not.toHaveAttribute(
+        "aria-current",
+      );
+    });
+
+    it("switches to English: PATCHes the endpoint then refreshes the session", async () => {
+      const user = userEvent.setup();
+      render(<AdminTopNav />);
+
+      await user.click(screen.getByRole("button", { name: "EN" }));
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          "/api/admin/me/locale",
+          expect.objectContaining({
+            method: "PATCH",
+            body: JSON.stringify({ locale: "EN" }),
+          }),
+        );
+      });
+      expect(mockUpdate).toHaveBeenCalledWith({ user: { locale: "EN" } });
+    });
   });
 });
