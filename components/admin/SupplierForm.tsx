@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { Field } from "@/components/admin/Field";
+import { t } from "@/lib/i18n/t";
 
 export interface SupplierFormValues {
   id: string;
@@ -13,7 +15,13 @@ export interface SupplierFormValues {
   contact: string | null;
 }
 
-export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
+export function SupplierForm({
+  locale,
+  supplier,
+}: {
+  locale: AdminLocale;
+  supplier?: SupplierFormValues;
+}) {
   const router = useRouter();
   const { pending: saving, error, run } = useAsyncAction();
   const [name, setName] = useState(supplier?.name ?? "");
@@ -34,7 +42,7 @@ export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
-      <Field label="Name" htmlFor="supplier-name">
+      <Field label={t("suppliers.name", locale)} htmlFor="supplier-name">
         <input
           id="supplier-name"
           required
@@ -44,7 +52,7 @@ export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
         />
       </Field>
 
-      <Field label="Contact (optional)" htmlFor="supplier-contact">
+      <Field label={t("suppliers.contactOptional", locale)} htmlFor="supplier-contact">
         <textarea
           id="supplier-contact"
           rows={2}
@@ -66,14 +74,18 @@ export function SupplierForm({ supplier }: { supplier?: SupplierFormValues }) {
           disabled={saving}
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
-          {saving ? "Saving…" : supplier ? "Save changes" : "Create supplier"}
+          {saving
+            ? t("common.saving", locale)
+            : supplier
+              ? t("suppliers.saveChanges", locale)
+              : t("suppliers.createButton", locale)}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/catalog/suppliers")}
           className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
-          Cancel
+          {t("common.cancel", locale)}
         </button>
       </div>
     </form>

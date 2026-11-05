@@ -16,10 +16,14 @@ import { useAsyncAction } from "@/lib/use-async-action";
 export function DeleteButton({
   endpoint,
   label = "Delete",
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   redirectTo,
 }: {
   endpoint: string;
   label?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
   redirectTo?: string;
 }) {
   const router = useRouter();
@@ -47,14 +51,14 @@ export function DeleteButton({
             disabled={pending}
             className="text-red-400 hover:underline disabled:opacity-50"
           >
-            {pending ? "…" : "Confirm"}
+            {pending ? "…" : confirmLabel}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
             className="text-admin-ink-muted hover:underline"
           >
-            Cancel
+            {cancelLabel}
           </button>
         </span>
       ) : (

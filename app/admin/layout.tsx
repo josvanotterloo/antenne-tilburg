@@ -1,3 +1,5 @@
+import { SessionProvider } from "next-auth/react";
+
 import { AdminTopNav } from "@/components/layout/AdminTopNav";
 
 export default function AdminLayout({
@@ -7,8 +9,10 @@ export default function AdminLayout({
 }) {
   return (
     <div className="admin-dark min-h-screen bg-admin-bg text-admin-ink">
-      <AdminTopNav />
-      <main className="mx-auto max-w-6xl p-6">{children}</main>
+      <SessionProvider>
+        <AdminTopNav />
+        <main className="mx-auto max-w-6xl p-6">{children}</main>
+      </SessionProvider>
     </div>
   );
 }

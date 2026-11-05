@@ -4,5 +4,19 @@
   "common.saving": "Opslaan…",
   "common.delete": "Verwijderen",
   "common.edit": "Bewerken",
-  "common.confirm": "Bevestigen"
+  "common.confirm": "Bevestigen",
+  "common.actions": "Acties",
+  "suppliers.title": "Leveranciers",
+  "suppliers.countSingular": "leverancier",
+  "suppliers.countPlural": "leveranciers",
+  "suppliers.newButton": "Nieuwe leverancier",
+  "suppliers.name": "Naam",
+  "suppliers.contact": "Contact",
+  "suppliers.contactOptional": "Contact (optioneel)",
+  "suppliers.orders": "Bestellingen",
+  "suppliers.empty": "Nog geen leveranciers.",
+  "suppliers.newTitle": "Nieuwe leverancier",
+  "suppliers.editTitle": "Leverancier bewerken",
+  "suppliers.saveChanges": "Wijzigingen opslaan",
+  "suppliers.createButton": "Leverancier aanmaken"
 }

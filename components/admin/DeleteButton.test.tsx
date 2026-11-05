@@ -91,4 +91,18 @@ describe("DeleteButton", () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();
   });
+
+  it("uses confirmLabel/cancelLabel overrides for the two-click confirm step", () => {
+    render(
+      <DeleteButton
+        endpoint="/api/admin/suppliers/s1"
+        label="Verwijderen"
+        confirmLabel="Bevestigen"
+        cancelLabel="Annuleren"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Verwijderen" }));
+    expect(screen.getByRole("button", { name: "Bevestigen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Annuleren" })).toBeInTheDocument();
+  });
 });
