@@ -7,6 +7,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/db", () => ({
   db: { newsletterSubscriber: { findMany: vi.fn() } },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import AdminSubscribersPage from "@/app/admin/settings/subscribers/page";
 import { db } from "@/lib/db";
@@ -21,12 +24,19 @@ describe("/admin/settings/subscribers", () => {
   it("lists subscribers, decrypting stored emails for display", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
       // As stored: ciphertext, not plaintext.
-      { id: "s1", name: "Ada", email: encryptEmail("ada@x.com"), createdAt: new Date() },
+      {
+        id: "s1",
+        name: "Ada",
+        email: encryptEmail("ada@x.com"),
+        createdAt: new Date(),
+        status: "CONFIRMED",
+        confirmEmailSentAt: new Date(),
+      },
     ] as never);
     render(await AdminSubscribersPage());
     expect(screen.getByText("Ada")).toBeInTheDocument();
     expect(screen.getByText("ada@x.com")).toBeInTheDocument();
-    const link = screen.getByText("Export CSV");
+    const link = screen.getByText("CSV exporteren");
     expect(link).toHaveAttribute("href", "/api/admin/subscribers/export");
   });
 
@@ -35,8 +45,22 @@ describe("/admin/settings/subscribers", () => {
     // Key rotated: the stored row can no longer be decrypted.
     vi.stubEnv("EMAIL_ENCRYPTION_KEY", "0".repeat(64));
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
-      { id: "s1", name: "Ada", email: stored, createdAt: new Date() },
-      { id: "s2", name: "Bo", email: encryptEmail("bo@x.com"), createdAt: new Date() },
+      {
+        id: "s1",
+        name: "Ada",
+        email: stored,
+        createdAt: new Date(),
+        status: "CONFIRMED",
+        confirmEmailSentAt: new Date(),
+      },
+      {
+        id: "s2",
+        name: "Bo",
+        email: encryptEmail("bo@x.com"),
+        createdAt: new Date(),
+        status: "CONFIRMED",
+        confirmEmailSentAt: new Date(),
+      },
     ] as never);
     render(await AdminSubscribersPage());
     // The bad row degrades, the good row still shows.
@@ -46,7 +70,14 @@ describe("/admin/settings/subscribers", () => {
 
   it("shows a fallback dash for a subscriber with no name (footer's email-only signup)", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
-      { id: "s1", name: null, email: encryptEmail("noname@x.com"), createdAt: new Date() },
+      {
+        id: "s1",
+        name: null,
+        email: encryptEmail("noname@x.com"),
+        createdAt: new Date(),
+        status: "CONFIRMED",
+        confirmEmailSentAt: new Date(),
+      },
     ] as never);
     render(await AdminSubscribersPage());
     expect(screen.getByText("noname@x.com")).toBeInTheDocument();
@@ -55,7 +86,14 @@ describe("/admin/settings/subscribers", () => {
 
   it("shows a legacy (unmigrated) plaintext row as-is", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
-      { id: "s1", name: "Old", email: "old@x.com", createdAt: new Date() },
+      {
+        id: "s1",
+        name: "Old",
+        email: "old@x.com",
+        createdAt: new Date(),
+        status: "CONFIRMED",
+        confirmEmailSentAt: new Date(),
+      },
     ] as never);
     render(await AdminSubscribersPage());
     expect(screen.getByText("old@x.com")).toBeInTheDocument();
@@ -85,10 +123,10 @@ describe("/admin/settings/subscribers", () => {
     expect(screen.getByText("Ada")).toBeInTheDocument();
     expect(screen.getByText("Bo")).toBeInTheDocument();
     // ...each with a status badge...
-    expect(screen.getByText(/^confirmed$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^pending$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^bevestigd$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^in behandeling$/i)).toBeInTheDocument();
     // ...but the count reflects confirmed only.
-    expect(screen.getByText(/1 confirmed subscriber/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 bevestigde abonnee/i)).toBeInTheDocument();
   });
 
   it("badges a PENDING row with no confirmation email sent, and offers a retry button", async () => {
@@ -103,9 +141,9 @@ describe("/admin/settings/subscribers", () => {
       },
     ] as never);
     render(await AdminSubscribersPage());
-    expect(screen.getByText(/pending \(no email sent\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/in behandeling \(geen e-mail verzonden\)/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /retry pending emails/i }),
+      screen.getByRole("button", { name: /wachtende e-mails opnieuw proberen/i }),
     ).toBeInTheDocument();
   });
 
@@ -121,9 +159,9 @@ describe("/admin/settings/subscribers", () => {
       },
     ] as never);
     render(await AdminSubscribersPage());
-    expect(screen.getByText(/pending \(no email sent\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/in behandeling \(geen e-mail verzonden\)/i)).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /retry pending emails/i }),
+      screen.queryByRole("button", { name: /wachtende e-mails opnieuw proberen/i }),
     ).toBeNull();
   });
 
@@ -139,16 +177,35 @@ describe("/admin/settings/subscribers", () => {
       },
     ] as never);
     render(await AdminSubscribersPage());
-    expect(screen.getByText(/^pending$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^in behandeling$/i)).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /retry pending emails/i }),
+      screen.queryByRole("button", { name: /wachtende e-mails opnieuw proberen/i }),
     ).toBeNull();
   });
 
   it("hides the export link and shows an empty state with no subscribers", async () => {
     vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([] as never);
     render(await AdminSubscribersPage());
-    expect(screen.getByText(/No subscribers yet/)).toBeInTheDocument();
-    expect(screen.queryByText("Export CSV")).toBeNull();
+    expect(screen.getByText(/Nog geen abonnees/)).toBeInTheDocument();
+    expect(screen.queryByText("CSV exporteren")).toBeNull();
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    vi.mocked(db.newsletterSubscriber.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        name: "Ada",
+        email: "ada@x.com",
+        status: "CONFIRMED",
+        createdAt: new Date(),
+        confirmEmailSentAt: new Date(),
+      },
+    ] as never);
+    render(await AdminSubscribersPage());
+    expect(screen.getByRole("heading", { name: "Subscribers" })).toBeInTheDocument();
+    expect(screen.getByText(/^confirmed$/i)).toBeInTheDocument();
+    expect(screen.getByText("Export CSV")).toBeInTheDocument();
   });
 });

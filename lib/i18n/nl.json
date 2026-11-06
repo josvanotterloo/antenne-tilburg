@@ -213,5 +213,16 @@
   "noticeForm.startsLabel": "Begint (optioneel)",
   "noticeForm.endsLabel": "Eindigt (optioneel)",
   "noticeForm.windowHint": "Met een periode ingesteld, wordt de mededeling automatisch getoond tussen die tijden (en alleen als Actief aan staat).",
-  "noticeForm.createButton": "Mededeling aanmaken"
+  "noticeForm.createButton": "Mededeling aanmaken",
+  "subscribers.title": "Abonnees",
+  "subscribers.confirmedCountSingular": "bevestigde abonnee",
+  "subscribers.confirmedCountPlural": "bevestigde abonnees",
+  "subscribers.exportCsv": "CSV exporteren",
+  "subscribers.empty": "Nog geen abonnees.",
+  "subscribers.colName": "Naam",
+  "subscribers.colEmail": "E-mail",
+  "subscribers.colStatus": "Status",
+  "subscribers.colSignedUp": "Aangemeld",
+  "retryPending.button": "Wachtende e-mails opnieuw proberen",
+  "retryPending.retrying": "Opnieuw proberen…"
 }

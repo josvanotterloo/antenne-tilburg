@@ -23,6 +23,10 @@ export async function GET() {
     email: decryptEmailSafe(s.email) ?? "(cannot decrypt)",
     createdAt: s.createdAt.toISOString(),
   }));
+  // Column headers stay English regardless of the admin's UI locale — this
+  // file is opened in spreadsheet tools outside the admin, and changing the
+  // headers would break any saved column mapping/formula in a spreadsheet
+  // someone already built against this export.
   const csv = toCsv(rows, [
     { key: "name", header: "Name" },
     { key: "email", header: "Email" },

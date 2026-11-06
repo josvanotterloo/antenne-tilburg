@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 
 type Result = { tried: number; succeeded: number; failed: number };
 
 // Manual trigger for PENDING subscribers whose confirmation email never sent
 // (Resend was down or timed out) — POSTs the retry endpoint, shows the
 // {tried, succeeded, failed} summary, then refreshes so badges update.
-export function RetryPendingButton() {
+export function RetryPendingButton({ locale }: { locale: AdminLocale }) {
   const router = useRouter();
   const { pending, error, run } = useAsyncAction();
   const [result, setResult] = useState<Result | null>(null);
@@ -35,12 +37,13 @@ export function RetryPendingButton() {
         disabled={pending}
         className="rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised disabled:opacity-60"
       >
-        {pending ? "Retrying…" : "Retry pending emails"}
+        {pending ? t("retryPending.retrying", locale) : t("retryPending.button", locale)}
       </button>
       {result && (
         <span role="status" className="text-xs text-admin-ink-muted">
-          Retried {result.tried}: {result.succeeded} sent
-          {result.failed > 0 ? `, ${result.failed} failed` : ""}.
+          {locale === "EN"
+            ? `Retried ${result.tried}: ${result.succeeded} sent${result.failed > 0 ? `, ${result.failed} failed` : ""}.`
+            : `${result.tried} opnieuw geprobeerd: ${result.succeeded} verzonden${result.failed > 0 ? `, ${result.failed} mislukt` : ""}.`}
         </span>
       )}
       {error && (

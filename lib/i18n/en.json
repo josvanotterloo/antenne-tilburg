@@ -214,5 +214,16 @@
   "noticeForm.endsLabel": "Ends (optional)",
   "noticeForm.windowHint": "With a window set, the notice shows automatically between those times (and only while Active).",
   "noticeForm.createButton": "Create notice",
+  "subscribers.title": "Subscribers",
+  "subscribers.confirmedCountSingular": "confirmed subscriber",
+  "subscribers.confirmedCountPlural": "confirmed subscribers",
+  "subscribers.exportCsv": "Export CSV",
+  "subscribers.empty": "No subscribers yet.",
+  "subscribers.colName": "Name",
+  "subscribers.colEmail": "Email",
+  "subscribers.colStatus": "Status",
+  "subscribers.colSignedUp": "Signed up",
+  "retryPending.button": "Retry pending emails",
+  "retryPending.retrying": "Retrying…",
   "test.fallbackOnly": "fallback works"
 }
