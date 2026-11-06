@@ -224,6 +224,11 @@ export function ReferenceSection({
   const label = title.toLowerCase();
   const countLabel = totalCount === 1 ? countSingular : label;
 
+  const supplierFieldLabel = t("suppliers.supplierLabel", locale);
+  const supplierComboboxLabels = {
+    placeholder: `${t("combobox.select", locale)} ${supplierFieldLabel.toLowerCase()}`,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between gap-2">
@@ -264,11 +269,12 @@ export function ReferenceSection({
           </button>
           {supplierEndpoint && (
             <Combobox
-              label="Supplier"
+              label={supplierFieldLabel}
               endpoint={supplierEndpoint}
               value={newSupplier}
               onChange={setNewSupplier}
               allowCreate={false}
+              labels={supplierComboboxLabels}
             />
           )}
         </form>
@@ -320,11 +326,12 @@ export function ReferenceSection({
                     />
                     {supplierEndpoint && (
                       <Combobox
-                        label="Supplier"
+                        label={supplierFieldLabel}
                         endpoint={supplierEndpoint}
                         value={editSupplier}
                         onChange={setEditSupplier}
                         allowCreate={false}
+                        labels={supplierComboboxLabels}
                       />
                     )}
                     <button

@@ -460,5 +460,41 @@ describe("ReferenceSection", () => {
         }),
       );
     });
+
+    it("renders the supplier combobox's label and placeholder in Dutch", () => {
+      fetchMock = mockFetch();
+      render(
+        <ReferenceSection
+          title="Labels"
+          addPlaceholder="Label toevoegen"
+          countSingular="label"
+          endpoint="/api/admin/labels"
+          initialItems={[]}
+          initialTotal={0}
+          supplierEndpoint="/api/admin/suppliers"
+          locale="NL"
+        />,
+      );
+      const supplierInput = screen.getByRole("combobox", { name: "Leverancier" });
+      expect(supplierInput).toHaveAttribute("placeholder", "Kies leverancier");
+    });
+
+    it("renders the supplier combobox's label and placeholder in English", () => {
+      fetchMock = mockFetch();
+      render(
+        <ReferenceSection
+          title="Labels"
+          addPlaceholder="Add label"
+          countSingular="label"
+          endpoint="/api/admin/labels"
+          initialItems={[]}
+          initialTotal={0}
+          supplierEndpoint="/api/admin/suppliers"
+          locale="EN"
+        />,
+      );
+      const supplierInput = screen.getByRole("combobox", { name: "Supplier" });
+      expect(supplierInput).toHaveAttribute("placeholder", "Select supplier");
+    });
   });
 });
