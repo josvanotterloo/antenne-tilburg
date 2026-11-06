@@ -1,6 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
 import type { AdminLocale } from "@prisma/client";
 
+import { ADMIN_LOCALES } from "@/lib/user-input";
+
 // Same admin-page pattern proxy.ts checks explicitly before redirecting
 // (see proxy.ts — it calls next-auth/jwt's getToken() directly rather than
 // relying on an `authorized` callback; empirically, wrapping `auth` with a
@@ -29,8 +31,11 @@ export const authConfig = {
         token.id = user.id;
         token.locale = user.locale;
       }
-      if (trigger === "update" && session?.user?.locale) {
-        token.locale = session.user.locale as AdminLocale;
+      if (
+        trigger === "update" &&
+        ADMIN_LOCALES.includes(session?.user?.locale as AdminLocale)
+      ) {
+        token.locale = session!.user!.locale as AdminLocale;
       }
       return token;
     },

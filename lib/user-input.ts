@@ -2,7 +2,7 @@
 
 import type { AdminLocale } from "@prisma/client";
 
-const ADMIN_LOCALES: readonly AdminLocale[] = ["NL", "EN"];
+export const ADMIN_LOCALES: readonly AdminLocale[] = ["NL", "EN"];
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MIN_PASSWORD = 8;
