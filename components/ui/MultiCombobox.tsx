@@ -79,7 +79,7 @@ export function MultiCombobox({
       }
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [open, query, endpoint]);
+  }, [open, query, endpoint, labels?.searchError]);
 
   // Already-selected artists don't show up again in the dropdown.
   const selectable = items.filter((o) => !selectedIds.has(o.id));

@@ -88,7 +88,7 @@ export function Combobox({
       }
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [open, query, endpoint]);
+  }, [open, query, endpoint, labels?.searchError]);
 
   const hasExact = items.some((o) => o.name.toLowerCase() === filter);
   const showQuickAdd = allowCreate && filter.length > 0 && !hasExact;
