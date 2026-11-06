@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { t } from "@/lib/i18n/t";
 import { EmailForm } from "@/components/admin/EmailForm";
 import { PasswordForm } from "@/components/admin/PasswordForm";
 
@@ -12,6 +14,8 @@ export default async function ManageUserPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  const locale = session!.user.locale;
   const { id } = await params;
   const user = await db.user.findUnique({
     where: { id },
@@ -26,15 +30,15 @@ export default async function ManageUserPage({
           href="/admin/settings/users"
           className="text-sm text-admin-ink-muted hover:underline"
         >
-          ← Users
+          {t("users.backLink", locale)}
         </Link>
         <h1 className="mt-2 text-2xl font-bold tracking-tight">
-          Manage {user.email}
+          {t("users.manageHeading", locale)} {user.email}
         </h1>
       </div>
 
-      <EmailForm userId={user.id} email={user.email} />
-      <PasswordForm userId={user.id} />
+      <EmailForm userId={user.id} email={user.email} locale={locale} />
+      <PasswordForm userId={user.id} locale={locale} />
     </div>
   );
 }
