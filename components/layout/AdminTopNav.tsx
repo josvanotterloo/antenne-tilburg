@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import type { AdminLocale } from "@prisma/client";
 
@@ -13,6 +13,7 @@ const LOCALES: AdminLocale[] = ["NL", "EN"];
 function LanguageSwitch() {
   const { data: session, update } = useSession();
   const { run } = useAsyncAction();
+  const router = useRouter();
   const current = session?.user?.locale ?? "NL";
 
   function switchTo(locale: AdminLocale) {
@@ -24,6 +25,7 @@ function LanguageSwitch() {
         body: JSON.stringify({ locale }),
       });
       await update({ user: { locale } });
+      router.refresh();
     });
   }
 

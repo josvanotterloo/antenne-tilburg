@@ -4,8 +4,10 @@ import userEvent from "@testing-library/user-event";
 
 // Mock the Next.js + next-auth bits the nav depends on so it renders in jsdom.
 const pathname = { current: "/admin/catalog" };
+const mockRefresh = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname.current,
+  useRouter: () => ({ refresh: mockRefresh }),
 }));
 const mockUpdate = vi.fn();
 const session = { current: { user: { locale: "NL" as const } } };
@@ -37,6 +39,7 @@ describe("AdminTopNav", () => {
     pathname.current = "/admin/catalog";
     session.current = { user: { locale: "NL" } };
     mockUpdate.mockClear();
+    mockRefresh.mockClear();
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ ok: true }),
@@ -126,6 +129,24 @@ describe("AdminTopNav", () => {
         );
       });
       expect(mockUpdate).toHaveBeenCalledWith({ user: { locale: "EN" } });
+      expect(mockRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not refresh the router when the PATCH fails", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "Something went wrong" }),
+      }) as unknown as typeof fetch;
+      const user = userEvent.setup();
+      render(<AdminTopNav />);
+
+      await user.click(screen.getByRole("button", { name: "EN" }));
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled();
+      });
+      expect(mockUpdate).not.toHaveBeenCalled();
+      expect(mockRefresh).not.toHaveBeenCalled();
     });
   });
 });
