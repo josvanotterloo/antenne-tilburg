@@ -245,5 +245,10 @@
   "errors.emailTaken": "Dat e-mailadres is al in gebruik",
   "errors.notFound": "Niet gevonden",
   "errors.currentPasswordRequired": "Huidig wachtwoord is verplicht",
-  "errors.currentPasswordIncorrect": "Huidig wachtwoord is onjuist"
+  "errors.currentPasswordIncorrect": "Huidig wachtwoord is onjuist",
+  "nav.catalog": "Catalogus",
+  "nav.content": "Content",
+  "nav.settings": "Instellingen",
+  "nav.newsletter": "Nieuwsbrief",
+  "common.signOut": "Uitloggen"
 }

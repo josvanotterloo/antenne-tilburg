@@ -1,19 +1,37 @@
+import type { Metadata } from "next";
+
+import { auth } from "@/lib/auth";
+import { t } from "@/lib/i18n/t";
 import { AdminSubNav } from "@/components/layout/AdminSubNav";
 
-const ITEMS = [
-  { href: "/admin/catalog", label: "Products" },
-  { href: "/admin/catalog/orders", label: "Orders" },
-  { href: "/admin/catalog/labels", label: "Labels" },
-  { href: "/admin/catalog/artists", label: "Artists" },
-  { href: "/admin/catalog/genres", label: "Genres" },
-  { href: "/admin/catalog/product-types", label: "Product Types" },
-  { href: "/admin/catalog/suppliers", label: "Suppliers" },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await auth();
+  return { title: t("nav.catalog", session!.user.locale) };
+}
 
-export default function CatalogLayout({ children }: { children: React.ReactNode }) {
+export default async function CatalogLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
+  const locale = session!.user.locale;
+  const items = [
+    { href: "/admin/catalog", label: t("products.title", locale) },
+    { href: "/admin/catalog/orders", label: t("orders.title", locale) },
+    { href: "/admin/catalog/labels", label: t("reference.labels.title", locale) },
+    { href: "/admin/catalog/artists", label: t("reference.artists.title", locale) },
+    { href: "/admin/catalog/genres", label: t("reference.genres.title", locale) },
+    {
+      href: "/admin/catalog/product-types",
+      label: t("reference.productTypes.title", locale),
+    },
+    { href: "/admin/catalog/suppliers", label: t("suppliers.title", locale) },
+  ];
+
   return (
     <div>
-      <AdminSubNav items={ITEMS} />
+      <AdminSubNav items={items} />
       {children}
     </div>
   );

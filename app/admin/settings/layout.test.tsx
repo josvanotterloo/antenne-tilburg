@@ -19,24 +19,27 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import SettingsLayout from "@/app/admin/settings/layout";
 
 describe("SettingsLayout nav", () => {
-  it("no longer links to Suppliers (moved to Catalog)", () => {
-    render(<SettingsLayout>{null}</SettingsLayout>);
+  it("no longer links to Suppliers (moved to Catalog)", async () => {
+    render(await SettingsLayout({ children: null }));
     expect(
-      screen.queryByRole("link", { name: "Suppliers" }),
+      screen.queryByRole("link", { name: "Leveranciers" }),
     ).not.toBeInTheDocument();
   });
 
-  it("still renders the remaining Settings links", () => {
-    render(<SettingsLayout>{null}</SettingsLayout>);
+  it("still renders the remaining Settings links (Dutch labels)", async () => {
+    render(await SettingsLayout({ children: null }));
     const expected: [string, string][] = [
-      ["Opening hours", "/admin/settings/hours"],
-      ["Notices", "/admin/settings/notices"],
-      ["Subscribers", "/admin/settings/subscribers"],
-      ["Users", "/admin/settings/users"],
+      ["Openingstijden", "/admin/settings/hours"],
+      ["Mededelingen", "/admin/settings/notices"],
+      ["Abonnees", "/admin/settings/subscribers"],
+      ["Gebruikers", "/admin/settings/users"],
     ];
     for (const [label, href] of expected) {
       expect(screen.getByRole("link", { name: label })).toHaveAttribute(
@@ -45,5 +48,15 @@ describe("SettingsLayout nav", () => {
       );
     }
     expect(screen.getAllByRole("link")).toHaveLength(expected.length);
+  });
+
+  it("renders English labels when locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    render(await SettingsLayout({ children: null }));
+    expect(
+      screen.getByRole("link", { name: "Opening hours" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Users" })).toBeInTheDocument();
   });
 });

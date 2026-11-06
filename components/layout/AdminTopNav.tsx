@@ -7,14 +7,14 @@ import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t, type TranslationKey } from "@/lib/i18n/t";
 
 const LOCALES: AdminLocale[] = ["NL", "EN"];
 
-function LanguageSwitch() {
-  const { data: session, update } = useSession();
+function LanguageSwitch({ current }: { current: AdminLocale }) {
+  const { update } = useSession();
   const { run } = useAsyncAction();
   const router = useRouter();
-  const current = session?.user?.locale ?? "NL";
 
   function switchTo(locale: AdminLocale) {
     if (locale === current) return;
@@ -52,19 +52,21 @@ function LanguageSwitch() {
 
 // Top-level admin sections. `match` decides the active state by path prefix so
 // deeper routes (e.g. /admin/catalog/new) still highlight their section.
-const SECTIONS = [
-  { label: "Catalog", href: "/admin/catalog", match: "/admin/catalog" },
-  { label: "Content", href: "/admin/content/posts", match: "/admin/content" },
+const SECTIONS: { labelKey: TranslationKey; href: string; match: string }[] = [
+  { labelKey: "nav.catalog", href: "/admin/catalog", match: "/admin/catalog" },
+  { labelKey: "nav.content", href: "/admin/content/posts", match: "/admin/content" },
   {
-    label: "Customer Orders",
+    labelKey: "customerOrders.title",
     href: "/admin/orders/customers",
     match: "/admin/orders",
   },
-  { label: "Settings", href: "/admin/settings/hours", match: "/admin/settings" },
+  { labelKey: "nav.settings", href: "/admin/settings/hours", match: "/admin/settings" },
 ];
 
 export function AdminTopNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const locale: AdminLocale = session?.user?.locale ?? "NL";
 
   // The login page shares the /admin layout but has no chrome (and no session
   // to sign out of).
@@ -94,20 +96,20 @@ export function AdminTopNav() {
                     : "text-admin-ink-muted hover:bg-admin-raised hover:text-admin-ink"
                 }`}
               >
-                {section.label}
+                {t(section.labelKey, locale)}
               </Link>
             );
           })}
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <LanguageSwitch />
+          <LanguageSwitch current={locale} />
           <button
             type="button"
             onClick={() => signOut({ redirectTo: "/admin/login" })}
             className="rounded px-3 py-1.5 text-sm text-admin-ink-muted transition-colors duration-150 ease-out hover:bg-admin-raised hover:text-admin-ink"
           >
-            Sign out
+            {t("common.signOut", locale)}
           </button>
         </div>
       </div>

@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
+
 import { auth } from "@/lib/auth";
 import { readCustomerOrders } from "@/lib/customer-orders";
 import { t } from "@/lib/i18n/t";
 import { CustomerOrdersEditor } from "@/components/admin/CustomerOrdersEditor";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const session = await auth();
+  return { title: t("customerOrders.title", session!.user.locale) };
+}
 
 export default async function CustomerOrdersPage() {
   const session = await auth();

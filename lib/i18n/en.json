@@ -246,5 +246,10 @@
   "errors.notFound": "Not found",
   "errors.currentPasswordRequired": "Current password is required",
   "errors.currentPasswordIncorrect": "Current password is incorrect",
+  "nav.catalog": "Catalog",
+  "nav.content": "Content",
+  "nav.settings": "Settings",
+  "nav.newsletter": "Newsletter",
+  "common.signOut": "Sign out",
   "test.fallbackOnly": "fallback works"
 }

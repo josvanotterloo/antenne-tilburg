@@ -10,7 +10,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: mockRefresh }),
 }));
 const mockUpdate = vi.fn();
-const session = { current: { user: { locale: "NL" as const } } };
+const session: { current: { user: { locale: "NL" | "EN" } } } = {
+  current: { user: { locale: "NL" } },
+};
 vi.mock("next-auth/react", () => ({
   signOut: vi.fn(),
   useSession: () => ({ data: session.current, update: mockUpdate }),
@@ -56,9 +58,9 @@ describe("AdminTopNav", () => {
     expect(wordmark).toHaveAttribute("href", "/admin/catalog");
   });
 
-  it("renders the four section nav items with correct targets", () => {
+  it("renders the four section nav items with correct targets (Dutch labels)", () => {
     render(<AdminTopNav />);
-    expect(screen.getByRole("link", { name: "Catalog" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Catalogus" })).toHaveAttribute(
       "href",
       "/admin/catalog",
     );
@@ -67,9 +69,9 @@ describe("AdminTopNav", () => {
       "/admin/content/posts",
     );
     expect(
-      screen.getByRole("link", { name: "Customer Orders" }),
+      screen.getByRole("link", { name: "Klantbestellingen" }),
     ).toHaveAttribute("href", "/admin/orders/customers");
-    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Instellingen" })).toHaveAttribute(
       "href",
       "/admin/settings/hours",
     );
@@ -82,15 +84,29 @@ describe("AdminTopNav", () => {
       "aria-current",
       "page",
     );
-    expect(screen.getByRole("link", { name: "Catalog" })).not.toHaveAttribute(
-      "aria-current",
-    );
+    expect(
+      screen.getByRole("link", { name: "Catalogus" }),
+    ).not.toHaveAttribute("aria-current");
   });
 
   it("renders a sign out control", () => {
     render(<AdminTopNav />);
     expect(
-      screen.getByRole("button", { name: /sign out/i }),
+      screen.getByRole("button", { name: /uitloggen/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders English section labels and sign out when locale is EN", () => {
+    session.current = { user: { locale: "EN" } };
+    render(<AdminTopNav />);
+    expect(screen.getByRole("link", { name: "Catalog" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Content" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Customer Orders" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Sign out" }),
     ).toBeInTheDocument();
   });
 
