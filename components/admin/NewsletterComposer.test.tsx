@@ -58,6 +58,7 @@ function setup() {
       initialFooter="See you at the shop"
       defaultFrom="2026-07-13"
       defaultTo="2026-07-17"
+      locale="NL"
     />,
   );
 }
@@ -73,18 +74,18 @@ describe("NewsletterComposer (structured)", () => {
   it("renders the three parts pre-populated from the template, with the date range", () => {
     setup();
 
-    expect(screen.getByLabelText(/subject/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/header/i)).toHaveValue("Hello **diggers**");
-    expect(screen.getByLabelText(/footer/i)).toHaveValue(
+    expect(screen.getByLabelText(/onderwerp/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/koptekst/i)).toHaveValue("Hello **diggers**");
+    expect(screen.getByLabelText(/voettekst/i)).toHaveValue(
       "See you at the shop",
     );
-    expect(screen.getByLabelText(/from/i)).toHaveValue("2026-07-13");
-    expect(screen.getByLabelText(/^to/i)).toHaveValue("2026-07-17");
+    expect(screen.getByLabelText(/^van$/i)).toHaveValue("2026-07-13");
+    expect(screen.getByLabelText(/^tot$/i)).toHaveValue("2026-07-17");
     expect(
-      screen.getByRole("button", { name: /load arrivals/i }),
+      screen.getByRole("button", { name: /binnenkomers laden/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /send newsletter/i }),
+      screen.getByRole("button", { name: /nieuwsbrief versturen/i }),
     ).toBeInTheDocument();
   });
 
@@ -93,7 +94,7 @@ describe("NewsletterComposer (structured)", () => {
     const fetchMock = mockFetch();
     setup();
 
-    await user.click(screen.getByRole("button", { name: /load arrivals/i }));
+    await user.click(screen.getByRole("button", { name: /binnenkomers laden/i }));
 
     expect(
       await screen.findByText(/VRIL \[Zulema Records ZR-001\] \*/),
@@ -109,7 +110,7 @@ describe("NewsletterComposer (structured)", () => {
     const fetchMock = mockFetch();
     setup();
 
-    await user.click(screen.getByRole("button", { name: /save template/i }));
+    await user.click(screen.getByRole("button", { name: /sjabloon opslaan/i }));
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(
@@ -127,9 +128,9 @@ describe("NewsletterComposer (structured)", () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole("button", { name: /load arrivals/i }));
+    await user.click(screen.getByRole("button", { name: /binnenkomers laden/i }));
     await screen.findByText(/VRIL/);
-    await user.click(screen.getByRole("button", { name: /preview/i }));
+    await user.click(screen.getByRole("button", { name: /voorbeeld/i }));
 
     const preview = screen.getByTestId("newsletter-preview");
     expect(preview).toHaveTextContent("diggers"); // header markdown
@@ -156,10 +157,10 @@ describe("NewsletterComposer (structured)", () => {
     const user = userEvent.setup();
     setup();
 
-    const header = screen.getByLabelText(/header/i);
+    const header = screen.getByLabelText(/koptekst/i);
     await user.clear(header);
     await user.type(header, "Line one{Enter}Line two");
-    await user.click(screen.getByRole("button", { name: /preview/i }));
+    await user.click(screen.getByRole("button", { name: /voorbeeld/i }));
 
     const preview = screen.getByTestId("newsletter-preview");
     expect(preview.innerHTML).toMatch(/Line one<br>\s*Line two/);
@@ -174,7 +175,7 @@ describe("NewsletterComposer (structured)", () => {
     const user = userEvent.setup();
     setup();
 
-    await user.click(screen.getByRole("button", { name: /preview/i }));
+    await user.click(screen.getByRole("button", { name: /voorbeeld/i }));
 
     const preview = screen.getByTestId("newsletter-preview");
     expect(preview).not.toHaveTextContent("soundcloud.com");
@@ -187,10 +188,10 @@ describe("NewsletterComposer (structured)", () => {
     expect(
       screen.queryByText(/social links.*are appended automatically/i),
     ).toBeNull();
-    expect(screen.getByText(/not added automatically/i)).toBeInTheDocument();
+    expect(screen.getByText(/niet automatisch toegevoegd/i)).toBeInTheDocument();
     // The contact-block auto-append (a separate, still-true behavior) stays.
     expect(
-      screen.getByText(/contact block.*appended automatically/i),
+      screen.getByText(/contactblok.*automatisch toegevoegd/i),
     ).toBeInTheDocument();
   });
 
@@ -199,13 +200,13 @@ describe("NewsletterComposer (structured)", () => {
     const fetchMock = mockFetch();
     setup();
 
-    await user.type(screen.getByLabelText(/subject/i), "July arrivals");
+    await user.type(screen.getByLabelText(/onderwerp/i), "July arrivals");
     await user.click(
-      screen.getByRole("button", { name: /send newsletter/i }),
+      screen.getByRole("button", { name: /nieuwsbrief versturen/i }),
     );
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      /sent to 3 subscribers/i,
+      /verzonden naar 3 abonnees/i,
     );
     const call = fetchMock.mock.calls.find(
       ([u]) => String(u) === "/api/admin/newsletter/send",
@@ -223,11 +224,30 @@ describe("NewsletterComposer (structured)", () => {
     const user = userEvent.setup();
     setup();
 
-    await user.type(screen.getByLabelText(/subject/i), "July arrivals");
-    const send = screen.getByRole("button", { name: /send newsletter/i });
+    await user.type(screen.getByLabelText(/onderwerp/i), "July arrivals");
+    const send = screen.getByRole("button", { name: /nieuwsbrief versturen/i });
     await user.click(send);
     await screen.findByRole("status");
 
-    expect(screen.getByRole("button", { name: /sent/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^verzonden$/i })).toBeDisabled();
+  });
+
+  it("renders English chrome when locale is EN", () => {
+    render(
+      <NewsletterComposer
+        initialHeader="Hello **diggers**"
+        initialFooter="See you at the shop"
+        defaultFrom="2026-07-13"
+        defaultTo="2026-07-17"
+        locale="EN"
+      />,
+    );
+    expect(screen.getByLabelText(/subject/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /load arrivals/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send newsletter/i }),
+    ).toBeInTheDocument();
   });
 });

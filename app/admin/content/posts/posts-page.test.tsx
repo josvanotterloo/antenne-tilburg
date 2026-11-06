@@ -10,6 +10,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("@/lib/db", () => ({ db: { post: { findMany: vi.fn() } } }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import AdminPostsPage from "@/app/admin/content/posts/page";
 import { db } from "@/lib/db";
@@ -36,14 +39,23 @@ describe("/admin/content/posts", () => {
     render(await AdminPostsPage());
     expect(screen.getByText("New Arrivals")).toBeInTheDocument();
     expect(screen.getByText("new-arrivals")).toBeInTheDocument();
-    expect(screen.getByText("PUBLISHED")).toBeInTheDocument();
-    // publish toggle for a published post reads "Unpublish"
-    expect(screen.getByText("Unpublish")).toBeInTheDocument();
+    expect(screen.getByText("Gepubliceerd")).toBeInTheDocument();
+    // publish toggle for a published post reads "Depubliceren"
+    expect(screen.getByText("Depubliceren")).toBeInTheDocument();
   });
 
   it("shows an empty state when there are no posts", async () => {
     vi.mocked(db.post.findMany).mockResolvedValue([] as never);
     render(await AdminPostsPage());
-    expect(screen.getByText(/No posts yet/)).toBeInTheDocument();
+    expect(screen.getByText(/Nog geen berichten/)).toBeInTheDocument();
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    vi.mocked(db.post.findMany).mockResolvedValue([POST] as never);
+    render(await AdminPostsPage());
+    expect(screen.getByRole("heading", { name: "Blog posts" })).toBeInTheDocument();
+    expect(screen.getByText("Published")).toBeInTheDocument();
   });
 });

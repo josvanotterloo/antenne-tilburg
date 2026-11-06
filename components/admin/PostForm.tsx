@@ -2,10 +2,13 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { imageMarkdown, insertAt } from "@/lib/markdown";
+import { t } from "@/lib/i18n/t";
+import { postStatusLabel } from "@/lib/i18n/enum-labels";
 import { Field } from "@/components/admin/Field";
 
 export interface PostFormValues {
@@ -19,7 +22,13 @@ export interface PostFormValues {
   seoDescription: string | null;
 }
 
-export function PostForm({ post }: { post?: PostFormValues }) {
+export function PostForm({
+  post,
+  locale,
+}: {
+  post?: PostFormValues;
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
@@ -90,7 +99,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl space-y-4">
-      <Field label="Title" htmlFor="title">
+      <Field label={t("postForm.titleLabel", locale)} htmlFor="title">
         <input
           id="title"
           required
@@ -99,7 +108,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Slug (optional — derived from title)" htmlFor="slug">
+      <Field label={t("postForm.slugLabel", locale)} htmlFor="slug">
         <input
           id="slug"
           value={slug}
@@ -108,7 +117,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Body (markdown)" htmlFor="body">
+      <Field label={t("postForm.bodyLabel", locale)} htmlFor="body">
         <textarea
           id="body"
           ref={bodyRef}
@@ -120,7 +129,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
         />
         <label className="mt-1 flex flex-wrap items-center gap-2 text-sm text-admin-ink-muted">
           <span className="cursor-pointer rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised">
-            {uploading ? "Uploading…" : "Insert image"}
+            {uploading ? t("productForm.uploading", locale) : t("postForm.insertImage", locale)}
           </span>
           <input
             type="file"
@@ -130,11 +139,11 @@ export function PostForm({ post }: { post?: PostFormValues }) {
             className="sr-only"
           />
           <span className="text-xs text-admin-ink-muted">
-            JPG/PNG/WebP/GIF · max 5 MB · inserted at the cursor
+            {t("postForm.imageHint", locale)}
           </span>
         </label>
       </Field>
-      <Field label="Cover image URL" htmlFor="cover-image">
+      <Field label={t("postForm.coverImageLabel", locale)} htmlFor="cover-image">
         <input
           id="cover-image"
           value={coverImage}
@@ -142,25 +151,25 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="Status">
+      <Field label={t("postForm.statusLabel", locale)}>
         <div className="flex gap-2">
           {(["DRAFT", "PUBLISHED"] as const).map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => setStatus(s)}
-              className={`rounded border px-3 py-1 text-sm ${
+              className={`whitespace-nowrap rounded border px-3 py-1 text-sm ${
                 status === s
                   ? "border-admin-ink bg-admin-ink text-admin-bg"
                   : "border-admin-hairline"
               }`}
             >
-              {s}
+              {postStatusLabel(s, locale)}
             </button>
           ))}
         </div>
       </Field>
-      <Field label="SEO title (optional)" htmlFor="seo-title">
+      <Field label={t("postForm.seoTitleLabel", locale)} htmlFor="seo-title">
         <input
           id="seo-title"
           value={seoTitle}
@@ -168,7 +177,7 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
         />
       </Field>
-      <Field label="SEO description (optional)" htmlFor="seo-description">
+      <Field label={t("postForm.seoDescriptionLabel", locale)} htmlFor="seo-description">
         <textarea
           id="seo-description"
           rows={2}
@@ -190,14 +199,18 @@ export function PostForm({ post }: { post?: PostFormValues }) {
           disabled={saving}
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
-          {saving ? "Saving…" : post ? "Save changes" : "Create post"}
+          {saving
+            ? t("common.saving", locale)
+            : post
+              ? t("common.saveChanges", locale)
+              : t("postForm.createButton", locale)}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/content/posts")}
           className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
-          Cancel
+          {t("common.cancel", locale)}
         </button>
       </div>
     </form>

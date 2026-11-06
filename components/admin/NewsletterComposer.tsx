@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { arrivalsText, type ArrivalsGroup } from "@/lib/newsletter-arrivals";
 import { markdownToHtml, footerAddressHtml } from "@/lib/email/render";
+import { t, tCount } from "@/lib/i18n/t";
 import { Field } from "@/components/admin/Field";
 
 type Status = "idle" | "sending" | "sent" | "error";
@@ -13,16 +15,24 @@ type Status = "idle" | "sending" | "sent" | "error";
 // Structured newsletter builder: Header (persisted template) → New Arrivals
 // (auto-loaded from the catalog for a date range) → Footer (persisted
 // template). The server re-assembles the email from the same inputs on send.
+//
+// Only this component's own chrome (labels, buttons, status messages) is
+// locale-aware. The arrivals block (arrivalsText) and the rendered
+// markdown/footer (markdownToHtml, footerAddressHtml) become the actual
+// email sent to subscribers — customer-facing emails stay English, so those
+// three stay untouched regardless of the admin's locale.
 export function NewsletterComposer({
   initialHeader,
   initialFooter,
   defaultFrom,
   defaultTo,
+  locale,
 }: {
   initialHeader: string;
   initialFooter: string;
   defaultFrom: string;
   defaultTo: string;
+  locale: AdminLocale;
 }) {
   const [subject, setSubject] = useState("");
   const [header, setHeader] = useState(initialHeader);
@@ -84,10 +94,10 @@ export function NewsletterComposer({
         setStatus("sent");
         return;
       }
-      setSendError(data.error ?? "Could not send the newsletter.");
+      setSendError(data.error ?? t("newsletter.couldNotSend", locale));
       setStatus("error");
     } catch {
-      setSendError("Couldn't reach the server. Please try again.");
+      setSendError(t("newsletter.networkError", locale));
       setStatus("error");
     }
   }
@@ -97,7 +107,7 @@ export function NewsletterComposer({
 
   return (
     <form onSubmit={handleSend} className="max-w-2xl space-y-6">
-      <Field label="Subject" htmlFor="subject">
+      <Field label={t("newsletter.subjectLabel", locale)} htmlFor="subject">
         <input
           id="subject"
           required
@@ -108,7 +118,7 @@ export function NewsletterComposer({
       </Field>
 
       {/* Part 1 — Header (persisted template) */}
-      <Field label="Header (markdown)" htmlFor="header">
+      <Field label={t("newsletter.headerLabel", locale)} htmlFor="header">
         <textarea
           id="header"
           rows={5}
@@ -116,17 +126,14 @@ export function NewsletterComposer({
           onChange={(e) => setHeader(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 font-mono text-sm"
         />
-        <p className="text-xs text-admin-ink-muted">
-          Remembered between newsletters. Include your own social links here
-          — they are not added automatically.
-        </p>
+        <p className="text-xs text-admin-ink-muted">{t("newsletter.headerHint", locale)}</p>
       </Field>
 
       {/* Part 2 — New arrivals, auto-populated from the catalog */}
       <div className="space-y-2 rounded border border-admin-hairline p-3">
-        <span className="block text-sm font-medium">New arrivals</span>
+        <span className="block text-sm font-medium">{t("newsletter.arrivalsTitle", locale)}</span>
         <div className="flex flex-wrap items-end gap-3">
-          <Field label="From" htmlFor="from">
+          <Field label={t("newsletter.fromLabel", locale)} htmlFor="from">
             <input
               id="from"
               type="date"
@@ -135,7 +142,7 @@ export function NewsletterComposer({
               className="rounded border border-admin-hairline px-2 py-1 text-sm"
             />
           </Field>
-          <Field label="To" htmlFor="to">
+          <Field label={t("newsletter.toLabel", locale)} htmlFor="to">
             <input
               id="to"
               type="date"
@@ -148,15 +155,15 @@ export function NewsletterComposer({
             type="button"
             onClick={loadArrivals}
             disabled={arrivals.pending}
-            className="rounded border border-admin-hairline px-3 py-1.5 text-sm hover:bg-admin-raised disabled:opacity-60"
+            className="whitespace-nowrap rounded border border-admin-hairline px-3 py-1.5 text-sm hover:bg-admin-raised disabled:opacity-60"
           >
-            {arrivals.pending ? "Loading…" : "Load arrivals"}
+            {arrivals.pending ? t("newsletter.loading", locale) : t("newsletter.loadArrivals", locale)}
           </button>
         </div>
         {groups &&
           (groups.length === 0 ? (
             <p className="text-sm text-admin-ink-muted">
-              No arrivals in this range.
+              {t("newsletter.noArrivals", locale)}
             </p>
           ) : (
             <pre className="overflow-x-auto rounded bg-admin-bg p-3 font-mono text-xs leading-5">
@@ -166,7 +173,7 @@ export function NewsletterComposer({
       </div>
 
       {/* Part 3 — Footer (persisted template) */}
-      <Field label="Footer (markdown)" htmlFor="footer">
+      <Field label={t("newsletter.footerLabel", locale)} htmlFor="footer">
         <textarea
           id="footer"
           rows={5}
@@ -174,10 +181,7 @@ export function NewsletterComposer({
           onChange={(e) => setFooter(e.target.value)}
           className="w-full rounded border border-admin-hairline px-2 py-1 font-mono text-sm"
         />
-        <p className="text-xs text-admin-ink-muted">
-          Shop news + sign-off. The contact block (address, phone) is appended
-          automatically.
-        </p>
+        <p className="text-xs text-admin-ink-muted">{t("newsletter.footerHint", locale)}</p>
       </Field>
 
       <div className="flex flex-wrap gap-2">
@@ -185,16 +189,16 @@ export function NewsletterComposer({
           type="button"
           onClick={saveTemplate}
           disabled={template.pending}
-          className="rounded border border-admin-hairline px-4 py-2 text-sm hover:bg-admin-raised disabled:opacity-60"
+          className="whitespace-nowrap rounded border border-admin-hairline px-4 py-2 text-sm hover:bg-admin-raised disabled:opacity-60"
         >
-          {template.pending ? "Saving…" : "Save template"}
+          {template.pending ? t("common.saving", locale) : t("newsletter.saveTemplate", locale)}
         </button>
         <button
           type="button"
           onClick={() => setShowPreview((p) => !p)}
-          className="rounded border border-admin-hairline px-4 py-2 text-sm"
+          className="whitespace-nowrap rounded border border-admin-hairline px-4 py-2 text-sm"
         >
-          {showPreview ? "Hide preview" : "Preview"}
+          {showPreview ? t("newsletter.hidePreview", locale) : t("newsletter.preview", locale)}
         </button>
         <button
           type="submit"
@@ -202,25 +206,31 @@ export function NewsletterComposer({
           // composition stays on screen, so a stray click would re-blast the
           // whole list. Composing a new one is a fresh page load.
           disabled={status === "sending" || status === "sent"}
-          className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
+          className="whitespace-nowrap rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
           {status === "sending"
-            ? "Sending…"
+            ? t("newsletter.sending", locale)
             : status === "sent"
-              ? "Sent"
-              : "Send newsletter"}
+              ? t("newsletter.sent", locale)
+              : t("newsletter.send", locale)}
         </button>
       </div>
 
       {templateSaved && (
         <p role="status" className="text-sm text-green-400">
-          Template saved.
+          {t("newsletter.templateSaved", locale)}
         </p>
       )}
       {status === "sent" && result && (
         <p role="status" className="text-sm text-green-400">
-          Sent to {result.sent} subscriber{result.sent === 1 ? "" : "s"}.
-          {result.failed > 0 ? ` ${result.failed} failed.` : ""}
+          {t("newsletter.sentToPrefix", locale)} {result.sent}{" "}
+          {tCount(
+            result.sent,
+            "newsletter.subscriberSingular",
+            "newsletter.subscriberPlural",
+            locale,
+          )}
+          .{result.failed > 0 ? ` ${result.failed} ${t("newsletter.failedSuffix", locale)}` : ""}
         </p>
       )}
       {(status === "error" || actionError) && (
@@ -235,17 +245,17 @@ export function NewsletterComposer({
           className="space-y-4 rounded border border-admin-hairline bg-canvas p-4"
         >
           <p className="text-xs uppercase tracking-wide text-ink-muted">
-            Email preview
+            {t("newsletter.emailPreview", locale)}
           </p>
           <div dangerouslySetInnerHTML={{ __html: markdownToHtml(header) }} />
-          <h2 className="text-lg font-semibold text-ink">New arrivals</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("newsletter.arrivalsTitle", locale)}</h2>
           {arrivalsBlock ? (
             <pre className="overflow-x-auto font-mono text-xs leading-5 text-ink">
               {arrivalsBlock}
             </pre>
           ) : (
             <p className="text-sm text-ink-muted">
-              No arrivals loaded — use Load arrivals above.
+              {t("newsletter.noArrivalsLoaded", locale)}
             </p>
           )}
           <div dangerouslySetInnerHTML={{ __html: markdownToHtml(footer) }} />

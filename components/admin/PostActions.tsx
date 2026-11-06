@@ -2,15 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 import type { PostFormValues } from "./PostForm";
 
 // Publish/unpublish toggle + delete for a post list row. The publish toggle
 // re-sends the post via PATCH with the flipped status (reusing validation).
 // Failures surface a visible alert instead of silently no-op'ing.
-export function PostActions({ post }: { post: PostFormValues }) {
+export function PostActions({
+  post,
+  locale,
+}: {
+  post: PostFormValues;
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const { pending, error, run } = useAsyncAction();
   const [confirming, setConfirming] = useState(false);
@@ -48,9 +56,9 @@ export function PostActions({ post }: { post: PostFormValues }) {
           type="button"
           onClick={togglePublish}
           disabled={pending}
-          className="text-admin-ink hover:underline disabled:opacity-50"
+          className="whitespace-nowrap text-admin-ink hover:underline disabled:opacity-50"
         >
-          {post.status === "PUBLISHED" ? "Unpublish" : "Publish"}
+          {post.status === "PUBLISHED" ? t("posts.unpublish", locale) : t("posts.publish", locale)}
         </button>
         {confirming ? (
           <>
@@ -58,25 +66,25 @@ export function PostActions({ post }: { post: PostFormValues }) {
               type="button"
               onClick={remove}
               disabled={pending}
-              className="text-red-400 hover:underline disabled:opacity-50"
+              className="whitespace-nowrap text-red-400 hover:underline disabled:opacity-50"
             >
-              Confirm
+              {t("common.confirm", locale)}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="text-admin-ink-muted hover:underline"
+              className="whitespace-nowrap text-admin-ink-muted hover:underline"
             >
-              Cancel
+              {t("common.cancel", locale)}
             </button>
           </>
         ) : (
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="text-red-400 hover:underline"
+            className="whitespace-nowrap text-red-400 hover:underline"
           >
-            Delete
+            {t("common.delete", locale)}
           </button>
         )}
       </div>

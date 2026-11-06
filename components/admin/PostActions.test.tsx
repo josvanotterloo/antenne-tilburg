@@ -30,8 +30,8 @@ describe("PostActions", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
     );
-    render(<PostActions post={post} />);
-    fireEvent.click(screen.getByRole("button", { name: /publish/i }));
+    render(<PostActions post={post} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /publiceren/i }));
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
@@ -43,8 +43,8 @@ describe("PostActions", () => {
         json: async () => ({ error: "Slug already exists" }),
       }),
     );
-    render(<PostActions post={post} />);
-    fireEvent.click(screen.getByRole("button", { name: /publish/i }));
+    render(<PostActions post={post} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /publiceren/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /slug already exists/i,
@@ -57,11 +57,16 @@ describe("PostActions", () => {
       "fetch",
       vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
     );
-    render(<PostActions post={post} />);
-    fireEvent.click(screen.getByRole("button", { name: /publish/i }));
+    render(<PostActions post={post} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /publiceren/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /reach the server/i,
     );
+  });
+
+  it("renders the English label when locale is EN", () => {
+    render(<PostActions post={post} locale="EN" />);
+    expect(screen.getByRole("button", { name: /publish/i })).toBeInTheDocument();
   });
 });

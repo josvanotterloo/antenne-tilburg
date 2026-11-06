@@ -12,14 +12,21 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("PostForm labels", () => {
   it("exposes every field by its visible label", () => {
-    render(<PostForm />);
+    render(<PostForm locale="NL" />);
+
+    expect(screen.getByLabelText("Titel")).toBeInTheDocument();
+    expect(screen.getByLabelText(/slug/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/inhoud \(markdown\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/url omslagafbeelding/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/seo-titel/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/seo-beschrijving/i)).toBeInTheDocument();
+  });
+
+  it("renders the English labels when locale is EN", () => {
+    render(<PostForm locale="EN" />);
 
     expect(screen.getByLabelText("Title")).toBeInTheDocument();
-    expect(screen.getByLabelText(/slug/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/body \(markdown\)/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/cover image url/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/seo title/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/seo description/i)).toBeInTheDocument();
   });
 });
 
@@ -31,7 +38,7 @@ describe("PostForm image upload", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { container } = render(<PostForm />);
+    const { container } = render(<PostForm locale="NL" />);
     const fileInput = container.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -56,7 +63,7 @@ describe("PostForm image upload", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { container, findByText } = render(<PostForm />);
+    const { container, findByText } = render(<PostForm locale="NL" />);
     const fileInput = container.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
