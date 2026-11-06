@@ -24,10 +24,13 @@ export const authConfig = {
   trustHost: true,
   providers: [],
   callbacks: {
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.locale = user.locale;
+      }
+      if (trigger === "update" && session?.user?.locale) {
+        token.locale = session.user.locale as AdminLocale;
       }
       return token;
     },

@@ -14,6 +14,17 @@ describe("authConfig callbacks", () => {
     expect(result.locale).toBe("EN");
   });
 
+  it("jwt copies the locale from a client update() call onto the token", () => {
+    const token = { id: "u1", locale: "NL" } as JWT;
+    const result = authConfig.callbacks.jwt({
+      token,
+      trigger: "update",
+      session: { user: { locale: "EN" } },
+    } as Parameters<typeof authConfig.callbacks.jwt>[0]);
+
+    expect(result.locale).toBe("EN");
+  });
+
   it("session copies the token's locale onto session.user.locale", () => {
     const session = { user: {} } as Session;
     const token = { id: "u1", locale: "EN" } as JWT;
