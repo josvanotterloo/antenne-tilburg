@@ -184,5 +184,8 @@
   "newsletter.networkError": "Couldn't reach the server. Please try again.",
   "newsletter.emailPreview": "Email preview",
   "newsletter.noArrivalsLoaded": "No arrivals loaded — use Load arrivals above.",
+  "customerOrders.title": "Customer Orders",
+  "customerOrders.preview": "Preview",
+  "customerOrders.savedIndicator": "✓ Saved",
   "test.fallbackOnly": "fallback works"
 }

@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 import { PostBody } from "@/components/PostBody";
 
+// PostBody is shared with the public blog post page — add no text or props
+// to it. Any new admin-only chrome (like the Preview label below) stays
+// in this file. `content` itself is admin-authored markdown that becomes
+// the actual customer-orders page text, so it is never translated.
 export function CustomerOrdersEditor({
   initialContent,
+  locale,
 }: {
   initialContent: string;
+  locale: AdminLocale;
 }) {
   const [content, setContent] = useState(initialContent);
   const [saved, setSaved] = useState(false);
@@ -45,10 +53,12 @@ export function CustomerOrdersEditor({
             disabled={save.pending}
             className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
           >
-            {save.pending ? "Saving…" : "Save"}
+            {save.pending ? t("common.saving", locale) : t("common.save", locale)}
           </button>
           {saved && !save.pending && (
-            <span className="text-sm text-admin-ink-muted">✓ Saved</span>
+            <span className="text-sm text-admin-ink-muted">
+              {t("customerOrders.savedIndicator", locale)}
+            </span>
           )}
         </div>
         {save.error && (
@@ -59,7 +69,9 @@ export function CustomerOrdersEditor({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-admin-ink-muted">Preview</h2>
+        <h2 className="text-sm font-medium text-admin-ink-muted">
+          {t("customerOrders.preview", locale)}
+        </h2>
         <div className="rounded border border-admin-hairline p-4">
           <PostBody body={content} />
         </div>

@@ -183,5 +183,8 @@
   "newsletter.couldNotSend": "Kon de nieuwsbrief niet versturen.",
   "newsletter.networkError": "Kon de server niet bereiken. Probeer het opnieuw.",
   "newsletter.emailPreview": "E-mailvoorbeeld",
-  "newsletter.noArrivalsLoaded": "Geen binnenkomers geladen — gebruik Binnenkomers laden hierboven."
+  "newsletter.noArrivalsLoaded": "Geen binnenkomers geladen — gebruik Binnenkomers laden hierboven.",
+  "customerOrders.title": "Klantbestellingen",
+  "customerOrders.preview": "Voorbeeld",
+  "customerOrders.savedIndicator": "✓ Opgeslagen"
 }
