@@ -248,7 +248,10 @@ export function NewsletterComposer({
             {t("newsletter.emailPreview", locale)}
           </p>
           <div dangerouslySetInnerHTML={{ __html: markdownToHtml(header) }} />
-          <h2 className="text-lg font-semibold text-ink">{t("newsletter.arrivalsTitle", locale)}</h2>
+          {/* Always English, matching lib/email/render.ts's hardcoded "New
+              arrivals" heading exactly — this block previews the actual sent
+              email, which stays English regardless of the admin's locale. */}
+          <h2 className="text-lg font-semibold text-ink">New arrivals</h2>
           {arrivalsBlock ? (
             <pre className="overflow-x-auto font-mono text-xs leading-5 text-ink">
               {arrivalsBlock}

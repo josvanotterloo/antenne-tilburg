@@ -8,8 +8,7 @@ import type { AdminLocale } from "@prisma/client";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { t, type TranslationKey } from "@/lib/i18n/t";
-
-const LOCALES: AdminLocale[] = ["NL", "EN"];
+import { ADMIN_LOCALES } from "@/lib/user-input";
 
 function LanguageSwitch({ current }: { current: AdminLocale }) {
   const { update } = useSession();
@@ -31,7 +30,7 @@ function LanguageSwitch({ current }: { current: AdminLocale }) {
 
   return (
     <div className="flex items-center gap-1 text-sm">
-      {LOCALES.map((locale) => (
+      {ADMIN_LOCALES.map((locale) => (
         <button
           key={locale}
           type="button"

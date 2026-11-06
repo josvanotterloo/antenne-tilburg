@@ -183,6 +183,23 @@ describe("NewsletterComposer (structured)", () => {
     expect(preview).not.toHaveTextContent("instagram.com");
   });
 
+  // Found in /code-review on feature/admin-i18n: the preview's "New arrivals"
+  // heading was translated via t(), but lib/email/render.ts always hardcodes
+  // the English "New arrivals" in the actual sent email — customer-facing
+  // email content stays English regardless of the admin's locale (see the
+  // Content section's established content/chrome boundary). A translated
+  // preview heading would no longer match what subscribers actually receive.
+  it("always shows the email's actual English 'New arrivals' heading in the preview, even when the admin's locale is NL", async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole("button", { name: /voorbeeld/i }));
+
+    const preview = screen.getByTestId("newsletter-preview");
+    expect(preview).toHaveTextContent("New arrivals");
+    expect(preview).not.toHaveTextContent("Nieuwe binnenkomers");
+  });
+
   it("tells the admin to add their own social links, not that they're automatic", () => {
     setup();
     expect(
