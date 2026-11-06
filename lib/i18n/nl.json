@@ -186,5 +186,11 @@
   "newsletter.noArrivalsLoaded": "Geen binnenkomers geladen — gebruik Binnenkomers laden hierboven.",
   "customerOrders.title": "Klantbestellingen",
   "customerOrders.preview": "Voorbeeld",
-  "customerOrders.savedIndicator": "✓ Opgeslagen"
+  "customerOrders.savedIndicator": "✓ Opgeslagen",
+  "openingHours.title": "Openingstijden",
+  "openingHours.subtitle": "Het weekrooster dat op de Bezoekpagina en in de footer wordt getoond.",
+  "openingHours.closed": "Gesloten",
+  "openingHours.saveButton": "Openingstijden opslaan",
+  "openingHours.opensSuffix": "opent",
+  "openingHours.closesSuffix": "sluit"
 }

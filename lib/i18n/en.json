@@ -187,5 +187,11 @@
   "customerOrders.title": "Customer Orders",
   "customerOrders.preview": "Preview",
   "customerOrders.savedIndicator": "✓ Saved",
+  "openingHours.title": "Opening hours",
+  "openingHours.subtitle": "The weekly grid shown on the Visit page and footer.",
+  "openingHours.closed": "Closed",
+  "openingHours.saveButton": "Save hours",
+  "openingHours.opensSuffix": "opens",
+  "openingHours.closesSuffix": "closes",
   "test.fallbackOnly": "fallback works"
 }

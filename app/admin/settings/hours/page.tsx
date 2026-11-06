@@ -1,10 +1,14 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { WEEK_ORDER, type HourRow } from "@/lib/opening-hours";
+import { t } from "@/lib/i18n/t";
 import { OpeningHoursForm } from "@/components/admin/OpeningHoursForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminOpeningHoursPage() {
+  const session = await auth();
+  const locale = session!.user.locale;
   const existing = await db.openingHours.findMany();
   const byDay = new Map(existing.map((h) => [h.dayOfWeek, h]));
 
@@ -24,12 +28,10 @@ export default async function AdminOpeningHoursPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Opening hours</h1>
-        <p className="text-sm text-admin-ink-muted">
-          The weekly grid shown on the Visit page and footer.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight">{t("openingHours.title", locale)}</h1>
+        <p className="text-sm text-admin-ink-muted">{t("openingHours.subtitle", locale)}</p>
       </div>
-      <OpeningHoursForm rows={rows} />
+      <OpeningHoursForm rows={rows} locale={locale} />
     </div>
   );
 }

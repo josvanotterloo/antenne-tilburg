@@ -7,6 +7,9 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/db", () => ({
   db: { openingHours: { findMany: vi.fn() } },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import AdminOpeningHoursPage from "@/app/admin/settings/hours/page";
 import { db } from "@/lib/db";
@@ -18,17 +21,17 @@ describe("/admin/settings/hours", () => {
     vi.mocked(db.openingHours.findMany).mockResolvedValue([] as never);
     render(await AdminOpeningHoursPage());
     for (const day of [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
+      "Maandag",
+      "Dinsdag",
+      "Woensdag",
+      "Donderdag",
+      "Vrijdag",
+      "Zaterdag",
+      "Zondag",
     ]) {
       expect(screen.getByText(day)).toBeInTheDocument();
     }
-    expect(screen.getByText("Save hours")).toBeInTheDocument();
+    expect(screen.getByText("Openingstijden opslaan")).toBeInTheDocument();
   });
 
   it("reflects a stored closed day", async () => {
@@ -37,7 +40,17 @@ describe("/admin/settings/hours", () => {
     ] as never);
     render(await AdminOpeningHoursPage());
     // Monday's opens input is disabled when closed
-    const mondayOpens = screen.getByLabelText("Monday opens") as HTMLInputElement;
+    const mondayOpens = screen.getByLabelText("Maandag opent") as HTMLInputElement;
     expect(mondayOpens.disabled).toBe(true);
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    vi.mocked(db.openingHours.findMany).mockResolvedValue([] as never);
+    render(await AdminOpeningHoursPage());
+    expect(screen.getByText("Monday")).toBeInTheDocument();
+    expect(screen.getByLabelText("Monday opens")).toBeInTheDocument();
+    expect(screen.getByText("Save hours")).toBeInTheDocument();
   });
 });

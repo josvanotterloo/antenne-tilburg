@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
-import { DAY_NAMES, type HourRow } from "@/lib/opening-hours";
+import { t } from "@/lib/i18n/t";
+import { dayName } from "@/lib/i18n/day-names";
+import { type HourRow } from "@/lib/opening-hours";
 
-export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
+export function OpeningHoursForm({
+  rows: initial,
+  locale,
+}: {
+  rows: HourRow[];
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const { pending: saving, error, run } = useAsyncAction();
   const [rows, setRows] = useState(initial);
@@ -39,18 +48,18 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
       <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.dayOfWeek} className="flex items-center gap-3 text-sm">
-            <span className="w-24 font-medium">{DAY_NAMES[row.dayOfWeek]}</span>
+            <span className="w-24 font-medium">{dayName(row.dayOfWeek, locale)}</span>
             <label className="flex items-center gap-1">
               <input
                 type="checkbox"
                 checked={row.closed}
                 onChange={(e) => update(row.dayOfWeek, { closed: e.target.checked })}
               />
-              Closed
+              {t("openingHours.closed", locale)}
             </label>
             <input
               type="time"
-              aria-label={`${DAY_NAMES[row.dayOfWeek]} opens`}
+              aria-label={`${dayName(row.dayOfWeek, locale)} ${t("openingHours.opensSuffix", locale)}`}
               value={row.opensAt}
               disabled={row.closed}
               onChange={(e) => update(row.dayOfWeek, { opensAt: e.target.value })}
@@ -59,7 +68,7 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
             <span>–</span>
             <input
               type="time"
-              aria-label={`${DAY_NAMES[row.dayOfWeek]} closes`}
+              aria-label={`${dayName(row.dayOfWeek, locale)} ${t("openingHours.closesSuffix", locale)}`}
               value={row.closesAt}
               disabled={row.closed}
               onChange={(e) => update(row.dayOfWeek, { closesAt: e.target.value })}
@@ -74,14 +83,14 @@ export function OpeningHoursForm({ rows: initial }: { rows: HourRow[] }) {
           {error}
         </p>
       )}
-      {saved && <p className="text-sm text-green-400">Saved.</p>}
+      {saved && <p className="text-sm text-green-400">{t("common.saved", locale)}</p>}
 
       <button
         type="submit"
         disabled={saving}
         className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
       >
-        {saving ? "Saving…" : "Save hours"}
+        {saving ? t("common.saving", locale) : t("openingHours.saveButton", locale)}
       </button>
     </form>
   );
