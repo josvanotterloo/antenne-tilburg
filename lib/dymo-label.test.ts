@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { generateLabelXml, missingLabelFields } from "@/lib/dymo-label";
+import { generateLabelXml, missingLabelFieldLabel, missingLabelFields } from "@/lib/dymo-label";
 import type { CatalogProduct } from "@/lib/catalog";
 
 function product(over: Record<string, unknown> = {}): CatalogProduct {
@@ -150,5 +150,13 @@ describe("missingLabelFields", () => {
       product({ productArtists: [], price: null }),
     );
     expect(missing).toEqual(["Artist", "Price"]);
+  });
+});
+
+describe("missingLabelFieldLabel", () => {
+  it("translates a missing-field key for display", () => {
+    expect(missingLabelFieldLabel("Artist", "EN")).toBe("Artist");
+    expect(missingLabelFieldLabel("Artist", "NL")).toBe("Artiest");
+    expect(missingLabelFieldLabel("Product Type", "NL")).toBe("Producttype");
   });
 });

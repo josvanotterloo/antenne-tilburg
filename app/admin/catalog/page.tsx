@@ -11,6 +11,8 @@ import { fullDate, relativeDate } from "@/lib/relative-date";
 import { missingLabelFields } from "@/lib/dymo-label";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
 import { db } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { t, type TranslationKey } from "@/lib/i18n/t";
 import { OrderButton } from "@/components/admin/OrderButton";
 
 import { DeleteProductButton } from "./DeleteProductButton";
@@ -29,22 +31,22 @@ const one = (v: string | string[] | undefined) =>
 type FilterParam = "artistId" | "genreId" | "labelId" | "productTypeId";
 const FILTER_ENTITIES: Record<
   FilterParam,
-  { label: string; find: (id: string) => Promise<{ name: string } | null> }
+  { labelKey: TranslationKey; find: (id: string) => Promise<{ name: string } | null> }
 > = {
   artistId: {
-    label: "Artist",
+    labelKey: "products.filterArtist",
     find: (id) => db.artist.findUnique({ where: { id }, select: { name: true } }),
   },
   genreId: {
-    label: "Genre",
+    labelKey: "products.filterGenre",
     find: (id) => db.genre.findUnique({ where: { id }, select: { name: true } }),
   },
   labelId: {
-    label: "Label",
+    labelKey: "products.filterLabel",
     find: (id) => db.label.findUnique({ where: { id }, select: { name: true } }),
   },
   productTypeId: {
-    label: "Product Type",
+    labelKey: "products.filterProductType",
     find: (id) =>
       db.productType.findUnique({ where: { id }, select: { name: true } }),
   },
@@ -77,6 +79,8 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  const session = await auth();
+  const locale = session!.user.locale;
   const sp = await searchParams;
   const q = one(sp.q);
   const instock = one(sp.instock) !== "false";
@@ -115,16 +119,17 @@ export default async function CatalogPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("products.title", locale)}</h1>
           <p className="text-sm text-admin-ink-muted">
-            {result.total} product{result.total === 1 ? "" : "s"}
+            {result.total}{" "}
+            {t(result.total === 1 ? "products.countSingular" : "products.countPlural", locale)}
           </p>
         </div>
         <Link
           href="/admin/catalog/new"
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
         >
-          Add product
+          {t("products.addButton", locale)}
         </Link>
       </div>
 
@@ -133,21 +138,21 @@ export default async function CatalogPage({
           type="search"
           name="q"
           defaultValue={q ?? ""}
-          placeholder="Search artist, title, description…"
+          placeholder={t("products.searchPlaceholder", locale)}
           className="w-full max-w-sm rounded border border-admin-hairline px-3 py-2 text-sm"
         />
         <button
           type="submit"
           className="rounded border border-admin-hairline px-3 py-2 text-sm"
         >
-          Search
+          {t("products.searchButton", locale)}
         </button>
         {q && (
           <Link
             href={adminHref(undefined, 1, instock, activeFilter)}
             className="rounded px-3 py-2 text-sm text-admin-ink-muted underline"
           >
-            Clear
+            {t("products.clear", locale)}
           </Link>
         )}
         <Link
@@ -159,17 +164,18 @@ export default async function CatalogPage({
               : "border-admin-hairline text-admin-ink-muted"
           }`}
         >
-          In stock only
+          {t("products.inStockOnly", locale)}
         </Link>
       </form>
 
       {activeFilter && (
         <p className="text-sm text-admin-ink-muted">
-          Filtered by {FILTER_ENTITIES[activeFilter.param].label}
+          {t("products.filteredByPrefix", locale)}{" "}
+          {t(FILTER_ENTITIES[activeFilter.param].labelKey, locale)}
           {filterEntity ? `: ${filterEntity.name}` : ""}
           <span aria-hidden> · </span>
           <Link href={adminHref(q, 1, instock)} className="underline">
-            Clear filter
+            {t("products.clearFilter", locale)}
           </Link>
         </p>
       )}
@@ -177,10 +183,10 @@ export default async function CatalogPage({
       {result.products.length === 0 ? (
         <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
           {q
-            ? "No products match your search."
+            ? t("products.emptySearch", locale)
             : activeFilter
-              ? "No products match this filter."
-              : "No products yet."}
+              ? t("products.emptyFilter", locale)
+              : t("products.emptyDefault", locale)}
         </p>
       ) : (
         <ul className="divide-y divide-admin-hairline rounded border border-admin-hairline bg-admin-surface">
@@ -204,12 +210,12 @@ export default async function CatalogPage({
                   <span>{joinGenreNames(product.productGenres)}</span>
                 </p>
                 <p className="text-xs text-admin-ink-muted">
-                  <span title={fullDate(product.createdAt)}>
-                    Added {relativeDate(product.createdAt)}
+                  <span title={fullDate(product.createdAt, locale)}>
+                    {t("products.added", locale)} {relativeDate(product.createdAt, locale)}
                   </span>
                   <span aria-hidden> · </span>
-                  <span title={fullDate(product.updatedAt)}>
-                    Updated {relativeDate(product.updatedAt)}
+                  <span title={fullDate(product.updatedAt, locale)}>
+                    {t("products.updated", locale)} {relativeDate(product.updatedAt, locale)}
                   </span>
                 </p>
               </div>
@@ -227,13 +233,16 @@ export default async function CatalogPage({
                   >
                     {product.quantity}
                   </span>
-                  <span className="text-xs text-admin-ink-muted"> in stock</span>
+                  <span className="text-xs text-admin-ink-muted">
+                    {" "}
+                    {t("products.inStockSuffix", locale)}
+                  </span>
                 </div>
                 <div className="text-right tabular-nums">
                   €{Number(product.price).toFixed(2)}
                 </div>
                 <div className="flex justify-center">
-                  <SellOneButton id={product.id} quantity={product.quantity} />
+                  <SellOneButton id={product.id} quantity={product.quantity} locale={locale} />
                 </div>
                 <div className="flex justify-center">
                   <PlusOneButton id={product.id} />
@@ -243,6 +252,7 @@ export default async function CatalogPage({
                     productId={product.id}
                     hasSupplier={!!product.supplierId}
                     initiallyOrdered={openOrderProductIds.has(product.id)}
+                    locale={locale}
                   />
                 </div>
                 <div className="flex justify-center">
@@ -251,8 +261,8 @@ export default async function CatalogPage({
                       href={`/api/admin/label/${product.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Print label"
-                      title="Print label"
+                      aria-label={t("products.printLabel", locale)}
+                      title={t("products.printLabel", locale)}
                       className="text-admin-ink hover:underline"
                     >
                       🖨️
@@ -264,11 +274,11 @@ export default async function CatalogPage({
                     href={`/admin/catalog/${product.id}/edit`}
                     className="text-admin-ink hover:underline"
                   >
-                    Edit
+                    {t("common.edit", locale)}
                   </Link>
                 </div>
                 <div className="flex justify-center">
-                  <DeleteProductButton id={product.id} />
+                  <DeleteProductButton id={product.id} locale={locale} />
                 </div>
               </div>
             </li>
@@ -286,7 +296,7 @@ export default async function CatalogPage({
               href={adminHref(q, result.page - 1, instock, activeFilter)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
-              Prev
+              {t("products.prev", locale)}
             </Link>
           )}
           {catalogPageNumbers(result.page, result.pageCount).map((n, i, arr) => (
@@ -312,7 +322,7 @@ export default async function CatalogPage({
               href={adminHref(q, result.page + 1, instock, activeFilter)}
               className="rounded border border-admin-hairline px-2 py-1 hover:bg-admin-raised"
             >
-              Next
+              {t("products.next", locale)}
             </Link>
           )}
         </nav>

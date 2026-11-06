@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { SEARCH_RESULT_CAP } from "@/lib/reference-items";
+import { t } from "@/lib/i18n/t";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 
 export interface ReferenceItem {
@@ -20,13 +22,19 @@ const SEARCH_DEBOUNCE_MS = 200;
 
 export function ReferenceSection({
   title,
+  addPlaceholder,
   endpoint,
   initialItems,
   initialTotal,
   supplierEndpoint,
   productLinkParam,
+  locale,
 }: {
   title: string;
+  // Already-localized "<Entity> toevoegen"/"Add <entity>" text — its exact
+  // grammar (word order, noun gender) differs per entity and per locale,
+  // same as `title` already did, so the caller composes it via t().
+  addPlaceholder: string;
   endpoint: string;
   initialItems: ReferenceItem[];
   initialTotal: number;
@@ -34,6 +42,7 @@ export function ReferenceSection({
   // Query param this entity's product count links to on /admin/catalog
   // (lib/catalog.ts's CatalogFilters already supports all four).
   productLinkParam?: "artistId" | "genreId" | "labelId" | "productTypeId";
+  locale: AdminLocale;
 }) {
   const { error, run } = useAsyncAction();
   const [items, setItems] = useState(initialItems);
@@ -73,12 +82,12 @@ export function ReferenceSection({
         }
       } catch {
         if (seq === searchSeq.current) {
-          setSearchError("Couldn't load results. Keep typing to retry.");
+          setSearchError(t("reference.searchError", locale));
         }
       }
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [query, endpoint]);
+  }, [query, endpoint, locale]);
 
   function createItem(name: string) {
     run(async () => {
@@ -127,12 +136,21 @@ export function ReferenceSection({
       }
       setNewName("");
       setNewSupplier(null);
-      const fuzzyHint = created.candidates?.length
-        ? ` Did you mean: ${created.candidates
+      const candidateList = created.candidates?.length
+        ? created.candidates
             .map((c) => `${c.name} (${c.productCount} products)`)
-            .join(", ")}?`
+            .join(", ")
+        : null;
+      const fuzzyHint = candidateList
+        ? locale === "EN"
+          ? ` Did you mean: ${candidateList}?`
+          : ` Bedoelde je: ${candidateList}?`
         : "";
-      setSuccessMessage(`Added "${created.name}".${fuzzyHint}`);
+      setSuccessMessage(
+        locale === "EN"
+          ? `Added "${created.name}".${fuzzyHint}`
+          : `"${created.name}" toegevoegd.${fuzzyHint}`,
+      );
     });
   }
 
@@ -175,7 +193,7 @@ export function ReferenceSection({
           .sort((a, b) => a.name.localeCompare(b.name)),
       );
       setEditingId(null);
-      setSuccessMessage("Saved.");
+      setSuccessMessage(t("common.saved", locale));
     });
   }
 
@@ -219,8 +237,8 @@ export function ReferenceSection({
             setQuery(e.target.value);
             setSuccessMessage(null);
           }}
-          placeholder={`Search ${label}`}
-          aria-label={`Search ${label}`}
+          placeholder={`${t("reference.search", locale)} ${label}`}
+          aria-label={`${t("reference.search", locale)} ${label}`}
           className="w-full rounded border border-admin-hairline bg-admin-bg px-2 py-1 text-sm"
         />
 
@@ -228,15 +246,15 @@ export function ReferenceSection({
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder={`Add ${title.toLowerCase().replace(/s$/, "")}`}
-            aria-label={`New ${title} name`}
+            placeholder={addPlaceholder}
+            aria-label={addPlaceholder}
             className="flex-1 rounded border border-admin-hairline bg-admin-bg px-2 py-1 text-sm"
           />
           <button
             type="submit"
             className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-3 py-2 text-sm font-medium text-admin-bg"
           >
-            Add
+            {t("common.add", locale)}
           </button>
           {supplierEndpoint && (
             <Combobox
@@ -269,10 +287,14 @@ export function ReferenceSection({
             onClick={() => createItem(query.trim())}
             className="mt-3 text-sm text-admin-ink underline"
           >
-            Add &quot;{query.trim()}&quot;
+            {locale === "EN" ? (
+              <>Add &quot;{query.trim()}&quot;</>
+            ) : (
+              <>&quot;{query.trim()}&quot; toevoegen</>
+            )}
           </button>
         ) : (
-          <p className="mt-3 text-sm text-admin-ink-muted">No matches.</p>
+          <p className="mt-3 text-sm text-admin-ink-muted">{t("reference.noMatches", locale)}</p>
         )
       ) : (
         <>
@@ -287,7 +309,7 @@ export function ReferenceSection({
                     <input
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      aria-label={`Edit ${item.name}`}
+                      aria-label={`${t("common.edit", locale)} ${item.name}`}
                       className="flex-1 rounded border border-admin-hairline px-2 py-1"
                     />
                     {supplierEndpoint && (
@@ -304,14 +326,14 @@ export function ReferenceSection({
                       onClick={() => handleSaveEdit(item.id)}
                       className="text-admin-ink hover:underline"
                     >
-                      Save
+                      {t("common.save", locale)}
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingId(null)}
                       className="text-admin-ink-muted hover:underline"
                     >
-                      Cancel
+                      {t("common.cancel", locale)}
                     </button>
                   </>
                 ) : (
@@ -320,7 +342,7 @@ export function ReferenceSection({
                       {item.name}
                       {supplierEndpoint && (
                         <span className="ml-2 text-xs text-admin-ink-muted">
-                          {item.supplierName ?? "No supplier"}
+                          {item.supplierName ?? t("reference.noSupplier", locale)}
                         </span>
                       )}
                     </span>
@@ -335,7 +357,7 @@ export function ReferenceSection({
                           onClick={() => startEdit(item)}
                           className="text-admin-ink hover:underline"
                         >
-                          Edit
+                          {t("common.edit", locale)}
                         </button>
                       </div>
                       <div className="flex justify-start">
@@ -350,11 +372,13 @@ export function ReferenceSection({
                               href={`/admin/catalog?${productLinkParam}=${item.id}&instock=false`}
                               className="text-admin-ink-muted hover:underline"
                             >
-                              In use by {item.productCount} products
+                              {t("reference.inUsePrefix", locale)} {item.productCount}{" "}
+                              {t("products.countPlural", locale)}
                             </Link>
                           ) : (
                             <span className="text-admin-ink-muted">
-                              In use by {item.productCount} products
+                              {t("reference.inUsePrefix", locale)} {item.productCount}{" "}
+                              {t("products.countPlural", locale)}
                             </span>
                           )
                         ) : (
@@ -363,7 +387,7 @@ export function ReferenceSection({
                             onClick={() => handleDelete(item.id)}
                             className="text-red-400 hover:underline"
                           >
-                            Delete
+                            {t("common.delete", locale)}
                           </button>
                         )}
                       </div>
@@ -375,8 +399,8 @@ export function ReferenceSection({
           </ul>
           {items.length === SEARCH_RESULT_CAP && (
             <p className="mt-2 text-sm text-admin-ink-muted">
-              Showing the first {SEARCH_RESULT_CAP} — refine your search to
-              narrow further.
+              {t("reference.showingFirstPrefix", locale)} {SEARCH_RESULT_CAP}{" "}
+              {t("reference.showingFirstSuffix", locale)}
             </p>
           )}
         </>

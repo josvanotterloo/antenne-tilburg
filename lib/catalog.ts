@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type AdminLocale } from "@prisma/client";
 
 import { db } from "@/lib/db";
 
@@ -405,25 +405,42 @@ export function shopDateISO(date: Date): string {
 
 // Human-readable date/time, pinned to SHOP_TZ — for use in server components,
 // where the bare Date#toLocaleDateString()/toLocaleTimeString() would format
-// using the server's own OS timezone/locale instead of the shop's.
-const SHOP_DISPLAY_DATE = new Intl.DateTimeFormat("en-US", {
-  timeZone: SHOP_TZ,
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-});
-const SHOP_DISPLAY_TIME = new Intl.DateTimeFormat("en-US", {
-  timeZone: SHOP_TZ,
-  hour: "numeric",
-  minute: "2-digit",
-});
+// using the server's own OS timezone/locale instead of the shop's. The
+// locale tag follows the admin's preference; the timezone never changes —
+// timezone and locale are orthogonal.
+const SHOP_DISPLAY_DATE: Record<AdminLocale, Intl.DateTimeFormat> = {
+  EN: new Intl.DateTimeFormat("en-US", {
+    timeZone: SHOP_TZ,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }),
+  NL: new Intl.DateTimeFormat("nl-NL", {
+    timeZone: SHOP_TZ,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }),
+};
+const SHOP_DISPLAY_TIME: Record<AdminLocale, Intl.DateTimeFormat> = {
+  EN: new Intl.DateTimeFormat("en-US", {
+    timeZone: SHOP_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+  }),
+  NL: new Intl.DateTimeFormat("nl-NL", {
+    timeZone: SHOP_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+  }),
+};
 
-export function shopDisplayDate(date: Date): string {
-  return SHOP_DISPLAY_DATE.format(date);
+export function shopDisplayDate(date: Date, locale: AdminLocale): string {
+  return SHOP_DISPLAY_DATE[locale].format(date);
 }
 
-export function shopDisplayTime(date: Date): string {
-  return SHOP_DISPLAY_TIME.format(date);
+export function shopDisplayTime(date: Date, locale: AdminLocale): string {
+  return SHOP_DISPLAY_TIME[locale].format(date);
 }
 
 // [start, end) of the given shop-local calendar month, as UTC instants.

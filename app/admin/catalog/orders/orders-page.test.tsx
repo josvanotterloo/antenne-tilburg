@@ -12,6 +12,9 @@ vi.mock("@/lib/order-overview", () => ({ getOpenOrderLines: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import OrdersOverviewPage from "@/app/admin/catalog/orders/page";
 import { getOpenOrderLines } from "@/lib/order-overview";
@@ -69,7 +72,7 @@ describe("/admin/catalog/orders", () => {
     const ui = await OrdersOverviewPage({ searchParams: Promise.resolve({ group: "date" }) });
     render(ui);
     expect(getOpenOrderLines).toHaveBeenCalledWith("date");
-    expect(screen.getByText(/week of/i)).toBeInTheDocument();
+    expect(screen.getByText(/week van/i)).toBeInTheDocument();
     expect(screen.getByText("Torus")).toBeInTheDocument();
   });
 
@@ -85,13 +88,24 @@ describe("/admin/catalog/orders", () => {
     vi.mocked(getOpenOrderLines).mockResolvedValue({ groupBy: "supplier", groups: [] });
     const ui = await OrdersOverviewPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    expect(screen.getByText(/no open orders/i)).toBeInTheDocument();
+    expect(screen.getByText(/openstaande bestellingen/i)).toBeInTheDocument();
   });
 
   it("renders the auto-print checkbox", async () => {
     vi.mocked(getOpenOrderLines).mockResolvedValue({ groupBy: "supplier", groups: [] });
     const ui = await OrdersOverviewPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    expect(screen.getByRole("checkbox", { name: /auto-print/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("checkbox", { name: /automatisch afdrukken/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    vi.mocked(getOpenOrderLines).mockResolvedValue({ groupBy: "supplier", groups: [] });
+    const ui = await OrdersOverviewPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.getByRole("heading", { name: "Orders" })).toBeInTheDocument();
   });
 });

@@ -11,6 +11,9 @@ vi.mock("@/lib/db", () => ({
     stockTransaction: { findMany: vi.fn() },
   },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import EditProductPage from "@/app/admin/catalog/[id]/edit/page";
 import { db } from "@/lib/db";
@@ -46,7 +49,7 @@ describe("/admin/catalog/[id]/edit", () => {
     render(ui);
 
     expect(screen.getByText("Opening balance")).toBeInTheDocument();
-    expect(screen.getByText("OUT")).toBeInTheDocument();
+    expect(screen.getByText("Uit")).toBeInTheDocument();
     // Verify row order: history is newest-first, so first data row (index 1)
     // has current balance (4), last data row has opening balance (5).
     const rows = screen.getAllByRole("row");
@@ -77,7 +80,7 @@ describe("/admin/catalog/[id]/edit", () => {
     const ui = await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
     render(ui);
 
-    expect(screen.getByText(/no stock transactions yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/nog geen voorraadtransacties/i)).toBeInTheDocument();
   });
 
   it("shows a Print label link with the correct href for a complete product", async () => {
@@ -88,7 +91,7 @@ describe("/admin/catalog/[id]/edit", () => {
     render(ui);
 
     expect(
-      screen.getByRole("link", { name: /print label/i }),
+      screen.getByRole("link", { name: /label afdrukken/i }),
     ).toHaveAttribute("href", "/api/admin/label/p1");
   });
 
@@ -102,9 +105,21 @@ describe("/admin/catalog/[id]/edit", () => {
     const ui = await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
     render(ui);
 
-    expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
-    const note = screen.getByText(/print label unavailable/i);
+    expect(screen.queryByRole("link", { name: /label afdrukken/i })).toBeNull();
+    const note = screen.getByText(/label afdrukken niet mogelijk/i);
     expect(note).toBeInTheDocument();
-    expect(note).toHaveTextContent(/artist/i);
+    expect(note).toHaveTextContent(/artiest/i);
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    vi.mocked(db.product.findUnique).mockResolvedValue(PRODUCT as never);
+    vi.mocked(db.stockTransaction.findMany).mockResolvedValue([] as never);
+
+    const ui = await EditProductPage({ params: Promise.resolve({ id: "p1" }) });
+    render(ui);
+
+    expect(screen.getByRole("heading", { name: "Edit product" })).toBeInTheDocument();
   });
 });

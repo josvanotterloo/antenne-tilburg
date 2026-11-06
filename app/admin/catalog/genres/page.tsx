@@ -1,4 +1,6 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { t } from "@/lib/i18n/t";
 import {
   ReferenceSection,
   type ReferenceItem,
@@ -25,6 +27,8 @@ const toGenreItems = (rows: GenreWithCount[]): ReferenceItem[] =>
   }));
 
 export default async function GenresPage() {
+  const session = await auth();
+  const locale = session!.user.locale;
   const [genres, total] = await Promise.all([
     db.genre.findMany({
       orderBy: { name: "asc" },
@@ -36,11 +40,13 @@ export default async function GenresPage() {
 
   return (
     <ReferenceSection
-      title="Genres"
+      title={t("reference.genres.title", locale)}
+      addPlaceholder={t("reference.genres.addPlaceholder", locale)}
       endpoint="/api/admin/genres"
       initialItems={toGenreItems(genres)}
       initialTotal={total}
       productLinkParam="genreId"
+      locale={locale}
     />
   );
 }

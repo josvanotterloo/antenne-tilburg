@@ -2,13 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 
 // Two-click confirm (no blocking window.confirm) — product delete is
 // unguarded and destroys data. A failed delete surfaces a visible message.
-export function DeleteProductButton({ id }: { id: string }) {
+export function DeleteProductButton({
+  id,
+  locale,
+}: {
+  id: string;
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const { pending, error, run } = useAsyncAction();
   const [confirming, setConfirming] = useState(false);
@@ -30,14 +38,14 @@ export function DeleteProductButton({ id }: { id: string }) {
             disabled={pending}
             className="text-red-400 hover:underline disabled:opacity-50"
           >
-            {pending ? "…" : "Confirm"}
+            {pending ? "…" : t("common.confirm", locale)}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
             className="text-admin-ink-muted hover:underline"
           >
-            Cancel
+            {t("common.cancel", locale)}
           </button>
         </span>
       ) : (
@@ -46,7 +54,7 @@ export function DeleteProductButton({ id }: { id: string }) {
           onClick={() => setConfirming(true)}
           className="text-red-400 hover:underline"
         >
-          Delete
+          {t("common.delete", locale)}
         </button>
       )}
       {error && (

@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe("SellOneButton", () => {
   it("is disabled at zero quantity", () => {
-    render(<SellOneButton id="p1" quantity={0} />);
+    render(<SellOneButton id="p1" quantity={0} locale="NL" />);
     expect(screen.getByRole("button")).toBeDisabled();
   });
 
@@ -24,8 +24,8 @@ describe("SellOneButton", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({ quantity: 1 }) }),
     );
-    render(<SellOneButton id="p1" quantity={2} />);
-    fireEvent.click(screen.getByRole("button", { name: /sell one/i }));
+    render(<SellOneButton id="p1" quantity={2} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /verkoop één/i }));
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
@@ -37,10 +37,15 @@ describe("SellOneButton", () => {
         json: async () => ({ error: "Not found" }),
       }),
     );
-    render(<SellOneButton id="p1" quantity={2} />);
-    fireEvent.click(screen.getByRole("button", { name: /sell one/i }));
+    render(<SellOneButton id="p1" quantity={2} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /verkoop één/i }));
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("renders the English label when locale is EN", () => {
+    render(<SellOneButton id="p1" quantity={2} locale="EN" />);
+    expect(screen.getByRole("button", { name: /sell one/i })).toBeInTheDocument();
   });
 });

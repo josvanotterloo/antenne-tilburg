@@ -28,7 +28,7 @@ function renderRow(line: OrderLineRowData = LINE) {
   return render(
     <table>
       <tbody>
-        <OrderLineRow line={line} />
+        <OrderLineRow line={line} locale="NL" />
       </tbody>
     </table>,
   );
@@ -41,20 +41,24 @@ beforeEach(() => {
 });
 
 describe("OrderLineRow", () => {
-  it("shows pending status and a 'Mark received' action for an unreceived line", () => {
+  it("shows pending status and a 'Markeer als ontvangen' action for an unreceived line", () => {
     renderRow();
-    expect(screen.getByText(/pending/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /mark received/i })).toBeInTheDocument();
+    expect(screen.getByText(/in behandeling/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /markeer als ontvangen/i }),
+    ).toBeInTheDocument();
   });
 
   it("shows partial status for a partly-received line", () => {
     renderRow({ ...LINE, quantityReceived: 2 });
-    expect(screen.getByText(/partial/i)).toBeInTheDocument();
+    expect(screen.getByText(/deels ontvangen/i)).toBeInTheDocument();
   });
 
-  it("does not show a 'Mark received' button for a fully received line", () => {
+  it("does not show a 'Markeer als ontvangen' button for a fully received line", () => {
     renderRow({ ...LINE, quantityReceived: 5 });
-    expect(screen.queryByRole("button", { name: /mark received/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /markeer als ontvangen/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("saves an edited quantity on blur", async () => {
@@ -64,7 +68,7 @@ describe("OrderLineRow", () => {
       json: async () => ({ id: "l1", quantityOrdered: 8 }),
     } as Response);
     renderRow();
-    const input = screen.getByLabelText(/quantity ordered for torus/i);
+    const input = screen.getByLabelText(/bestelde hoeveelheid voor torus/i);
     await user.clear(input);
     await user.type(input, "8");
     await user.tab();
@@ -83,7 +87,7 @@ describe("OrderLineRow", () => {
     const user = userEvent.setup();
     const fetchSpy = vi.spyOn(global, "fetch");
     renderRow();
-    const input = screen.getByLabelText(/quantity ordered for torus/i);
+    const input = screen.getByLabelText(/bestelde hoeveelheid voor torus/i);
     await user.clear(input);
     await user.type(input, "0");
     await user.tab();
@@ -97,8 +101,8 @@ describe("OrderLineRow", () => {
     vi.spyOn(global, "fetch").mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
     renderRow();
 
-    await user.click(screen.getByRole("button", { name: /mark received/i }));
-    await user.click(screen.getByRole("button", { name: /confirm/i }));
+    await user.click(screen.getByRole("button", { name: /markeer als ontvangen/i }));
+    await user.click(screen.getByRole("button", { name: /bevestigen/i }));
 
     await waitFor(() => {
       expect(refresh).toHaveBeenCalled();
@@ -113,10 +117,10 @@ describe("OrderLineRow", () => {
     } as Response);
     renderRow({ ...LINE, quantityOrdered: 5, quantityReceived: 2 });
 
-    await user.click(screen.getByRole("button", { name: /mark received/i }));
-    expect(screen.getByLabelText(/quantity received for torus/i)).toHaveValue(3);
+    await user.click(screen.getByRole("button", { name: /markeer als ontvangen/i }));
+    expect(screen.getByLabelText(/ontvangen hoeveelheid voor torus/i)).toHaveValue(3);
 
-    await user.click(screen.getByRole("button", { name: /confirm/i }));
+    await user.click(screen.getByRole("button", { name: /bevestigen/i }));
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         "/api/admin/orders/lines/l1/receive",
@@ -135,8 +139,8 @@ describe("OrderLineRow", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     renderRow();
 
-    await user.click(screen.getByRole("button", { name: /mark received/i }));
-    await user.click(screen.getByRole("button", { name: /confirm/i }));
+    await user.click(screen.getByRole("button", { name: /markeer als ontvangen/i }));
+    await user.click(screen.getByRole("button", { name: /bevestigen/i }));
 
     await waitFor(() => {
       expect(openSpy).toHaveBeenCalledWith("/api/admin/label/p1", "_blank", "noopener,noreferrer");
@@ -149,8 +153,8 @@ describe("OrderLineRow", () => {
     const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
     renderRow();
 
-    await user.click(screen.getByRole("button", { name: /mark received/i }));
-    await user.click(screen.getByRole("button", { name: /confirm/i }));
+    await user.click(screen.getByRole("button", { name: /markeer als ontvangen/i }));
+    await user.click(screen.getByRole("button", { name: /bevestigen/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -169,11 +173,11 @@ describe("OrderLineRow", () => {
     } as Response);
     renderRow();
 
-    expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /remove/i }));
-    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^bevestigen$/i })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /verwijder/i }));
+    expect(screen.getByRole("button", { name: /annuleren/i })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await user.click(screen.getByRole("button", { name: /^bevestigen$/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -188,12 +192,12 @@ describe("OrderLineRow", () => {
 
   it("does not render a Remove button once any quantity has been received", () => {
     renderRow({ ...LINE, quantityReceived: 2 });
-    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /verwijder/i })).not.toBeInTheDocument();
   });
 
   it("does not render a Remove button when the parent order is no longer PENDING, even with quantityReceived 0", () => {
     renderRow({ ...LINE, quantityReceived: 0, orderStatus: "PARTIAL" });
-    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /verwijder/i })).not.toBeInTheDocument();
   });
 
   it("disables the quantity input and Remove button while a receive is still in flight", async () => {
@@ -206,13 +210,13 @@ describe("OrderLineRow", () => {
     );
     renderRow();
 
-    await user.click(screen.getByRole("button", { name: /mark received/i }));
-    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await user.click(screen.getByRole("button", { name: /markeer als ontvangen/i }));
+    await user.click(screen.getByRole("button", { name: /^bevestigen$/i }));
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/quantity ordered for torus/i)).toBeDisabled();
+      expect(screen.getByLabelText(/bestelde hoeveelheid voor torus/i)).toBeDisabled();
     });
-    expect(screen.getByRole("button", { name: /remove/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /verwijder/i })).toBeDisabled();
 
     // Let the in-flight receive resolve so it doesn't leak into other tests
     // (this line receives its full remaining quantity, so the quantity
@@ -221,7 +225,7 @@ describe("OrderLineRow", () => {
     // state change cleanly without conflating the two disabled reasons).
     resolveFetch({ ok: true, json: async () => ({}) } as Response);
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /^confirm$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^bevestigen$/i })).not.toBeInTheDocument();
     });
   });
 
@@ -233,8 +237,8 @@ describe("OrderLineRow", () => {
     } as Response);
     renderRow();
 
-    await user.click(screen.getByRole("button", { name: /remove/i }));
-    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await user.click(screen.getByRole("button", { name: /verwijder/i }));
+    await user.click(screen.getByRole("button", { name: /^bevestigen$/i }));
 
     expect(
       await screen.findByText(/cannot remove a line once the order is partially or fully received/i),
@@ -247,12 +251,12 @@ describe("OrderLineRow", () => {
     renderRow();
 
     // First, trigger a client-side quantity-validation error (no fetch involved).
-    const qtyInput = screen.getByLabelText(/quantity ordered for torus/i);
+    const qtyInput = screen.getByLabelText(/bestelde hoeveelheid voor torus/i);
     await user.clear(qtyInput);
     await user.type(qtyInput, "0");
     await user.tab();
     expect(
-      await screen.findByText(/quantity must be a whole number/i),
+      await screen.findByText(/aantal moet een geheel getal zijn/i),
     ).toBeInTheDocument();
 
     // Then trigger a remove that fails with a different, later error.
@@ -260,12 +264,24 @@ describe("OrderLineRow", () => {
       ok: false,
       json: async () => ({ error: "Cannot remove a line once it has received quantity." }),
     } as Response);
-    await user.click(screen.getByRole("button", { name: /remove/i }));
-    await user.click(screen.getByRole("button", { name: /^confirm$/i }));
+    await user.click(screen.getByRole("button", { name: /verwijder/i }));
+    await user.click(screen.getByRole("button", { name: /^bevestigen$/i }));
 
     expect(
       await screen.findByText(/cannot remove a line once it has received quantity/i),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/quantity must be a whole number/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/aantal moet een geheel getal zijn/i)).not.toBeInTheDocument();
+  });
+
+  it("renders the English column status text and buttons when locale is EN", () => {
+    render(
+      <table>
+        <tbody>
+          <OrderLineRow line={LINE} locale="EN" />
+        </tbody>
+      </table>,
+    );
+    expect(screen.getByText(/pending/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mark received/i })).toBeInTheDocument();
   });
 });

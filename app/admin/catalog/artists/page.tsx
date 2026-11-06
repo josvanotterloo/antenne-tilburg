@@ -1,4 +1,6 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { t } from "@/lib/i18n/t";
 import {
   ReferenceSection,
   type ReferenceItem,
@@ -25,6 +27,8 @@ const toArtistItems = (rows: ArtistWithCount[]): ReferenceItem[] =>
   }));
 
 export default async function ArtistsPage() {
+  const session = await auth();
+  const locale = session!.user.locale;
   const [artists, total] = await Promise.all([
     db.artist.findMany({
       orderBy: { name: "asc" },
@@ -36,11 +40,13 @@ export default async function ArtistsPage() {
 
   return (
     <ReferenceSection
-      title="Artists"
+      title={t("reference.artists.title", locale)}
+      addPlaceholder={t("reference.artists.addPlaceholder", locale)}
       endpoint="/api/admin/artists"
       initialItems={toArtistItems(artists)}
       initialTotal={total}
       productLinkParam="artistId"
+      locale={locale}
     />
   );
 }

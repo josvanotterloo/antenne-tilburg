@@ -24,8 +24,13 @@ const LINE: OrderLineRowData = {
 
 describe("OrderLinesTable", () => {
   it("renders a header and one row per line", () => {
-    render(<OrderLinesTable lines={[LINE]} />);
-    expect(screen.getByRole("columnheader", { name: /artist/i })).toBeInTheDocument();
+    render(<OrderLinesTable lines={[LINE]} locale="NL" />);
+    expect(screen.getByRole("columnheader", { name: /artiest/i })).toBeInTheDocument();
     expect(screen.getByText("Torus")).toBeInTheDocument();
+  });
+
+  it("renders the English header when locale is EN", () => {
+    render(<OrderLinesTable lines={[LINE]} locale="EN" />);
+    expect(screen.getByRole("columnheader", { name: /artist/i })).toBeInTheDocument();
   });
 });

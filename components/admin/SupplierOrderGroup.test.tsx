@@ -26,7 +26,7 @@ const LINE: OrderLineRowData = {
 beforeEach(() => vi.restoreAllMocks());
 
 describe("SupplierOrderGroup", () => {
-  it("shows the supplier name and an enabled 'Mark all as sent' button for a PENDING order", () => {
+  it("shows the supplier name and an enabled 'Alles als verzonden markeren' button for a PENDING order", () => {
     render(
       <SupplierOrderGroup
         supplierName="Beta Distro"
@@ -34,13 +34,16 @@ describe("SupplierOrderGroup", () => {
         orderStatus="PENDING"
         sentAt={null}
         lines={[LINE]}
+        locale="NL"
       />,
     );
     expect(screen.getByText("Beta Distro")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /mark all as sent/i })).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /alles als verzonden markeren/i }),
+    ).not.toBeDisabled();
   });
 
-  it("disables the export PDF button with a 'Coming soon' title", () => {
+  it("disables the export PDF button with a 'Binnenkort beschikbaar' title", () => {
     render(
       <SupplierOrderGroup
         supplierName="Beta Distro"
@@ -48,11 +51,12 @@ describe("SupplierOrderGroup", () => {
         orderStatus="PENDING"
         sentAt={null}
         lines={[LINE]}
+        locale="NL"
       />,
     );
-    const exportButton = screen.getByRole("button", { name: /export pdf/i });
+    const exportButton = screen.getByRole("button", { name: /pdf exporteren/i });
     expect(exportButton).toBeDisabled();
-    expect(exportButton).toHaveAttribute("title", "Coming soon");
+    expect(exportButton).toHaveAttribute("title", "Binnenkort beschikbaar");
   });
 
   it("marks the order sent on click and disables the button", async () => {
@@ -68,10 +72,11 @@ describe("SupplierOrderGroup", () => {
         orderStatus="PENDING"
         sentAt={null}
         lines={[LINE]}
+        locale="NL"
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: /mark all as sent/i }));
+    await user.click(screen.getByRole("button", { name: /alles als verzonden markeren/i }));
 
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/admin/orders/o1",
@@ -81,7 +86,7 @@ describe("SupplierOrderGroup", () => {
       }),
     );
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /^sent$/i })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /^verzonden$/i })).toBeDisabled();
     });
   });
 
@@ -93,8 +98,23 @@ describe("SupplierOrderGroup", () => {
         orderStatus="PARTIAL"
         sentAt="2026-08-01T09:00:00.000Z"
         lines={[LINE]}
+        locale="NL"
       />,
     );
-    expect(screen.getByRole("button", { name: /^sent$/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^verzonden$/i })).toBeDisabled();
+  });
+
+  it("renders the English labels when locale is EN", () => {
+    render(
+      <SupplierOrderGroup
+        supplierName="Beta Distro"
+        orderId="o1"
+        orderStatus="PENDING"
+        sentAt={null}
+        lines={[LINE]}
+        locale="EN"
+      />,
+    );
+    expect(screen.getByRole("button", { name: /mark all as sent/i })).toBeInTheDocument();
   });
 });

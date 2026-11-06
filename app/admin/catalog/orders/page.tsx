@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { getOpenOrderLines, type GroupBy, type OpenOrderLine } from "@/lib/order-overview";
 import { joinArtistNames, shopDisplayDate } from "@/lib/catalog";
+import { auth } from "@/lib/auth";
+import { t, type TranslationKey } from "@/lib/i18n/t";
 import { AutoPrintToggle } from "@/components/admin/AutoPrintToggle";
 import { SupplierOrderGroup } from "@/components/admin/SupplierOrderGroup";
 import { OrderLinesTable } from "@/components/admin/OrderLinesTable";
@@ -9,10 +11,10 @@ import type { OrderLineRowData } from "@/components/admin/OrderLineRow";
 
 export const dynamic = "force-dynamic";
 
-const GROUP_TABS: { value: GroupBy; label: string }[] = [
-  { value: "supplier", label: "By supplier" },
-  { value: "date", label: "By date ordered" },
-  { value: "flat", label: "Flat list" },
+const GROUP_TABS: { value: GroupBy; labelKey: TranslationKey }[] = [
+  { value: "supplier", labelKey: "orders.tabSupplier" },
+  { value: "date", labelKey: "orders.tabDate" },
+  { value: "flat", labelKey: "orders.tabFlat" },
 ];
 
 function toRowData(line: OpenOrderLine): OrderLineRowData {
@@ -36,6 +38,8 @@ export default async function OrdersOverviewPage({
 }: {
   searchParams: Promise<{ group?: string }>;
 }) {
+  const session = await auth();
+  const locale = session!.user.locale;
   const sp = await searchParams;
   const groupBy: GroupBy = sp.group === "date" || sp.group === "flat" ? sp.group : "supplier";
   const result = await getOpenOrderLines(groupBy);
@@ -44,12 +48,10 @@ export default async function OrdersOverviewPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-          <p className="text-sm text-admin-ink-muted">
-            Products ordered from suppliers, awaiting delivery.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("orders.title", locale)}</h1>
+          <p className="text-sm text-admin-ink-muted">{t("orders.subtitle", locale)}</p>
         </div>
-        <AutoPrintToggle />
+        <AutoPrintToggle locale={locale} />
       </div>
 
       <nav className="flex gap-4 border-b border-admin-hairline text-sm">
@@ -64,7 +66,7 @@ export default async function OrdersOverviewPage({
                 : "border-transparent text-admin-ink-muted hover:text-admin-ink"
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey, locale)}
           </Link>
         ))}
       </nav>
@@ -72,7 +74,7 @@ export default async function OrdersOverviewPage({
       {result.groupBy === "supplier" &&
         (result.groups.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-            No open orders. Use &quot;Order&quot; on a catalog row to start one.
+            {t("orders.emptySupplier", locale)}
           </p>
         ) : (
           <div className="space-y-4">
@@ -84,6 +86,7 @@ export default async function OrdersOverviewPage({
                 orderStatus={group.order.status}
                 sentAt={group.order.sentAt ? group.order.sentAt.toISOString() : null}
                 lines={group.lines.map(toRowData)}
+                locale={locale}
               />
             ))}
           </div>
@@ -92,7 +95,7 @@ export default async function OrdersOverviewPage({
       {result.groupBy === "date" &&
         (result.groups.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-            No open orders yet — nothing is currently on order.
+            {t("orders.emptyDate", locale)}
           </p>
         ) : (
           <div className="space-y-4">
@@ -102,9 +105,9 @@ export default async function OrdersOverviewPage({
                 className="rounded border border-admin-hairline bg-admin-surface"
               >
                 <h2 className="border-b border-admin-hairline px-4 py-3 font-semibold">
-                  Week of {shopDisplayDate(group.weekStart)}
+                  {t("orders.weekOfPrefix", locale)} {shopDisplayDate(group.weekStart, locale)}
                 </h2>
-                <OrderLinesTable lines={group.lines.map(toRowData)} />
+                <OrderLinesTable lines={group.lines.map(toRowData)} locale={locale} />
               </section>
             ))}
           </div>
@@ -114,11 +117,11 @@ export default async function OrdersOverviewPage({
       {result.groupBy === "flat" &&
         (result.lines.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-8 text-center text-admin-ink-muted">
-            No open orders yet.
+            {t("orders.emptyFlat", locale)}
           </p>
         ) : (
           <div className="rounded border border-admin-hairline bg-admin-surface">
-            <OrderLinesTable lines={result.lines.map(toRowData)} />
+            <OrderLinesTable lines={result.lines.map(toRowData)} locale={locale} />
           </div>
         ))}
     </div>

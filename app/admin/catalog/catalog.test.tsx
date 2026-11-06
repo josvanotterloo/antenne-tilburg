@@ -31,6 +31,9 @@ vi.mock("@/lib/db", () => ({
     productType: { findUnique: vi.fn() },
   },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import AdminCatalogPage from "@/app/admin/catalog/page";
 import { getCatalogPage } from "@/lib/catalog";
@@ -83,7 +86,7 @@ describe("/admin/catalog", () => {
     // Quantity is shown, with single-click "Sell one" and "+1" actions per row.
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /sell one/i }),
+      screen.getByRole("button", { name: /verkoop één/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "+1" })).toBeInTheDocument();
   });
@@ -100,15 +103,24 @@ describe("/admin/catalog", () => {
     expect(screen.getByText(/€24\.99/)).toBeInTheDocument();
 
     // Relative dates: created shows age, updated is how you spot restocks.
-    expect(screen.getByText(/added 3 days ago/i)).toBeInTheDocument();
-    expect(screen.getByText(/updated 2 hours ago/i)).toBeInTheDocument();
+    expect(screen.getByText(/toegevoegd 3 dagen geleden/i)).toBeInTheDocument();
+    expect(screen.getByText(/bijgewerkt 2 uur geleden/i)).toBeInTheDocument();
     // Full timestamp on hover.
-    expect(screen.getByText(/added 3 days ago/i)).toHaveAttribute("title");
+    expect(screen.getByText(/toegevoegd 3 dagen geleden/i)).toHaveAttribute("title");
 
-    expect(screen.getByRole("link", { name: /edit/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /bewerken/i })).toHaveAttribute(
       "href",
       "/admin/catalog/p1/edit",
     );
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.getByRole("heading", { name: "Products" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /add product/i })).toBeInTheDocument();
   });
 
   it("does not render the product's condition", async () => {
@@ -143,7 +155,7 @@ describe("/admin/catalog", () => {
   it("shows an 'In stock only' toggle, on by default, linking to turn it off", async () => {
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    const toggle = screen.getByRole("link", { name: /in stock only/i });
+    const toggle = screen.getByRole("link", { name: /alleen op voorraad/i });
     expect(toggle).toHaveAttribute("href", "/admin/catalog?instock=false");
     expect(toggle).toHaveAttribute("aria-pressed", "true");
   });
@@ -153,7 +165,7 @@ describe("/admin/catalog", () => {
       searchParams: Promise.resolve({ q: "vril", instock: "false" }),
     });
     render(ui);
-    expect(screen.getByRole("link", { name: /clear/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /wissen/i })).toHaveAttribute(
       "href",
       "/admin/catalog?instock=false",
     );
@@ -164,7 +176,7 @@ describe("/admin/catalog", () => {
       searchParams: Promise.resolve({ q: "vril", instock: "false" }),
     });
     render(ui);
-    const toggle = screen.getByRole("link", { name: /in stock only/i });
+    const toggle = screen.getByRole("link", { name: /alleen op voorraad/i });
     expect(toggle).toHaveAttribute("href", "/admin/catalog?q=vril");
     expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
@@ -173,7 +185,7 @@ describe("/admin/catalog", () => {
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(
-      screen.getByRole("link", { name: /print label/i }),
+      screen.getByRole("link", { name: /label afdrukken/i }),
     ).toHaveAttribute("href", "/api/admin/label/p1");
   });
 
@@ -186,7 +198,7 @@ describe("/admin/catalog", () => {
     });
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    expect(screen.queryByRole("link", { name: /print label/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /label afdrukken/i })).toBeNull();
   });
 
   it("shows a disabled Order button with a tooltip when the product has no supplier", async () => {
@@ -198,9 +210,9 @@ describe("/admin/catalog", () => {
     });
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    const button = screen.getByRole("button", { name: /order/i });
+    const button = screen.getByRole("button", { name: /bestellen/i });
     expect(button).toBeDisabled();
-    expect(button).toHaveAttribute("title", "No supplier linked");
+    expect(button).toHaveAttribute("title", "Geen leverancier gekoppeld");
   });
 
   it("shows a disabled 'Ordered' button when the product is already in an open order", async () => {
@@ -213,7 +225,7 @@ describe("/admin/catalog", () => {
     vi.mocked(getOpenOrderProductIds).mockResolvedValue(new Set(["p1"]));
     const ui = await AdminCatalogPage({ searchParams: Promise.resolve({}) });
     render(ui);
-    expect(screen.getByRole("button", { name: /ordered/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /besteld/i })).toBeDisabled();
   });
 
   describe("reference-entity product filters", () => {
@@ -274,9 +286,9 @@ describe("/admin/catalog", () => {
       });
       render(ui);
 
-      expect(screen.getByText(/filtered by label: zulema records/i)).toBeInTheDocument();
+      expect(screen.getByText(/gefilterd op label: zulema records/i)).toBeInTheDocument();
       expect(
-        screen.getByRole("link", { name: /clear filter/i }),
+        screen.getByRole("link", { name: /filter wissen/i }),
       ).toHaveAttribute("href", "/admin/catalog?q=vril");
     });
 
@@ -289,7 +301,7 @@ describe("/admin/catalog", () => {
       });
       render(ui);
 
-      expect(screen.getByRole("link", { name: /^next$/i })).toHaveAttribute(
+      expect(screen.getByRole("link", { name: /^volgende$/i })).toHaveAttribute(
         "href",
         "/admin/catalog?page=3&labelId=l1",
       );
@@ -309,7 +321,9 @@ describe("/admin/catalog", () => {
         searchParams: Promise.resolve({ labelId: "l1" }),
       });
       render(ui);
-      expect(screen.getByText(/no products match this filter/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/geen producten gevonden voor dit filter/i),
+      ).toBeInTheDocument();
     });
 
     it("does not render the banner when no entity filter is active", async () => {

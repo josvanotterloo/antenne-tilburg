@@ -485,14 +485,22 @@ describe("shopMonthISO", () => {
 describe("shopDisplayDate", () => {
   it("formats an instant as its shop-local calendar date, not the server/UTC date", () => {
     // 23:30Z on Jan 1 is already Jan 2 in Amsterdam (CET, UTC+1).
-    expect(shopDisplayDate(new Date("2026-01-01T23:30:00Z"))).toBe("1/2/2026");
+    expect(shopDisplayDate(new Date("2026-01-01T23:30:00Z"), "EN")).toBe("1/2/2026");
+  });
+
+  it("formats in Dutch when the admin's locale is NL", () => {
+    expect(shopDisplayDate(new Date("2026-01-01T23:30:00Z"), "NL")).toBe("2-1-2026");
   });
 });
 
 describe("shopDisplayTime", () => {
   it("formats an instant as its shop-local time, not the server/UTC time", () => {
     // 23:30Z is 00:30 the next day in Amsterdam (CET, UTC+1).
-    expect(shopDisplayTime(new Date("2026-01-01T23:30:00Z"))).toBe("12:30 AM");
+    expect(shopDisplayTime(new Date("2026-01-01T23:30:00Z"), "EN")).toBe("12:30 AM");
+  });
+
+  it("formats in Dutch (24-hour) when the admin's locale is NL", () => {
+    expect(shopDisplayTime(new Date("2026-01-01T23:30:00Z"), "NL")).toBe("0:30");
   });
 });
 

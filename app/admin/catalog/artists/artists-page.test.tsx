@@ -4,6 +4,9 @@ import { render, screen } from "@testing-library/react";
 vi.mock("@/lib/db", () => ({
   db: { artist: { findMany: vi.fn(), count: vi.fn() } },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import ArtistsPage from "./page";
 import { db } from "@/lib/db";
@@ -20,14 +23,14 @@ describe("ArtistsPage", () => {
   it("renders its own title and its own entity's items", async () => {
     render(await ArtistsPage());
     expect(
-      screen.getByRole("heading", { name: "Artists", level: 1 }),
+      screen.getByRole("heading", { name: "Artiesten", level: 1 }),
     ).toBeInTheDocument();
     expect(screen.getByText("Jeff Mills")).toBeInTheDocument();
   });
 
   it("renders only Artists — no other section's heading", async () => {
     render(await ArtistsPage());
-    for (const name of ["Labels", "Genres", "Product Types"]) {
+    for (const name of ["Labels", "Genres", "Producttypes"]) {
       expect(
         screen.queryByRole("heading", { name, level: 1 }),
       ).not.toBeInTheDocument();
@@ -39,5 +42,14 @@ describe("ArtistsPage", () => {
     expect(db.artist.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
     );
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    render(await ArtistsPage());
+    expect(
+      screen.getByRole("heading", { name: "Artists", level: 1 }),
+    ).toBeInTheDocument();
   });
 });

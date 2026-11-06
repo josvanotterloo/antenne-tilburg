@@ -49,9 +49,11 @@ function setup(overrides: Partial<Parameters<typeof ReferenceSection>[0]> = {}) 
   render(
     <ReferenceSection
       title="Genres"
+      addPlaceholder="Genre toevoegen"
       endpoint="/api/admin/genres"
       initialItems={INITIAL}
       initialTotal={90}
+      locale="NL"
       {...overrides}
     />,
   );
@@ -68,7 +70,7 @@ describe("ReferenceSection", () => {
   it("renders a search input scoped to the section", () => {
     setup();
     expect(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
     ).toBeInTheDocument();
   });
 
@@ -101,7 +103,7 @@ describe("ReferenceSection", () => {
     expect(screen.getByText("Ambient")).toBeInTheDocument();
 
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "tec",
     );
 
@@ -121,14 +123,14 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("textbox", { name: /new genres name/i }),
+      screen.getByRole("textbox", { name: /genre toevoegen/i }),
       "Dub",
     );
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: /^toevoegen$/i }));
 
     expect(await screen.findByText("Dub")).toBeInTheDocument();
     expect(screen.getByText(/91 genres/i)).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/added "dub"/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/"dub" toegevoegd/i);
   });
 
   it("shows a non-blocking fuzzy 'did you mean' hint when the create response includes candidates (Artists only)", async () => {
@@ -149,13 +151,13 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("textbox", { name: /new genres name/i }),
+      screen.getByRole("textbox", { name: /genre toevoegen/i }),
       "Jeff Milz",
     );
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: /^toevoegen$/i }));
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      /added "jeff milz"\. did you mean: jeff mills \(28 products\)\?/i,
+      /"jeff milz" toegevoegd\. bedoelde je: jeff mills \(28 products\)\?/i,
     );
   });
 
@@ -164,16 +166,16 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "tec",
     );
     await screen.findByText("Techno");
 
     await user.type(
-      screen.getByRole("textbox", { name: /new genres name/i }),
+      screen.getByRole("textbox", { name: /genre toevoegen/i }),
       "Dub",
     );
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: /^toevoegen$/i }));
 
     await screen.findByText(/91 genres/i);
     expect(screen.queryByText("Dub")).toBeNull();
@@ -184,7 +186,7 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "hou",
     );
     // "House" is already visible from the initial (unfiltered) list, so
@@ -193,21 +195,21 @@ describe("ReferenceSection", () => {
     // which doesn't match, disappearing.
     await waitFor(() => expect(screen.queryByText("Ambient")).toBeNull());
 
-    await user.click(screen.getByRole("button", { name: /^edit$/i }));
-    const editInput = screen.getByRole("textbox", { name: /edit house/i });
+    await user.click(screen.getByRole("button", { name: /^bewerken$/i }));
+    const editInput = screen.getByRole("textbox", { name: /bewerken house/i });
     await user.clear(editInput);
     await user.type(editInput, "Techno Renamed");
-    await user.click(screen.getByRole("button", { name: /^save$/i }));
+    await user.click(screen.getByRole("button", { name: /^opslaan$/i }));
 
     expect(await screen.findByText("Techno Renamed")).toBeInTheDocument();
-    expect(screen.getByRole("status")).toHaveTextContent(/^saved\.$/i);
+    expect(screen.getByRole("status")).toHaveTextContent(/^opgeslagen\.$/i);
   });
 
   it("removes a deleted item and decrements the total", async () => {
     const user = userEvent.setup();
     setup({ initialItems: [{ id: "1", name: "Ambient", productCount: 0 }] });
 
-    await user.click(screen.getByRole("button", { name: /^delete$/i }));
+    await user.click(screen.getByRole("button", { name: /^verwijderen$/i }));
 
     expect(await screen.findByText(/89 genres/i)).toBeInTheDocument();
     expect(screen.queryByText("Ambient")).toBeNull();
@@ -235,7 +237,7 @@ describe("ReferenceSection", () => {
     });
 
     setup();
-    const searchbox = screen.getByRole("searchbox", { name: /search genres/i });
+    const searchbox = screen.getByRole("searchbox", { name: /zoek genres/i });
 
     // First search settles and its (still-unresolved) request goes out.
     await user.type(searchbox, "tec");
@@ -293,7 +295,7 @@ describe("ReferenceSection", () => {
     });
 
     setup();
-    const searchbox = screen.getByRole("searchbox", { name: /search genres/i });
+    const searchbox = screen.getByRole("searchbox", { name: /zoek genres/i });
 
     // Search settles and its request goes out, but is held open — it's
     // still in flight when the mutation below happens.
@@ -306,10 +308,10 @@ describe("ReferenceSection", () => {
     // immediately, so the optimistic setItems runs before the stale search
     // response below does.
     await user.type(
-      screen.getByRole("textbox", { name: /new genres name/i }),
+      screen.getByRole("textbox", { name: /genre toevoegen/i }),
       "Technics",
     );
-    await user.click(screen.getByRole("button", { name: /^add$/i }));
+    await user.click(screen.getByRole("button", { name: /^toevoegen$/i }));
 
     expect(await screen.findByText("Technics")).toBeInTheDocument();
 
@@ -327,38 +329,38 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "zzznomatch",
     );
 
     const addButton = await screen.findByRole("button", {
-      name: /add "zzznomatch"/i,
+      name: /"zzznomatch" toevoegen/i,
     });
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);
 
     await user.click(addButton);
 
-    expect(await screen.findByRole("status")).toHaveTextContent(/added "dub"/i);
+    expect(await screen.findByRole("status")).toHaveTextContent(/"dub" toegevoegd/i);
   });
 
   it("shows a plain empty-state message when the list itself is empty", () => {
     setup({ initialItems: [] });
-    expect(screen.getByText(/no matches/i)).toBeInTheDocument();
+    expect(screen.getByText(/geen resultaten/i)).toBeInTheDocument();
   });
 
   it("links the product count to the filtered admin catalog when productLinkParam is set", () => {
     setup({ productLinkParam: "genreId" });
 
-    const link = screen.getByRole("link", { name: /in use by 3 products/i });
+    const link = screen.getByRole("link", { name: /in gebruik bij 3 producten/i });
     expect(link).toHaveAttribute("href", "/admin/catalog?genreId=2&instock=false");
   });
 
   it("renders the product count as plain text when productLinkParam is absent", () => {
     setup();
 
-    expect(screen.getByText(/in use by 3 products/i)).toBeInTheDocument();
+    expect(screen.getByText(/in gebruik bij 3 producten/i)).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: /in use by 3 products/i }),
+      screen.queryByRole("link", { name: /in gebruik bij 3 producten/i }),
     ).toBeNull();
   });
 
@@ -375,11 +377,11 @@ describe("ReferenceSection", () => {
 
     setup();
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "a",
     );
 
-    expect(await screen.findByText(/showing the first 20/i)).toBeInTheDocument();
+    expect(await screen.findByText(/de eerste 20/i)).toBeInTheDocument();
   });
 
   it("does not show the truncation hint when results are under the cap", async () => {
@@ -387,12 +389,18 @@ describe("ReferenceSection", () => {
     setup();
 
     await user.type(
-      screen.getByRole("searchbox", { name: /search genres/i }),
+      screen.getByRole("searchbox", { name: /zoek genres/i }),
       "tec",
     );
 
     await screen.findByText("Techno");
-    expect(screen.queryByText(/showing the first 20/i)).toBeNull();
+    expect(screen.queryByText(/de eerste 20/i)).toBeNull();
+  });
+
+  it("renders English chrome when locale is EN", () => {
+    setup({ locale: "EN", addPlaceholder: "Add genre" });
+    expect(screen.getByRole("searchbox", { name: /search genres/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^add$/i })).toBeInTheDocument();
   });
 
   describe("supplier field (Labels only)", () => {
@@ -416,14 +424,16 @@ describe("ReferenceSection", () => {
       render(
         <ReferenceSection
           title="Labels"
+          addPlaceholder="Label toevoegen"
           endpoint="/api/admin/labels"
           initialItems={[]}
           initialTotal={0}
           supplierEndpoint="/api/admin/suppliers"
+          locale="NL"
         />,
       );
-      await user.type(screen.getByLabelText(/new labels name/i), "Warp");
-      await user.click(screen.getByRole("button", { name: /^add$/i }));
+      await user.type(screen.getByLabelText(/label toevoegen/i), "Warp");
+      await user.click(screen.getByRole("button", { name: /^toevoegen$/i }));
 
       expect(await screen.findByText("Warp")).toBeInTheDocument();
       expect(fetchMock).toHaveBeenCalledWith(

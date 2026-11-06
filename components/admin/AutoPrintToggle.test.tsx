@@ -8,20 +8,29 @@ beforeEach(() => localStorage.clear());
 
 describe("AutoPrintToggle", () => {
   it("starts unchecked when nothing is stored", () => {
-    render(<AutoPrintToggle />);
-    expect(screen.getByRole("checkbox", { name: /auto-print/i })).not.toBeChecked();
+    render(<AutoPrintToggle locale="NL" />);
+    expect(
+      screen.getByRole("checkbox", { name: /automatisch afdrukken/i }),
+    ).not.toBeChecked();
   });
 
   it("reflects a previously stored true value", async () => {
     localStorage.setItem(AUTO_PRINT_STORAGE_KEY, "true");
-    render(<AutoPrintToggle />);
-    expect(await screen.findByRole("checkbox", { name: /auto-print/i })).toBeChecked();
+    render(<AutoPrintToggle locale="NL" />);
+    expect(
+      await screen.findByRole("checkbox", { name: /automatisch afdrukken/i }),
+    ).toBeChecked();
   });
 
   it("persists a change to localStorage", async () => {
     const user = userEvent.setup();
-    render(<AutoPrintToggle />);
-    await user.click(screen.getByRole("checkbox", { name: /auto-print/i }));
+    render(<AutoPrintToggle locale="NL" />);
+    await user.click(screen.getByRole("checkbox", { name: /automatisch afdrukken/i }));
     expect(localStorage.getItem(AUTO_PRINT_STORAGE_KEY)).toBe("true");
+  });
+
+  it("renders the English label when locale is EN", () => {
+    render(<AutoPrintToggle locale="EN" />);
+    expect(screen.getByRole("checkbox", { name: /auto-print/i })).toBeInTheDocument();
   });
 });

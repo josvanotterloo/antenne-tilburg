@@ -1,3 +1,5 @@
+import type { AdminLocale } from "@prisma/client";
+
 import { type CatalogProduct, joinArtistNames } from "@/lib/catalog";
 
 // Physical label space is tight — only the primary (position 0) genre is
@@ -146,4 +148,22 @@ const REQUIRED_FIELDS: RequiredField[] = [
 // pages.
 export function missingLabelFields(product: CatalogProduct): string[] {
   return REQUIRED_FIELDS.filter((f) => !f.present(product)).map((f) => f.key);
+}
+
+// Display-only bilingual label for a missingLabelFields() key — the keys
+// themselves (used by the API's 422 body too) stay the fixed English values
+// above; only the admin UI's rendering of them is locale-aware.
+const MISSING_FIELD_LABELS: Record<string, { nl: string; en: string }> = {
+  Artist: { nl: "Artiest", en: "Artist" },
+  Title: { nl: "Titel", en: "Title" },
+  Price: { nl: "Prijs", en: "Price" },
+  Label: { nl: "Label", en: "Label" },
+  Genre: { nl: "Genre", en: "Genre" },
+  "Product Type": { nl: "Producttype", en: "Product Type" },
+};
+
+export function missingLabelFieldLabel(key: string, locale: AdminLocale): string {
+  const label = MISSING_FIELD_LABELS[key];
+  if (!label) return key;
+  return locale === "EN" ? label.en : label.nl;
 }

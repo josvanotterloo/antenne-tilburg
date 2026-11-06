@@ -1,19 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 
 interface AdjustStockFormProps {
   productId: string;
   onAdjusted: (quantity: number) => void;
+  locale: AdminLocale;
 }
 
 // Inline expand/collapse form for a manual stock correction (ADJUSTMENT
 // transaction). No reason prompt — adjustments need no "why" (spec-admin-
 // stock-artist.md A2).
-export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps) {
+export function AdjustStockForm({ productId, onAdjusted, locale }: AdjustStockFormProps) {
   const [open, setOpen] = useState(false);
   const [delta, setDelta] = useState("");
   const { pending, error, run } = useAsyncAction();
@@ -41,7 +44,7 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
         onClick={() => setOpen(true)}
         className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
       >
-        Adjust stock
+        {t("productForm.adjustStock", locale)}
       </button>
     );
   }
@@ -74,14 +77,14 @@ export function AdjustStockForm({ productId, onAdjusted }: AdjustStockFormProps)
           disabled={pending}
           className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
         >
-          {pending ? "…" : "Save adjustment"}
+          {pending ? "…" : t("productForm.saveAdjustment", locale)}
         </button>
         <button
           type="button"
           onClick={() => setOpen(false)}
           className="text-xs text-admin-ink-muted hover:underline"
         >
-          Cancel
+          {t("common.cancel", locale)}
         </button>
       </div>
       {error && (

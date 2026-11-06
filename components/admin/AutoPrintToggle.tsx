@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { AdminLocale } from "@prisma/client";
+
+import { t } from "@/lib/i18n/t";
 
 export const AUTO_PRINT_STORAGE_KEY = "antenne-tilburg:auto-print-on-receive";
 
 // Per-browser preference, not per-account — deliberately localStorage, not a
 // DB field. Read on mount rather than during render so server/client markup
 // match on first paint.
-export function AutoPrintToggle() {
+export function AutoPrintToggle({ locale }: { locale: AdminLocale }) {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export function AutoPrintToggle() {
   return (
     <label className="flex items-center gap-2 text-sm">
       <input type="checkbox" checked={checked} onChange={(e) => toggle(e.target.checked)} />
-      Auto-print label on receipt
+      {t("orders.autoPrintLabel", locale)}
     </label>
   );
 }

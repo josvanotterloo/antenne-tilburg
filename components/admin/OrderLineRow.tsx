@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale, SupplyOrderStatus } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
+import { supplyOrderStatusLabel } from "@/lib/i18n/enum-labels";
 import { AUTO_PRINT_STORAGE_KEY } from "@/components/admin/AutoPrintToggle";
 
 export interface OrderLineRowData {
@@ -30,7 +33,13 @@ function lineStatus(line: {
   return "pending";
 }
 
-export function OrderLineRow({ line }: { line: OrderLineRowData }) {
+export function OrderLineRow({
+  line,
+  locale,
+}: {
+  line: OrderLineRowData;
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const [quantityOrdered, setQuantityOrdered] = useState(line.quantityOrdered);
   const [quantityReceived, setQuantityReceived] = useState(line.quantityReceived);
@@ -59,7 +68,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
     const next = Number.parseInt(qtyDraft, 10);
     if (!Number.isInteger(next) || next <= 0 || next < quantityReceived) {
       qtyAction.setError(
-        `Quantity must be a whole number of at least ${Math.max(1, quantityReceived)}`,
+        `${t("orders.qtyErrorMin", locale)} ${Math.max(1, quantityReceived)}`,
       );
       return;
     }
@@ -78,7 +87,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
     clearOtherErrors("receive");
     const amount = Number.parseInt(receiveDraft, 10);
     if (!Number.isInteger(amount) || amount <= 0) {
-      receiveAction.setError("Enter a whole number greater than zero");
+      receiveAction.setError(t("orders.qtyErrorPositive", locale));
       return;
     }
     receiveAction.run(async () => {
@@ -134,7 +143,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
           value={qtyDraft}
           onChange={(e) => setQtyDraft(e.target.value)}
           onBlur={saveQuantity}
-          aria-label={`Quantity ordered for ${line.title}`}
+          aria-label={`${t("orders.qtyOrderedFor", locale)} ${line.title}`}
           disabled={anyPending || status === "received"}
           className="w-16 rounded border border-admin-hairline px-2 py-1 text-sm tabular-nums"
         />
@@ -152,7 +161,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
                 : "bg-admin-raised text-admin-ink-muted"
           }`}
         >
-          {status}
+          {supplyOrderStatusLabel(status.toUpperCase() as SupplyOrderStatus, locale)}
         </span>
       </td>
       <td className="px-3 py-2">
@@ -164,7 +173,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
               max={remaining}
               value={receiveDraft}
               onChange={(e) => setReceiveDraft(e.target.value)}
-              aria-label={`Quantity received for ${line.title}`}
+              aria-label={`${t("orders.qtyReceivedFor", locale)} ${line.title}`}
               className="w-14 rounded border border-admin-hairline px-2 py-1 text-sm tabular-nums"
             />
             <button
@@ -173,14 +182,14 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
               disabled={anyPending}
               className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
             >
-              {receiveAction.pending ? "…" : "Confirm"}
+              {receiveAction.pending ? "…" : t("common.confirm", locale)}
             </button>
             <button
               type="button"
               onClick={() => setReceiving(false)}
               className="text-xs text-admin-ink-muted hover:underline"
             >
-              Cancel
+              {t("common.cancel", locale)}
             </button>
           </span>
         ) : (
@@ -193,7 +202,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
             disabled={anyPending}
             className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
           >
-            Mark received
+            {t("orders.markReceived", locale)}
           </button>
         )}
         {/* Undo for a mis-clicked quick-add. Gated client-side on both
@@ -211,14 +220,14 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
                 disabled={anyPending}
                 className="text-xs text-red-400 hover:underline disabled:opacity-50"
               >
-                {removeAction.pending ? "…" : "Confirm"}
+                {removeAction.pending ? "…" : t("common.confirm", locale)}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
                 className="text-xs text-admin-ink-muted hover:underline"
               >
-                Cancel
+                {t("common.cancel", locale)}
               </button>
             </span>
           ) : (
@@ -228,7 +237,7 @@ export function OrderLineRow({ line }: { line: OrderLineRowData }) {
               disabled={anyPending}
               className="ml-2 text-xs text-red-400 hover:underline disabled:opacity-50"
             >
-              Remove
+              {t("common.remove", locale)}
             </button>
           ))}
         {(qtyAction.error || receiveAction.error || removeAction.error) && (

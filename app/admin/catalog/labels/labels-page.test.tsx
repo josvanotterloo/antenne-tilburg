@@ -4,6 +4,9 @@ import { render, screen } from "@testing-library/react";
 vi.mock("@/lib/db", () => ({
   db: { label: { findMany: vi.fn(), count: vi.fn() } },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import LabelsPage from "./page";
 import { db } from "@/lib/db";
@@ -44,5 +47,14 @@ describe("LabelsPage", () => {
     expect(db.label.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
     );
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    render(await LabelsPage());
+    expect(
+      screen.getByRole("heading", { name: "Labels", level: 1 }),
+    ).toBeInTheDocument();
   });
 });

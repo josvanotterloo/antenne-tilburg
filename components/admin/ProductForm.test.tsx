@@ -32,15 +32,23 @@ describe("ProductForm", () => {
   beforeEach(() => vi.clearAllMocks());
   afterEach(() => vi.restoreAllMocks());
 
+  it("renders English labels and condition buttons when locale is EN", () => {
+    render(<ProductForm locale="EN" />);
+    expect(screen.getByText("Title")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Secondhand" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /add product/i })).toBeInTheDocument();
+  });
+
   it("renders every field of the product", () => {
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
     expect(
       screen.getByRole("combobox", { name: /artists/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: /title/i })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /titel/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("textbox", { name: /catalog number/i }),
+      screen.getByRole("textbox", { name: /catalogusnummer/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("combobox", { name: /label/i }),
@@ -51,69 +59,69 @@ describe("ProductForm", () => {
     expect(
       screen.getByRole("combobox", { name: /product type/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "NEW" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuw" })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "SECONDHAND" }),
+      screen.getByRole("button", { name: "Tweedehands" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("spinbutton", { name: /price/i }),
+      screen.getByRole("spinbutton", { name: /prijs/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("textbox", { name: /description/i }),
+      screen.getByRole("textbox", { name: /beschrijving/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /add product/i }),
+      screen.getByRole("button", { name: /product toevoegen/i }),
     ).toBeInTheDocument();
   });
 
   it("associates labels with inputs — clicking a label focuses its field", async () => {
     const user = userEvent.setup();
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
-    await user.click(screen.getByText("Artists"));
+    await user.click(screen.getByText("Artiesten"));
     expect(screen.getByRole("combobox", { name: /artists/i })).toHaveFocus();
 
-    await user.click(screen.getByText("Price (€)"));
-    expect(screen.getByRole("spinbutton", { name: /price/i })).toHaveFocus();
+    await user.click(screen.getByText("Prijs (€)"));
+    expect(screen.getByRole("spinbutton", { name: /prijs/i })).toHaveFocus();
   });
 
   it("shows the sell-one button only when editing an existing product", () => {
-    const { unmount } = render(<ProductForm product={PRODUCT} />);
+    const { unmount } = render(<ProductForm product={PRODUCT} locale="NL" />);
     expect(
-      screen.getByRole("button", { name: /sell one/i }),
+      screen.getByRole("button", { name: /verkoop één/i }),
     ).toBeInTheDocument();
     unmount();
 
-    render(<ProductForm />);
-    expect(screen.queryByRole("button", { name: /sell one/i })).toBeNull();
+    render(<ProductForm locale="NL" />);
+    expect(screen.queryByRole("button", { name: /verkoop één/i })).toBeNull();
   });
 
   it("shows quantity as read-only text with Adjust stock, only when editing", () => {
-    const { unmount } = render(<ProductForm product={PRODUCT} />);
+    const { unmount } = render(<ProductForm product={PRODUCT} locale="NL" />);
     expect(screen.getByText("4")).toBeInTheDocument();
-    expect(screen.queryByRole("spinbutton", { name: /quantity/i })).toBeNull();
-    expect(screen.getByRole("button", { name: /adjust stock/i })).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton", { name: /aantal/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /voorraad aanpassen/i })).toBeInTheDocument();
     unmount();
 
-    render(<ProductForm />);
-    expect(screen.queryByRole("button", { name: /adjust stock/i })).toBeNull();
+    render(<ProductForm locale="NL" />);
+    expect(screen.queryByRole("button", { name: /voorraad aanpassen/i })).toBeNull();
   });
 
   it("shows an editable quantity input, defaulting to 1, only when creating a new product", () => {
-    const { unmount } = render(<ProductForm />);
-    expect(screen.getByRole("spinbutton", { name: /quantity/i })).toHaveValue(1);
+    const { unmount } = render(<ProductForm locale="NL" />);
+    expect(screen.getByRole("spinbutton", { name: /aantal/i })).toHaveValue(1);
     unmount();
 
-    render(<ProductForm product={PRODUCT} />);
-    expect(screen.queryByRole("spinbutton", { name: /quantity/i })).toBeNull();
+    render(<ProductForm product={PRODUCT} locale="NL" />);
+    expect(screen.queryByRole("spinbutton", { name: /aantal/i })).toBeNull();
   });
 
   it("shows a +1 button next to Sell one when editing, absent when creating", () => {
-    const { unmount } = render(<ProductForm product={PRODUCT} />);
+    const { unmount } = render(<ProductForm product={PRODUCT} locale="NL" />);
     expect(screen.getByRole("button", { name: "+1" })).toBeInTheDocument();
     unmount();
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
     expect(screen.queryByRole("button", { name: "+1" })).toBeNull();
   });
 
@@ -127,8 +135,8 @@ describe("ProductForm", () => {
         }),
     );
 
-    render(<ProductForm product={PRODUCT} />);
-    const sellButton = screen.getByRole("button", { name: /sell one/i });
+    render(<ProductForm product={PRODUCT} locale="NL" />);
+    const sellButton = screen.getByRole("button", { name: /verkoop één/i });
     const plusOneButton = screen.getByRole("button", { name: "+1" });
     await user.click(sellButton);
 
@@ -158,24 +166,24 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify([]));
     });
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
     await user.click(screen.getByRole("combobox", { name: /artists/i }));
     await user.click(await screen.findByRole("option", { name: "Vril" }));
-    await user.type(screen.getByRole("textbox", { name: /title/i }), "Torus");
+    await user.type(screen.getByRole("textbox", { name: /titel/i }), "Torus");
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Zulema Records" }));
     await user.click(screen.getByRole("combobox", { name: /genre/i }));
     await user.click(await screen.findByRole("option", { name: "Techno" }));
     await user.click(screen.getByRole("combobox", { name: /product type/i }));
     await user.click(await screen.findByRole("option", { name: "LP" }));
-    await user.type(screen.getByRole("spinbutton", { name: /price/i }), "24.99");
+    await user.type(screen.getByRole("spinbutton", { name: /prijs/i }), "24.99");
 
-    const quantityInput = screen.getByRole("spinbutton", { name: /quantity/i });
+    const quantityInput = screen.getByRole("spinbutton", { name: /aantal/i });
     await user.clear(quantityInput);
     await user.type(quantityInput, "3");
 
-    await user.click(screen.getByRole("button", { name: /add product/i }));
+    await user.click(screen.getByRole("button", { name: /product toevoegen/i }));
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
@@ -193,19 +201,19 @@ describe("ProductForm", () => {
   // returning unnoticed.
   it("never nests a second <form> inside itself, even with Adjust stock expanded", async () => {
     const user = userEvent.setup();
-    const { container } = render(<ProductForm product={PRODUCT} />);
-    await user.click(screen.getByRole("button", { name: /adjust stock/i }));
+    const { container } = render(<ProductForm product={PRODUCT} locale="NL" />);
+    await user.click(screen.getByRole("button", { name: /voorraad aanpassen/i }));
     expect(container.querySelectorAll("form")).toHaveLength(1);
   });
 
   it("renders a cover image upload field, without a preview on a new product", () => {
-    render(<ProductForm />);
-    expect(screen.getByLabelText(/cover image/i)).toBeInTheDocument();
+    render(<ProductForm locale="NL" />);
+    expect(screen.getByLabelText(/omslagafbeelding/i)).toBeInTheDocument();
     expect(screen.queryByRole("img", { name: /cover image/i })).toBeNull();
   });
 
   it("shows the existing cover image preview when editing", () => {
-    render(<ProductForm product={PRODUCT} />);
+    render(<ProductForm product={PRODUCT} locale="NL" />);
     expect(screen.getByRole("img", { name: /cover image/i })).toHaveAttribute(
       "src",
       "/uploads/existing-cover.webp",
@@ -222,11 +230,11 @@ describe("ProductForm", () => {
         }),
       );
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
     const file = new File([new Uint8Array(8)], "cover.png", {
       type: "image/png",
     });
-    await user.upload(screen.getByLabelText(/cover image/i), file);
+    await user.upload(screen.getByLabelText(/omslagafbeelding/i), file);
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/admin/uploads",
@@ -243,8 +251,8 @@ describe("ProductForm", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
 
-    render(<ProductForm product={PRODUCT} />);
-    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    render(<ProductForm product={PRODUCT} locale="NL" />);
+    await user.click(screen.getByRole("button", { name: /wijzigingen opslaan/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -283,11 +291,12 @@ describe("ProductForm", () => {
             { id: "a2", name: "Rrose" },
           ],
         }}
+        locale="NL"
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "Remove Vril" }));
-    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    await user.click(screen.getByRole("button", { name: /wijzigingen opslaan/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const body = JSON.parse(
@@ -306,6 +315,7 @@ describe("ProductForm", () => {
             { id: "g2", name: "House" },
           ],
         }}
+        locale="NL"
       />,
     );
 
@@ -326,11 +336,11 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify({ ok: true }));
     });
 
-    render(<ProductForm product={PRODUCT} />);
+    render(<ProductForm product={PRODUCT} locale="NL" />);
 
     await user.click(screen.getByRole("combobox", { name: /genres/i }));
     await user.click(await screen.findByRole("option", { name: "House" }));
-    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    await user.click(screen.getByRole("button", { name: /wijzigingen opslaan/i }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -364,12 +374,12 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify([]));
     });
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
     await user.click(screen.getByRole("combobox", { name: /artists/i }));
     await user.click(await screen.findByRole("option", { name: "Vril" }));
 
-    await user.type(screen.getByRole("textbox", { name: /title/i }), "Torus");
+    await user.type(screen.getByRole("textbox", { name: /titel/i }), "Torus");
 
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(
@@ -382,9 +392,9 @@ describe("ProductForm", () => {
     await user.click(screen.getByRole("combobox", { name: /product type/i }));
     await user.click(await screen.findByRole("option", { name: "LP" }));
 
-    await user.type(screen.getByRole("spinbutton", { name: /price/i }), "24.99");
+    await user.type(screen.getByRole("spinbutton", { name: /prijs/i }), "24.99");
 
-    await user.click(screen.getByRole("button", { name: /add product/i }));
+    await user.click(screen.getByRole("button", { name: /product toevoegen/i }));
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
@@ -410,7 +420,7 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify([]));
     });
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Warp" }));
 
@@ -438,7 +448,7 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify([]));
     });
 
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
     await user.click(screen.getByRole("combobox", { name: /supplier/i }));
     await user.click(
@@ -454,9 +464,9 @@ describe("ProductForm", () => {
   });
 
   it("Various Artists checkbox is unchecked by default, with the artist combobox visible", () => {
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
     expect(
-      screen.getByRole("checkbox", { name: /various artists/i }),
+      screen.getByRole("checkbox", { name: /diverse artiesten/i }),
     ).not.toBeChecked();
     expect(
       screen.getByRole("combobox", { name: /artists/i }),
@@ -466,9 +476,9 @@ describe("ProductForm", () => {
 
   it("checking Various Artists hides the artist combobox and shows the contents textarea", async () => {
     const user = userEvent.setup();
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
-    await user.click(screen.getByRole("checkbox", { name: /various artists/i }));
+    await user.click(screen.getByRole("checkbox", { name: /diverse artiesten/i }));
 
     expect(screen.queryByRole("combobox", { name: /artists/i })).toBeNull();
     expect(screen.getByPlaceholderText(/surgeon, regis/i)).toBeInTheDocument();
@@ -476,9 +486,9 @@ describe("ProductForm", () => {
 
   it("unchecking Various Artists after checking clears contents and restores an empty artist combobox", async () => {
     const user = userEvent.setup();
-    render(<ProductForm />);
+    render(<ProductForm locale="NL" />);
 
-    const checkbox = screen.getByRole("checkbox", { name: /various artists/i });
+    const checkbox = screen.getByRole("checkbox", { name: /diverse artiesten/i });
     await user.click(checkbox);
     await user.type(
       screen.getByPlaceholderText(/surgeon, regis/i),
@@ -498,13 +508,13 @@ describe("ProductForm", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
 
-    render(<ProductForm product={PRODUCT} />);
-    await user.click(screen.getByRole("checkbox", { name: /various artists/i }));
+    render(<ProductForm product={PRODUCT} locale="NL" />);
+    await user.click(screen.getByRole("checkbox", { name: /diverse artiesten/i }));
     await user.type(
       screen.getByPlaceholderText(/surgeon, regis/i),
       "Surgeon, Regis",
     );
-    await user.click(screen.getByRole("button", { name: /save changes/i }));
+    await user.click(screen.getByRole("button", { name: /wijzigingen opslaan/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const body = JSON.parse(
@@ -528,7 +538,7 @@ describe("ProductForm", () => {
       return new Response(JSON.stringify([]));
     });
 
-    render(<ProductForm product={PRODUCT} />);
+    render(<ProductForm product={PRODUCT} locale="NL" />);
 
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Ostgut Ton" }));

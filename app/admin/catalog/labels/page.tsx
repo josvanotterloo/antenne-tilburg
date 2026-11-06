@@ -1,4 +1,6 @@
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { t } from "@/lib/i18n/t";
 import {
   ReferenceSection,
   type ReferenceItem,
@@ -25,6 +27,8 @@ const toLabelItems = (rows: LabelWithCount[]): ReferenceItem[] =>
   }));
 
 export default async function LabelsPage() {
+  const session = await auth();
+  const locale = session!.user.locale;
   const [labels, total] = await Promise.all([
     db.label.findMany({
       orderBy: { name: "asc" },
@@ -36,12 +40,14 @@ export default async function LabelsPage() {
 
   return (
     <ReferenceSection
-      title="Labels"
+      title={t("reference.labels.title", locale)}
+      addPlaceholder={t("reference.labels.addPlaceholder", locale)}
       endpoint="/api/admin/labels"
       initialItems={toLabelItems(labels)}
       initialTotal={total}
       supplierEndpoint="/api/admin/suppliers"
       productLinkParam="labelId"
+      locale={locale}
     />
   );
 }

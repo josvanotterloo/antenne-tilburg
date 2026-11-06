@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
+import { conditionLabel } from "@/lib/i18n/enum-labels";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 import { MultiCombobox } from "@/components/ui/MultiCombobox";
 import { Field } from "@/components/admin/Field";
@@ -36,9 +39,10 @@ export interface ProductFormValues {
 
 interface ProductFormProps {
   product?: ProductFormValues;
+  locale: AdminLocale;
 }
 
-export function ProductForm({ product }: ProductFormProps) {
+export function ProductForm({ product, locale }: ProductFormProps) {
   const router = useRouter();
 
   const [artists, setArtists] = useState<ComboboxOption[]>(
@@ -177,7 +181,7 @@ export function ProductForm({ product }: ProductFormProps) {
       className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
     >
       {!isVariousArtists && (
-        <Field label="Artists" htmlFor="artists">
+        <Field label={t("productForm.artists", locale)} htmlFor="artists">
           <MultiCombobox
             id="artists"
             label="Artists"
@@ -189,7 +193,7 @@ export function ProductForm({ product }: ProductFormProps) {
         </Field>
       )}
 
-      <Field label="Various Artists / Compilation" htmlFor="various-artists">
+      <Field label={t("productForm.variousArtists", locale)} htmlFor="various-artists">
         <input
           id="various-artists"
           type="checkbox"
@@ -200,7 +204,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
       {isVariousArtists && (
         <Field
-          label="Artists on this release"
+          label={t("productForm.artistsOnRelease", locale)}
           htmlFor="contents"
           className="md:col-span-2"
         >
@@ -215,7 +219,7 @@ export function ProductForm({ product }: ProductFormProps) {
         </Field>
       )}
 
-      <Field label="Title" htmlFor="product-title">
+      <Field label={t("productForm.title", locale)} htmlFor="product-title">
         <input
           id="product-title"
           required
@@ -225,7 +229,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Label" htmlFor="label">
+      <Field label={t("productForm.label", locale)} htmlFor="label">
         <Combobox
           id="label"
           label="Label"
@@ -252,7 +256,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Genres" htmlFor="genres">
+      <Field label={t("productForm.genres", locale)} htmlFor="genres">
         <MultiCombobox
           id="genres"
           label="Genres"
@@ -263,7 +267,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Product type" htmlFor="product-type">
+      <Field label={t("productForm.productType", locale)} htmlFor="product-type">
         <Combobox
           id="product-type"
           label="Product type"
@@ -274,7 +278,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Supplier" htmlFor="supplier">
+      <Field label={t("suppliers.supplierLabel", locale)} htmlFor="supplier">
         <Combobox
           id="supplier"
           label="Supplier"
@@ -285,7 +289,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Condition">
+      <Field label={t("productForm.condition", locale)}>
         <div className="flex gap-2">
           {(["NEW", "SECONDHAND"] as const).map((c) => (
             <button
@@ -298,13 +302,13 @@ export function ProductForm({ product }: ProductFormProps) {
                   : "border-admin-hairline"
               }`}
             >
-              {c}
+              {conditionLabel(c, locale)}
             </button>
           ))}
         </div>
       </Field>
 
-      <Field label="Price (€)" htmlFor="price">
+      <Field label={t("productForm.price", locale)} htmlFor="price">
         <input
           id="price"
           type="number"
@@ -318,10 +322,10 @@ export function ProductForm({ product }: ProductFormProps) {
       </Field>
 
       {product ? (
-        <Field label="Quantity in stock">
+        <Field label={t("productForm.quantityInStock", locale)}>
           <p className="text-lg font-semibold tabular-nums">{quantity}</p>
           <p className="text-xs text-admin-ink-muted">
-            Derived from stock transactions — 0 hides the product from the shop.
+            {t("productForm.quantityHintEdit", locale)}
           </p>
           <div className="mt-1 flex items-center gap-2">
             <button
@@ -330,7 +334,7 @@ export function ProductForm({ product }: ProductFormProps) {
               disabled={selling || quantity <= 0}
               className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
             >
-              {selling ? "…" : "Sell one"}
+              {selling ? "…" : t("products.sellOne", locale)}
             </button>
             <button
               type="button"
@@ -340,11 +344,11 @@ export function ProductForm({ product }: ProductFormProps) {
             >
               {addingOne ? "…" : "+1"}
             </button>
-            <AdjustStockForm productId={product.id} onAdjusted={setQuantity} />
+            <AdjustStockForm productId={product.id} onAdjusted={setQuantity} locale={locale} />
           </div>
         </Field>
       ) : (
-        <Field label="Quantity" htmlFor="quantity">
+        <Field label={t("productForm.quantity", locale)} htmlFor="quantity">
           <input
             id="quantity"
             type="number"
@@ -355,12 +359,12 @@ export function ProductForm({ product }: ProductFormProps) {
             className="w-24 rounded border border-admin-hairline px-2 py-1 text-sm"
           />
           <p className="text-xs text-admin-ink-muted">
-            0 hides the product from the shop until stock is added.
+            {t("productForm.quantityHintCreate", locale)}
           </p>
         </Field>
       )}
 
-      <Field label="Catalog number" htmlFor="catalog-number">
+      <Field label={t("productForm.catalogNumber", locale)} htmlFor="catalog-number">
         <input
           id="catalog-number"
           value={catalogNumber}
@@ -369,7 +373,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Description" htmlFor="description" className="md:col-span-2">
+      <Field label={t("productForm.description", locale)} htmlFor="description" className="md:col-span-2">
         <textarea
           id="description"
           value={description}
@@ -379,7 +383,7 @@ export function ProductForm({ product }: ProductFormProps) {
         />
       </Field>
 
-      <Field label="Cover image" htmlFor="cover-image" className="md:col-span-2">
+      <Field label={t("productForm.coverImage", locale)} htmlFor="cover-image" className="md:col-span-2">
         {coverImage && (
           // Plain <img>: local admin preview of an /uploads file with arbitrary
           // dimensions; next/image optimization buys nothing here.
@@ -399,20 +403,20 @@ export function ProductForm({ product }: ProductFormProps) {
             disabled={uploading}
             className="text-sm text-admin-ink-muted"
           />
-          {uploading && <span className="text-admin-ink-muted">Uploading…</span>}
+          {uploading && (
+            <span className="text-admin-ink-muted">{t("productForm.uploading", locale)}</span>
+          )}
           {coverImage && !uploading && (
             <button
               type="button"
               onClick={() => setCoverImage("")}
               className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised"
             >
-              Remove
+              {t("common.remove", locale)}
             </button>
           )}
         </div>
-        <p className="text-xs text-admin-ink-muted">
-          JPG/PNG/WebP/GIF · max 5 MB · not shown on the public site yet
-        </p>
+        <p className="text-xs text-admin-ink-muted">{t("productForm.coverHint", locale)}</p>
       </Field>
 
       {error && (
@@ -427,14 +431,18 @@ export function ProductForm({ product }: ProductFormProps) {
           disabled={submitting}
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
-          {submitting ? "Saving…" : product ? "Save changes" : "Add product"}
+          {submitting
+            ? t("common.saving", locale)
+            : product
+              ? t("common.saveChanges", locale)
+              : t("products.addButton", locale)}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/catalog")}
           className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
-          Cancel
+          {t("common.cancel", locale)}
         </button>
       </div>
     </form>

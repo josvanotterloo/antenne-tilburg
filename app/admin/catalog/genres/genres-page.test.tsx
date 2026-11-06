@@ -4,6 +4,9 @@ import { render, screen } from "@testing-library/react";
 vi.mock("@/lib/db", () => ({
   db: { genre: { findMany: vi.fn(), count: vi.fn() } },
 }));
+vi.mock("@/lib/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { locale: "NL" } }),
+}));
 
 import GenresPage from "./page";
 import { db } from "@/lib/db";
@@ -39,5 +42,14 @@ describe("GenresPage", () => {
     expect(db.genre.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 20 }),
     );
+  });
+
+  it("renders in English when the admin's locale is EN", async () => {
+    const { auth } = await import("@/lib/auth");
+    vi.mocked(auth).mockResolvedValueOnce({ user: { locale: "EN" } } as never);
+    render(await GenresPage());
+    expect(
+      screen.getByRole("heading", { name: "Genres", level: 1 }),
+    ).toBeInTheDocument();
   });
 });

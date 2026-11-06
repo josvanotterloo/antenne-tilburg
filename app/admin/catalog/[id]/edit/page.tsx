@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 
+import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { computeRunningBalance } from "@/lib/stock-history";
-import { missingLabelFields } from "@/lib/dymo-label";
+import { missingLabelFieldLabel, missingLabelFields } from "@/lib/dymo-label";
+import { t } from "@/lib/i18n/t";
+import { stockTransactionTypeLabel } from "@/lib/i18n/enum-labels";
 import { ProductForm } from "@/components/admin/ProductForm";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +15,8 @@ export default async function EditProductPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  const locale = session!.user.locale;
   const { id } = await params;
 
   // Relations included so the comboboxes can display the selected names —
@@ -40,7 +45,7 @@ export default async function EditProductPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Edit product</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("products.editTitle", locale)}</h1>
       {missingFields.length === 0 ? (
         <a
           href={`/api/admin/label/${product.id}`}
@@ -48,11 +53,12 @@ export default async function EditProductPage({
           rel="noopener noreferrer"
           className="inline-block rounded border border-admin-hairline px-3 py-2 text-sm hover:bg-admin-raised"
         >
-          Print label
+          {t("products.printLabel", locale)}
         </a>
       ) : (
         <p className="text-sm text-admin-ink-muted">
-          Print label unavailable — missing: {missingFields.join(", ")}.
+          {t("products.printLabelUnavailablePrefix", locale)}{" "}
+          {missingFields.map((f) => missingLabelFieldLabel(f, locale)).join(", ")}.
         </p>
       )}
       <ProductForm
@@ -84,23 +90,24 @@ export default async function EditProductPage({
           isVariousArtists: product.isVariousArtists,
           contents: product.contents,
         }}
+        locale={locale}
       />
       <div className="max-w-3xl space-y-2">
-        <h2 className="text-lg font-semibold">Stock transactions</h2>
+        <h2 className="text-lg font-semibold">{t("products.stockTransactionsTitle", locale)}</h2>
         {history.length === 0 ? (
           <p className="rounded border border-dashed border-admin-hairline p-4 text-sm text-admin-ink-muted">
-            No stock transactions yet.
+            {t("products.noTransactions", locale)}
           </p>
         ) : (
           <div className="overflow-x-auto rounded border border-admin-hairline bg-admin-surface">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-admin-hairline bg-admin-bg text-admin-ink-muted">
                 <tr>
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 font-medium">Type</th>
-                  <th className="px-3 py-2 font-medium">Quantity</th>
-                  <th className="px-3 py-2 font-medium">Note</th>
-                  <th className="px-3 py-2 font-medium">Balance</th>
+                  <th className="px-3 py-2 font-medium">{t("products.colDate", locale)}</th>
+                  <th className="px-3 py-2 font-medium">{t("products.colType", locale)}</th>
+                  <th className="px-3 py-2 font-medium">{t("products.colQuantity", locale)}</th>
+                  <th className="px-3 py-2 font-medium">{t("products.colNote", locale)}</th>
+                  <th className="px-3 py-2 font-medium">{t("products.colBalance", locale)}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-admin-hairline">
@@ -109,7 +116,7 @@ export default async function EditProductPage({
                     <td className="px-3 py-2 text-admin-ink-muted">
                       {entry.createdAt.toLocaleString()}
                     </td>
-                    <td className="px-3 py-2">{entry.type}</td>
+                    <td className="px-3 py-2">{stockTransactionTypeLabel(entry.type, locale)}</td>
                     <td className="px-3 py-2 tabular-nums">
                       {entry.quantity > 0 ? `+${entry.quantity}` : entry.quantity}
                     </td>

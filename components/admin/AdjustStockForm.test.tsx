@@ -8,8 +8,8 @@ beforeEach(() => vi.restoreAllMocks());
 
 describe("AdjustStockForm", () => {
   it("is collapsed by default, showing only the trigger button", () => {
-    render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} />);
-    expect(screen.getByRole("button", { name: /adjust stock/i })).toBeInTheDocument();
+    render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} locale="NL" />);
+    expect(screen.getByRole("button", { name: /voorraad aanpassen/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/reason/i)).toBeNull();
   });
 
@@ -24,10 +24,10 @@ describe("AdjustStockForm", () => {
       }),
     );
 
-    render(<AdjustStockForm productId="p1" onAdjusted={onAdjusted} />);
-    await user.click(screen.getByRole("button", { name: /adjust stock/i }));
+    render(<AdjustStockForm productId="p1" onAdjusted={onAdjusted} locale="NL" />);
+    await user.click(screen.getByRole("button", { name: /voorraad aanpassen/i }));
     await user.type(screen.getByLabelText(/quantity delta/i), "2");
-    fireEvent.click(screen.getByRole("button", { name: /save adjustment/i }));
+    fireEvent.click(screen.getByRole("button", { name: /aanpassing opslaan/i }));
 
     await waitFor(() => expect(onAdjusted).toHaveBeenCalledWith(7));
   });
@@ -39,11 +39,16 @@ describe("AdjustStockForm", () => {
       vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: "Delta must be a non-zero whole number" }) }),
     );
 
-    render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} />);
-    await user.click(screen.getByRole("button", { name: /adjust stock/i }));
+    render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} locale="NL" />);
+    await user.click(screen.getByRole("button", { name: /voorraad aanpassen/i }));
     await user.type(screen.getByLabelText(/quantity delta/i), "1");
-    fireEvent.click(screen.getByRole("button", { name: /save adjustment/i }));
+    fireEvent.click(screen.getByRole("button", { name: /aanpassing opslaan/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/delta must be a non-zero whole number/i);
+  });
+
+  it("renders the English labels when locale is EN", () => {
+    render(<AdjustStockForm productId="p1" onAdjusted={vi.fn()} locale="EN" />);
+    expect(screen.getByRole("button", { name: /adjust stock/i })).toBeInTheDocument();
   });
 });
