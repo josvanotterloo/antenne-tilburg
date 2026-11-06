@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { t } from "@/lib/i18n/t";
+import { t, tCount } from "@/lib/i18n/t";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +22,10 @@ export default async function AdminSuppliersPage() {
           <h1 className="text-2xl font-bold tracking-tight">{t("suppliers.title", locale)}</h1>
           <p className="text-sm text-admin-ink-muted">
             {suppliers.length}{" "}
-            {t(
-              suppliers.length === 1 ? "suppliers.countSingular" : "suppliers.countPlural",
+            {tCount(
+              suppliers.length,
+              "suppliers.countSingular",
+              "suppliers.countPlural",
               locale,
             )}
           </p>

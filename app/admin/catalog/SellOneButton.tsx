@@ -35,7 +35,7 @@ export function SellOneButton({
         type="button"
         onClick={handleSell}
         disabled={pending || quantity <= 0}
-        className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
+        className="whitespace-nowrap rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
       >
         {pending ? "…" : t("products.sellOne", locale)}
       </button>

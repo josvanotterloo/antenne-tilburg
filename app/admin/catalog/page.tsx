@@ -12,7 +12,7 @@ import { missingLabelFields } from "@/lib/dymo-label";
 import { getOpenOrderProductIds } from "@/lib/open-order-lookup";
 import { db } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { t, type TranslationKey } from "@/lib/i18n/t";
+import { t, tCount, type TranslationKey } from "@/lib/i18n/t";
 import { OrderButton } from "@/components/admin/OrderButton";
 
 import { DeleteProductButton } from "./DeleteProductButton";
@@ -122,7 +122,7 @@ export default async function CatalogPage({
           <h1 className="text-2xl font-bold tracking-tight">{t("products.title", locale)}</h1>
           <p className="text-sm text-admin-ink-muted">
             {result.total}{" "}
-            {t(result.total === 1 ? "products.countSingular" : "products.countPlural", locale)}
+            {tCount(result.total, "products.countSingular", "products.countPlural", locale)}
           </p>
         </div>
         <Link
@@ -221,10 +221,13 @@ export default async function CatalogPage({
               </div>
 
               {/* Stock, price and actions; wraps below the identity block on
-                  mobile. Fixed grid columns keep quantity/price/every
-                  action control aligned row-to-row regardless of digit
-                  count or button label length. */}
-              <div className="grid grid-cols-[104px_76px_84px_56px_84px_32px_48px_56px] items-center gap-3 text-sm">
+                  mobile. Quantity and price are fixed-width (their content
+                  is numeric and locale-independent) so their start x stays
+                  put; every action column sizes to max-content instead of
+                  a guessed px width, so it fits whichever language is
+                  active — since each column's text is the same string on
+                  every row, max-content still lines actions up row to row. */}
+              <div className="grid grid-cols-[104px_76px_max-content_max-content_max-content_32px_max-content_max-content] items-center gap-x-4 gap-y-1 text-sm">
                 <div className="text-right">
                   <span
                     className={`font-semibold tabular-nums ${
@@ -263,7 +266,7 @@ export default async function CatalogPage({
                       rel="noopener noreferrer"
                       aria-label={t("products.printLabel", locale)}
                       title={t("products.printLabel", locale)}
-                      className="text-admin-ink hover:underline"
+                      className="whitespace-nowrap text-admin-ink hover:underline"
                     >
                       🖨️
                     </a>
@@ -272,7 +275,7 @@ export default async function CatalogPage({
                 <div className="flex justify-center">
                   <Link
                     href={`/admin/catalog/${product.id}/edit`}
-                    className="text-admin-ink hover:underline"
+                    className="whitespace-nowrap text-admin-ink hover:underline"
                   >
                     {t("common.edit", locale)}
                   </Link>

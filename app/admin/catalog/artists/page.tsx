@@ -42,6 +42,7 @@ export default async function ArtistsPage() {
     <ReferenceSection
       title={t("reference.artists.title", locale)}
       addPlaceholder={t("reference.artists.addPlaceholder", locale)}
+      countSingular={t("reference.artists.countSingular", locale)}
       endpoint="/api/admin/artists"
       initialItems={toArtistItems(artists)}
       initialTotal={total}

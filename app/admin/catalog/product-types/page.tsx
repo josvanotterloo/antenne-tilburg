@@ -26,6 +26,7 @@ export default async function ProductTypesPage() {
     <ReferenceSection
       title={t("reference.productTypes.title", locale)}
       addPlaceholder={t("reference.productTypes.addPlaceholder", locale)}
+      countSingular={t("reference.productTypes.countSingular", locale)}
       endpoint="/api/admin/product-types"
       initialItems={toSimpleReferenceItems(productTypes)}
       initialTotal={total}

@@ -42,6 +42,7 @@ export default async function GenresPage() {
     <ReferenceSection
       title={t("reference.genres.title", locale)}
       addPlaceholder={t("reference.genres.addPlaceholder", locale)}
+      countSingular={t("reference.genres.countSingular", locale)}
       endpoint="/api/admin/genres"
       initialItems={toGenreItems(genres)}
       initialTotal={total}

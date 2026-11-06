@@ -42,6 +42,7 @@ export default async function LabelsPage() {
     <ReferenceSection
       title={t("reference.labels.title", locale)}
       addPlaceholder={t("reference.labels.addPlaceholder", locale)}
+      countSingular={t("reference.labels.countSingular", locale)}
       endpoint="/api/admin/labels"
       initialItems={toLabelItems(labels)}
       initialTotal={total}

@@ -76,18 +76,19 @@ Every feature branch must complete these steps before the session ends:
 3. For frontend changes, do a visual consistency check: open the app and compare any
    states that must stay in sync (e.g. before/after an action, empty/filled, mobile/
    desktop) side by side before merging.
-4. Merge the branch to the default branch and delete the feature branch
-5. Push to the remote
-6. Create `docs/features/NNN-<feature-name>.md` (if you keep feature docs)
-7. Fill in `docs/sessions/YYYY-MM-DD.md` using the session log template
-8. Add a row to `tasks/lessons.md` for any new mistake or pitfall discovered
+4. For any change to user-facing text, check the layout in the longest language.
+5. Merge the branch to the default branch and delete the feature branch
+6. Push to the remote
+7. Create `docs/features/NNN-<feature-name>.md` (if you keep feature docs)
+8. Fill in `docs/sessions/YYYY-MM-DD.md` using the session log template
+9. Add a row to `tasks/lessons.md` for any new mistake or pitfall discovered
    during the session
-9. Update any test-count baseline referenced in `tasks/todo.md`
-10. Run the project's deterministic checks (lint, any architecture check).
+10. Update any test-count baseline referenced in `tasks/todo.md`
+11. Run the project's deterministic checks (lint, any architecture check).
     CI handles final test verification on every push — don't re-run the suite
     locally as a close-out step. Reserve AI review for the parts a script can't
     decide — it saves tokens.
-11. Commit and push docs changes
+12. Commit and push docs changes
 
 ## Migrations
 

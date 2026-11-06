@@ -43,7 +43,7 @@ export function OrderButton({
         onClick={handleOrder}
         disabled={disabled}
         title={!hasSupplier ? t("orders.noSupplierLinked", locale) : undefined}
-        className="rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
+        className="whitespace-nowrap rounded border border-admin-hairline px-2 py-1 text-xs hover:bg-admin-raised disabled:opacity-40"
       >
         {pending
           ? "…"

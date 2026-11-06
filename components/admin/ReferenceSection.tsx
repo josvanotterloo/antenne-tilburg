@@ -7,7 +7,7 @@ import type { AdminLocale } from "@prisma/client";
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
 import { SEARCH_RESULT_CAP } from "@/lib/reference-items";
-import { t } from "@/lib/i18n/t";
+import { t, tCount } from "@/lib/i18n/t";
 import { Combobox, type ComboboxOption } from "@/components/ui/Combobox";
 
 export interface ReferenceItem {
@@ -23,6 +23,7 @@ const SEARCH_DEBOUNCE_MS = 200;
 export function ReferenceSection({
   title,
   addPlaceholder,
+  countSingular,
   endpoint,
   initialItems,
   initialTotal,
@@ -35,6 +36,10 @@ export function ReferenceSection({
   // grammar (word order, noun gender) differs per entity and per locale,
   // same as `title` already did, so the caller composes it via t().
   addPlaceholder: string;
+  // Already-localized singular noun ("label"/"genre"/"artiest"/"producttype")
+  // for the header count line when totalCount is exactly 1 — the plural form
+  // is already correct as title.toLowerCase() in both languages.
+  countSingular: string;
   endpoint: string;
   initialItems: ReferenceItem[];
   initialTotal: number;
@@ -217,13 +222,14 @@ export function ReferenceSection({
   }
 
   const label = title.toLowerCase();
+  const countLabel = totalCount === 1 ? countSingular : label;
 
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
         <span className="text-sm text-admin-ink-muted">
-          {totalCount.toLocaleString()} {label}
+          {totalCount.toLocaleString()} {countLabel}
         </span>
       </div>
 
@@ -346,16 +352,19 @@ export function ReferenceSection({
                         </span>
                       )}
                     </span>
-                    {/* Fixed columns keep Edit aligned across every row,
-                        and align whatever trails it (Delete, or the
-                        "In use by N products" text) too — same approach
-                        as the catalog list. */}
-                    <div className="grid grid-cols-[48px_200px] items-center gap-2">
+                    {/* Columns size to their own content (not a fixed px
+                        guess that only fits English) so Edit and whatever
+                        trails it (Delete, or the "In use by N products"
+                        text) each get their own slot and never overlap,
+                        while still starting at the same x position row to
+                        row — every row renders the same locale's text, so
+                        same text still means same computed width. */}
+                    <div className="grid grid-cols-[max-content_max-content] items-center gap-x-4">
                       <div className="flex justify-center">
                         <button
                           type="button"
                           onClick={() => startEdit(item)}
-                          className="text-admin-ink hover:underline"
+                          className="whitespace-nowrap text-admin-ink hover:underline"
                         >
                           {t("common.edit", locale)}
                         </button>
@@ -370,22 +379,32 @@ export function ReferenceSection({
                               // land on a page showing fewer products than
                               // the count just said (or none at all).
                               href={`/admin/catalog?${productLinkParam}=${item.id}&instock=false`}
-                              className="text-admin-ink-muted hover:underline"
+                              className="whitespace-nowrap text-admin-ink-muted hover:underline"
                             >
                               {t("reference.inUsePrefix", locale)} {item.productCount}{" "}
-                              {t("products.countPlural", locale)}
+                              {tCount(
+                                item.productCount,
+                                "products.countSingular",
+                                "products.countPlural",
+                                locale,
+                              )}
                             </Link>
                           ) : (
-                            <span className="text-admin-ink-muted">
+                            <span className="whitespace-nowrap text-admin-ink-muted">
                               {t("reference.inUsePrefix", locale)} {item.productCount}{" "}
-                              {t("products.countPlural", locale)}
+                              {tCount(
+                                item.productCount,
+                                "products.countSingular",
+                                "products.countPlural",
+                                locale,
+                              )}
                             </span>
                           )
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleDelete(item.id)}
-                            className="text-red-400 hover:underline"
+                            className="whitespace-nowrap text-red-400 hover:underline"
                           >
                             {t("common.delete", locale)}
                           </button>

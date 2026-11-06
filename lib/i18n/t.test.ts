@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { t } from "./t";
+import { t, tCount } from "./t";
 import en from "./en.json";
 
 describe("t", () => {
@@ -14,6 +14,32 @@ describe("t", () => {
   it("falls back to English when the key is missing from nl.json", () => {
     expect(t("test.fallbackOnly", "NL")).toBe(
       (en as Record<string, string>)["test.fallbackOnly"],
+    );
+  });
+});
+
+describe("tCount", () => {
+  it("picks the singular key only for exactly 1, in Dutch", () => {
+    expect(tCount(0, "products.countSingular", "products.countPlural", "NL")).toBe(
+      "producten",
+    );
+    expect(tCount(1, "products.countSingular", "products.countPlural", "NL")).toBe(
+      "product",
+    );
+    expect(tCount(2, "products.countSingular", "products.countPlural", "NL")).toBe(
+      "producten",
+    );
+  });
+
+  it("picks the singular key only for exactly 1, in English", () => {
+    expect(tCount(0, "products.countSingular", "products.countPlural", "EN")).toBe(
+      "products",
+    );
+    expect(tCount(1, "products.countSingular", "products.countPlural", "EN")).toBe(
+      "product",
+    );
+    expect(tCount(2, "products.countSingular", "products.countPlural", "EN")).toBe(
+      "products",
     );
   });
 });

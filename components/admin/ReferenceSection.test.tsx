@@ -50,6 +50,7 @@ function setup(overrides: Partial<Parameters<typeof ReferenceSection>[0]> = {}) 
     <ReferenceSection
       title="Genres"
       addPlaceholder="Genre toevoegen"
+      countSingular="genre"
       endpoint="/api/admin/genres"
       initialItems={INITIAL}
       initialTotal={90}
@@ -84,6 +85,12 @@ describe("ReferenceSection", () => {
   it("renders the total count", () => {
     setup();
     expect(screen.getByText(/90 genres/i)).toBeInTheDocument();
+  });
+
+  it("uses the singular noun when the total is exactly 1", () => {
+    setup({ initialTotal: 1 });
+    expect(screen.getByText(/^1 genre$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/1 genres/i)).toBeNull();
   });
 
   it("does not refetch on initial mount — initialItems already reflect the empty-query search", async () => {
@@ -364,6 +371,15 @@ describe("ReferenceSection", () => {
     ).toBeNull();
   });
 
+  it("uses the singular 'product' when the item is used by exactly 1 product", () => {
+    setup({
+      initialItems: [{ id: "1", name: "Ambient", productCount: 1 }],
+    });
+
+    expect(screen.getByText(/^in gebruik bij 1 product$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/in gebruik bij 1 producten/i)).toBeNull();
+  });
+
   it("hints that results are truncated when the 20-result cap is hit", async () => {
     const user = userEvent.setup();
     const twenty: ReferenceItem[] = Array.from({ length: 20 }, (_, i) => ({
@@ -425,6 +441,7 @@ describe("ReferenceSection", () => {
         <ReferenceSection
           title="Labels"
           addPlaceholder="Label toevoegen"
+          countSingular="label"
           endpoint="/api/admin/labels"
           initialItems={[]}
           initialTotal={0}

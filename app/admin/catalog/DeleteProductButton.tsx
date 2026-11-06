@@ -36,14 +36,14 @@ export function DeleteProductButton({
             type="button"
             onClick={handleDelete}
             disabled={pending}
-            className="text-red-400 hover:underline disabled:opacity-50"
+            className="whitespace-nowrap text-red-400 hover:underline disabled:opacity-50"
           >
             {pending ? "…" : t("common.confirm", locale)}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="text-admin-ink-muted hover:underline"
+            className="whitespace-nowrap text-admin-ink-muted hover:underline"
           >
             {t("common.cancel", locale)}
           </button>
@@ -52,7 +52,7 @@ export function DeleteProductButton({
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="text-red-400 hover:underline"
+          className="whitespace-nowrap text-red-400 hover:underline"
         >
           {t("common.delete", locale)}
         </button>

@@ -153,7 +153,7 @@ export function OrderLineRow({
       </td>
       <td className="px-3 py-2">
         <span
-          className={`rounded px-1.5 py-0.5 text-xs ${
+          className={`whitespace-nowrap rounded px-1.5 py-0.5 text-xs ${
             status === "received"
               ? "bg-green-500/15 text-green-400"
               : status === "partial"
