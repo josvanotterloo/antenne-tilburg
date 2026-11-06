@@ -9,7 +9,16 @@ import { NoticeForm } from "@/components/admin/NoticeForm";
 
 describe("NoticeForm labels", () => {
   it("exposes every field by its visible label", () => {
-    render(<NoticeForm />);
+    render(<NoticeForm locale="NL" />);
+
+    expect(screen.getByLabelText("Bericht")).toBeInTheDocument();
+    expect(screen.getByLabelText(/begint/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/eindigt/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Actief")).toBeInTheDocument();
+  });
+
+  it("renders the English labels when locale is EN", () => {
+    render(<NoticeForm locale="EN" />);
 
     expect(screen.getByLabelText("Message")).toBeInTheDocument();
     expect(screen.getByLabelText(/starts/i)).toBeInTheDocument();

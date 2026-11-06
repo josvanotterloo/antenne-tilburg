@@ -27,8 +27,8 @@ describe("NoticeActions", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
     );
-    render(<NoticeActions notice={notice} />);
-    fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
+    render(<NoticeActions notice={notice} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /deactiveren/i }));
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
@@ -40,12 +40,17 @@ describe("NoticeActions", () => {
         json: async () => ({ error: "Could not save notice" }),
       }),
     );
-    render(<NoticeActions notice={notice} />);
-    fireEvent.click(screen.getByRole("button", { name: /deactivate/i }));
+    render(<NoticeActions notice={notice} locale="NL" />);
+    fireEvent.click(screen.getByRole("button", { name: /deactiveren/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /could not save notice/i,
     );
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("renders the English label when locale is EN", () => {
+    render(<NoticeActions notice={notice} locale="EN" />);
+    expect(screen.getByRole("button", { name: /deactivate/i })).toBeInTheDocument();
   });
 });

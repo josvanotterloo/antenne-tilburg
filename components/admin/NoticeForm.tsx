@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AdminLocale } from "@prisma/client";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
+import { t } from "@/lib/i18n/t";
 import { Field } from "@/components/admin/Field";
 
 export interface NoticeFormValues {
@@ -15,7 +17,15 @@ export interface NoticeFormValues {
   endsAt: string;
 }
 
-export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
+// `message` is admin-typed content shown on the public site — never
+// translated. Only this form's own chrome is locale-aware.
+export function NoticeForm({
+  notice,
+  locale,
+}: {
+  notice?: NoticeFormValues;
+  locale: AdminLocale;
+}) {
   const router = useRouter();
   const { pending: saving, error, run } = useAsyncAction();
   const [message, setMessage] = useState(notice?.message ?? "");
@@ -41,7 +51,7 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl space-y-4">
-      <Field label="Message" htmlFor="message">
+      <Field label={t("noticeForm.messageLabel", locale)} htmlFor="message">
         <textarea
           id="message"
           required
@@ -58,11 +68,11 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
           checked={active}
           onChange={(e) => setActive(e.target.checked)}
         />
-        Active
+        {t("noticeForm.active", locale)}
       </label>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Starts (optional)" htmlFor="starts-at">
+        <Field label={t("noticeForm.startsLabel", locale)} htmlFor="starts-at">
           <input
             id="starts-at"
             type="datetime-local"
@@ -71,7 +81,7 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
             className="w-full rounded border border-admin-hairline px-2 py-1 text-sm"
           />
         </Field>
-        <Field label="Ends (optional)" htmlFor="ends-at">
+        <Field label={t("noticeForm.endsLabel", locale)} htmlFor="ends-at">
           <input
             id="ends-at"
             type="datetime-local"
@@ -81,10 +91,7 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
           />
         </Field>
       </div>
-      <p className="text-xs text-admin-ink-muted">
-        With a window set, the notice shows automatically between those times
-        (and only while Active).
-      </p>
+      <p className="text-xs text-admin-ink-muted">{t("noticeForm.windowHint", locale)}</p>
 
       {error && (
         <p role="alert" className="text-sm text-red-400">
@@ -98,14 +105,18 @@ export function NoticeForm({ notice }: { notice?: NoticeFormValues }) {
           disabled={saving}
           className="rounded bg-admin-ink transition-colors duration-150 ease-out hover:bg-signal px-4 py-2 text-sm font-medium text-admin-bg disabled:opacity-60"
         >
-          {saving ? "Saving…" : notice ? "Save changes" : "Create notice"}
+          {saving
+            ? t("common.saving", locale)
+            : notice
+              ? t("common.saveChanges", locale)
+              : t("noticeForm.createButton", locale)}
         </button>
         <button
           type="button"
           onClick={() => router.push("/admin/settings/notices")}
           className="rounded border border-admin-hairline px-4 py-2 text-sm"
         >
-          Cancel
+          {t("common.cancel", locale)}
         </button>
       </div>
     </form>
