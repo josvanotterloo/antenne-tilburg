@@ -173,4 +173,37 @@ describe("Combobox (server typeahead)", () => {
     await screen.findByRole("combobox");
     expect(screen.queryByText(/\+ add/i)).toBeNull();
   });
+
+  describe("labels override", () => {
+    it("uses the overridden placeholder instead of the default English one", () => {
+      setup({ labels: { placeholder: "Kies genre" } });
+      expect(screen.getByRole("combobox", { name: /genre/i })).toHaveAttribute(
+        "placeholder",
+        "Kies genre",
+      );
+    });
+
+    it("uses the overridden quick-add text, built from the typed query", async () => {
+      const user = userEvent.setup();
+      setup({ labels: { quickAdd: (q) => `"${q}" toevoegen` } });
+
+      const input = screen.getByRole("combobox", { name: /genre/i });
+      await user.click(input);
+      await user.type(input, "Dub");
+
+      expect(await screen.findByText('"Dub" toevoegen')).toBeInTheDocument();
+    });
+
+    it("uses the overridden search-error text", async () => {
+      const user = userEvent.setup();
+      vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
+      setup({ labels: { searchError: "Kon geen suggesties laden." } });
+
+      const input = screen.getByRole("combobox", { name: /genre/i });
+      await user.click(input);
+      await user.type(input, "x");
+
+      expect(await screen.findByText("Kon geen suggesties laden.")).toBeInTheDocument();
+    });
+  });
 });

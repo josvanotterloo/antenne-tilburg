@@ -159,7 +159,7 @@ const MISSING_FIELD_LABELS: Record<string, { nl: string; en: string }> = {
   Price: { nl: "Prijs", en: "Price" },
   Label: { nl: "Label", en: "Label" },
   Genre: { nl: "Genre", en: "Genre" },
-  "Product Type": { nl: "Producttype", en: "Product Type" },
+  "Product Type": { nl: "Formaat", en: "Product Type" },
 };
 
 export function missingLabelFieldLabel(key: string, locale: AdminLocale): string {

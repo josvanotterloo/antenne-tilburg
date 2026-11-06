@@ -44,7 +44,7 @@ describe("ProductForm", () => {
     render(<ProductForm locale="NL" />);
 
     expect(
-      screen.getByRole("combobox", { name: /artists/i }),
+      screen.getByRole("combobox", { name: /artiesten/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: /titel/i })).toBeInTheDocument();
     expect(
@@ -57,7 +57,7 @@ describe("ProductForm", () => {
       screen.getByRole("combobox", { name: /genre/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("combobox", { name: /product type/i }),
+      screen.getByRole("combobox", { name: /formaat/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Nieuw" })).toBeInTheDocument();
     expect(
@@ -79,7 +79,7 @@ describe("ProductForm", () => {
     render(<ProductForm locale="NL" />);
 
     await user.click(screen.getByText("Artiesten"));
-    expect(screen.getByRole("combobox", { name: /artists/i })).toHaveFocus();
+    expect(screen.getByRole("combobox", { name: /artiesten/i })).toHaveFocus();
 
     await user.click(screen.getByText("Prijs (€)"));
     expect(screen.getByRole("spinbutton", { name: /prijs/i })).toHaveFocus();
@@ -168,14 +168,14 @@ describe("ProductForm", () => {
 
     render(<ProductForm locale="NL" />);
 
-    await user.click(screen.getByRole("combobox", { name: /artists/i }));
+    await user.click(screen.getByRole("combobox", { name: /artiesten/i }));
     await user.click(await screen.findByRole("option", { name: "Vril" }));
     await user.type(screen.getByRole("textbox", { name: /titel/i }), "Torus");
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Zulema Records" }));
     await user.click(screen.getByRole("combobox", { name: /genre/i }));
     await user.click(await screen.findByRole("option", { name: "Techno" }));
-    await user.click(screen.getByRole("combobox", { name: /product type/i }));
+    await user.click(screen.getByRole("combobox", { name: /formaat/i }));
     await user.click(await screen.findByRole("option", { name: "LP" }));
     await user.type(screen.getByRole("spinbutton", { name: /prijs/i }), "24.99");
 
@@ -295,7 +295,7 @@ describe("ProductForm", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "Remove Vril" }));
+    await user.click(screen.getByRole("button", { name: "Verwijder Vril" }));
     await user.click(screen.getByRole("button", { name: /wijzigingen opslaan/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
@@ -322,8 +322,8 @@ describe("ProductForm", () => {
     expect(
       screen.getByRole("combobox", { name: /genres/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove Techno" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Remove House" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Verwijder Techno" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Verwijder House" })).toBeInTheDocument();
   });
 
   it("adding a second genre and submitting sends both genreIds, in pick order", async () => {
@@ -376,7 +376,7 @@ describe("ProductForm", () => {
 
     render(<ProductForm locale="NL" />);
 
-    await user.click(screen.getByRole("combobox", { name: /artists/i }));
+    await user.click(screen.getByRole("combobox", { name: /artiesten/i }));
     await user.click(await screen.findByRole("option", { name: "Vril" }));
 
     await user.type(screen.getByRole("textbox", { name: /titel/i }), "Torus");
@@ -389,7 +389,7 @@ describe("ProductForm", () => {
     await user.click(screen.getByRole("combobox", { name: /genre/i }));
     await user.click(await screen.findByRole("option", { name: "Techno" }));
 
-    await user.click(screen.getByRole("combobox", { name: /product type/i }));
+    await user.click(screen.getByRole("combobox", { name: /formaat/i }));
     await user.click(await screen.findByRole("option", { name: "LP" }));
 
     await user.type(screen.getByRole("spinbutton", { name: /prijs/i }), "24.99");
@@ -424,7 +424,7 @@ describe("ProductForm", () => {
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Warp" }));
 
-    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: /leverancier/i })).toHaveValue(
       "Beta Distro",
     );
   });
@@ -450,7 +450,7 @@ describe("ProductForm", () => {
 
     render(<ProductForm locale="NL" />);
 
-    await user.click(screen.getByRole("combobox", { name: /supplier/i }));
+    await user.click(screen.getByRole("combobox", { name: /leverancier/i }));
     await user.click(
       await screen.findByRole("option", { name: "Manual Distro" }),
     );
@@ -458,7 +458,7 @@ describe("ProductForm", () => {
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Warp" }));
 
-    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: /leverancier/i })).toHaveValue(
       "Manual Distro",
     );
   });
@@ -469,7 +469,7 @@ describe("ProductForm", () => {
       screen.getByRole("checkbox", { name: /diverse artiesten/i }),
     ).not.toBeChecked();
     expect(
-      screen.getByRole("combobox", { name: /artists/i }),
+      screen.getByRole("combobox", { name: /artiesten/i }),
     ).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/surgeon, regis/i)).toBeNull();
   });
@@ -480,7 +480,7 @@ describe("ProductForm", () => {
 
     await user.click(screen.getByRole("checkbox", { name: /diverse artiesten/i }));
 
-    expect(screen.queryByRole("combobox", { name: /artists/i })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: /artiesten/i })).toBeNull();
     expect(screen.getByPlaceholderText(/surgeon, regis/i)).toBeInTheDocument();
   });
 
@@ -497,7 +497,7 @@ describe("ProductForm", () => {
     await user.click(checkbox);
 
     expect(screen.queryByPlaceholderText(/surgeon, regis/i)).toBeNull();
-    const combobox = screen.getByRole("combobox", { name: /artists/i });
+    const combobox = screen.getByRole("combobox", { name: /artiesten/i });
     expect(combobox).toBeInTheDocument();
     expect(screen.queryByText("Vril")).toBeNull();
   });
@@ -543,6 +543,6 @@ describe("ProductForm", () => {
     await user.click(screen.getByRole("combobox", { name: /label/i }));
     await user.click(await screen.findByRole("option", { name: "Ostgut Ton" }));
 
-    expect(screen.getByRole("combobox", { name: /supplier/i })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: /leverancier/i })).toHaveValue("");
   });
 });

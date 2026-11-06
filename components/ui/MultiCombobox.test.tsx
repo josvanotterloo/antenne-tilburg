@@ -228,4 +228,36 @@ describe("MultiCombobox", () => {
       { id: "9", name: "Drax" },
     ]);
   });
+
+  describe("labels override", () => {
+    it("uses the overridden placeholder instead of the default English one", () => {
+      setup({ labels: { placeholder: "Artiesten toevoegen" } });
+      expect(screen.getByRole("combobox", { name: /artists/i })).toHaveAttribute(
+        "placeholder",
+        "Artiesten toevoegen",
+      );
+    });
+
+    it("uses the overridden move/remove aria-labels, built from the chip's name", () => {
+      setup({
+        selected: [
+          { id: "1", name: "Jeff Mills" },
+          { id: "2", name: "Surgeon" },
+        ],
+        labels: {
+          moveUp: (name) => `Verplaats ${name} omhoog`,
+          moveDown: (name) => `Verplaats ${name} omlaag`,
+          remove: (name) => `Verwijder ${name}`,
+        },
+      });
+
+      expect(
+        screen.getByRole("button", { name: "Verplaats Surgeon omhoog" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Verplaats Jeff Mills omlaag" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Verwijder Jeff Mills" })).toBeInTheDocument();
+    });
+  });
 });

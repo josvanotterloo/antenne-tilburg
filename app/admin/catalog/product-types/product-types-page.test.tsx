@@ -23,7 +23,7 @@ describe("ProductTypesPage", () => {
   it("renders its own title and its own entity's items", async () => {
     render(await ProductTypesPage());
     expect(
-      screen.getByRole("heading", { name: "Producttypes", level: 1 }),
+      screen.getByRole("heading", { name: "Formaten", level: 1 }),
     ).toBeInTheDocument();
     expect(screen.getByText('12"')).toBeInTheDocument();
   });

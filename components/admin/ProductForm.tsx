@@ -175,20 +175,49 @@ export function ProductForm({ product, locale }: ProductFormProps) {
     });
   }
 
+  // Localized field labels, reused both for each <Field>'s visible text and
+  // for the Combobox/MultiCombobox's own label (drives its aria-label).
+  const artistsLabel = t("productForm.artists", locale);
+  const labelFieldLabel = t("productForm.label", locale);
+  const genresLabel = t("productForm.genres", locale);
+  const productTypeLabel = t("productForm.productType", locale);
+  const supplierFieldLabel = t("suppliers.supplierLabel", locale);
+
+  // Shared across every Combobox/MultiCombobox on this form — same wording
+  // pattern regardless of entity.
+  const comboboxSearchError = t("combobox.searchError", locale);
+  const comboboxQuickAdd = (query: string) =>
+    locale === "EN" ? `+ Add "${query}"` : `+ "${query}" toevoegen`;
+  const comboboxSelectPlaceholder = (fieldLabel: string) =>
+    `${t("combobox.select", locale)} ${fieldLabel.toLowerCase()}`;
+  const multiComboboxLabels = {
+    searchError: comboboxSearchError,
+    quickAdd: comboboxQuickAdd,
+    moveUp: (name: string) =>
+      `${t("combobox.moveUp", locale)} ${name} ${t("combobox.directionUp", locale)}`,
+    moveDown: (name: string) =>
+      `${t("combobox.moveUp", locale)} ${name} ${t("combobox.directionDown", locale)}`,
+    remove: (name: string) => `${t("common.remove", locale)} ${name}`,
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
       className="grid max-w-3xl grid-cols-1 gap-4 md:grid-cols-2"
     >
       {!isVariousArtists && (
-        <Field label={t("productForm.artists", locale)} htmlFor="artists">
+        <Field label={artistsLabel} htmlFor="artists">
           <MultiCombobox
             id="artists"
-            label="Artists"
+            label={artistsLabel}
             endpoint="/api/admin/artists"
             selected={artists}
             onChange={setArtists}
             required
+            labels={{
+              ...multiComboboxLabels,
+              placeholder: t("productForm.artistsPlaceholder", locale),
+            }}
           />
         </Field>
       )}
@@ -229,12 +258,17 @@ export function ProductForm({ product, locale }: ProductFormProps) {
         />
       </Field>
 
-      <Field label={t("productForm.label", locale)} htmlFor="label">
+      <Field label={labelFieldLabel} htmlFor="label">
         <Combobox
           id="label"
-          label="Label"
+          label={labelFieldLabel}
           endpoint="/api/admin/labels"
           value={label}
+          labels={{
+            searchError: comboboxSearchError,
+            quickAdd: comboboxQuickAdd,
+            placeholder: comboboxSelectPlaceholder(labelFieldLabel),
+          }}
           onChange={(option) => {
             setLabel(option);
             // Opportunistic prefill: only on create, and only if the admin
@@ -256,36 +290,50 @@ export function ProductForm({ product, locale }: ProductFormProps) {
         />
       </Field>
 
-      <Field label={t("productForm.genres", locale)} htmlFor="genres">
+      <Field label={genresLabel} htmlFor="genres">
         <MultiCombobox
           id="genres"
-          label="Genres"
+          label={genresLabel}
           endpoint="/api/admin/genres"
           selected={genres}
           onChange={setGenres}
           required
+          labels={{
+            ...multiComboboxLabels,
+            placeholder: t("productForm.genresPlaceholder", locale),
+          }}
         />
       </Field>
 
-      <Field label={t("productForm.productType", locale)} htmlFor="product-type">
+      <Field label={productTypeLabel} htmlFor="product-type">
         <Combobox
           id="product-type"
-          label="Product type"
+          label={productTypeLabel}
           endpoint="/api/admin/product-types"
           value={productType}
           onChange={setProductType}
           required
+          labels={{
+            searchError: comboboxSearchError,
+            quickAdd: comboboxQuickAdd,
+            placeholder: comboboxSelectPlaceholder(productTypeLabel),
+          }}
         />
       </Field>
 
-      <Field label={t("suppliers.supplierLabel", locale)} htmlFor="supplier">
+      <Field label={supplierFieldLabel} htmlFor="supplier">
         <Combobox
           id="supplier"
-          label="Supplier"
+          label={supplierFieldLabel}
           endpoint="/api/admin/suppliers"
           value={supplier}
           onChange={setSupplier}
           allowCreate={false}
+          labels={{
+            searchError: comboboxSearchError,
+            quickAdd: comboboxQuickAdd,
+            placeholder: comboboxSelectPlaceholder(supplierFieldLabel),
+          }}
         />
       </Field>
 

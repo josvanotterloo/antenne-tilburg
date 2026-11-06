@@ -30,7 +30,7 @@ describe("ArtistsPage", () => {
 
   it("renders only Artists — no other section's heading", async () => {
     render(await ArtistsPage());
-    for (const name of ["Labels", "Genres", "Producttypes"]) {
+    for (const name of ["Labels", "Genres", "Formaten"]) {
       expect(
         screen.queryByRole("heading", { name, level: 1 }),
       ).not.toBeInTheDocument();

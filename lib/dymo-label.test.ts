@@ -157,6 +157,6 @@ describe("missingLabelFieldLabel", () => {
   it("translates a missing-field key for display", () => {
     expect(missingLabelFieldLabel("Artist", "EN")).toBe("Artist");
     expect(missingLabelFieldLabel("Artist", "NL")).toBe("Artiest");
-    expect(missingLabelFieldLabel("Product Type", "NL")).toBe("Producttype");
+    expect(missingLabelFieldLabel("Product Type", "NL")).toBe("Formaat");
   });
 });

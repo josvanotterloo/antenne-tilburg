@@ -4,7 +4,16 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { apiSend } from "@/lib/api-client";
 import { useAsyncAction } from "@/lib/use-async-action";
-import type { ComboboxOption } from "@/components/ui/Combobox";
+import type { ComboboxLabels, ComboboxOption } from "@/components/ui/Combobox";
+
+// Adds the two chip-only actions (reorder, remove) to Combobox's label set —
+// all still optional, so every existing caller keeps the current English
+// text unchanged.
+export interface MultiComboboxLabels extends ComboboxLabels {
+  moveUp?: (name: string) => string;
+  moveDown?: (name: string) => string;
+  remove?: (name: string) => string;
+}
 
 export interface MultiComboboxProps {
   label: string;
@@ -14,6 +23,7 @@ export interface MultiComboboxProps {
   onChange: (options: ComboboxOption[]) => void;
   id?: string;
   required?: boolean;
+  labels?: MultiComboboxLabels;
 }
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -31,6 +41,7 @@ export function MultiCombobox({
   onChange,
   id,
   required,
+  labels,
 }: MultiComboboxProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -61,7 +72,9 @@ export function MultiCombobox({
         }
       } catch {
         if (seq === searchSeq.current) {
-          setSearchError("Couldn't load suggestions. Keep typing to retry.");
+          setSearchError(
+            labels?.searchError ?? "Couldn't load suggestions. Keep typing to retry.",
+          );
         }
       }
     }, SEARCH_DEBOUNCE_MS);
@@ -160,7 +173,7 @@ export function MultiCombobox({
               {selected.length > 1 && (
                 <button
                   type="button"
-                  aria-label={`Move ${option.name} up`}
+                  aria-label={labels?.moveUp ? labels.moveUp(option.name) : `Move ${option.name} up`}
                   disabled={index === 0}
                   onClick={() => move(index, -1)}
                   className="text-admin-ink-muted hover:text-admin-ink disabled:opacity-30"
@@ -172,7 +185,9 @@ export function MultiCombobox({
               {selected.length > 1 && (
                 <button
                   type="button"
-                  aria-label={`Move ${option.name} down`}
+                  aria-label={
+                    labels?.moveDown ? labels.moveDown(option.name) : `Move ${option.name} down`
+                  }
                   disabled={index === selected.length - 1}
                   onClick={() => move(index, 1)}
                   className="text-admin-ink-muted hover:text-admin-ink disabled:opacity-30"
@@ -182,7 +197,7 @@ export function MultiCombobox({
               )}
               <button
                 type="button"
-                aria-label={`Remove ${option.name}`}
+                aria-label={labels?.remove ? labels.remove(option.name) : `Remove ${option.name}`}
                 onClick={() => remove(option.id)}
                 className="text-admin-ink-muted hover:text-red-400"
               >
@@ -202,7 +217,7 @@ export function MultiCombobox({
         aria-required={required && selected.length === 0}
         autoComplete="off"
         value={query}
-        placeholder={`Add ${label.toLowerCase()}`}
+        placeholder={labels?.placeholder ?? `Add ${label.toLowerCase()}`}
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
         onChange={(e) => {
@@ -273,7 +288,9 @@ export function MultiCombobox({
                 highlight === selectable.length ? "bg-admin-raised" : ""
               }`}
             >
-              + Add &quot;{query.trim()}&quot;
+              {labels?.quickAdd
+                ? labels.quickAdd(query.trim())
+                : `+ Add "${query.trim()}"`}
             </li>
           )}
         </ul>

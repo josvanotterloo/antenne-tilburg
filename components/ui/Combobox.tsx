@@ -10,6 +10,15 @@ export interface ComboboxOption {
   name: string;
 }
 
+// All optional — every existing caller keeps the current English text
+// unchanged. A caller that wants another language (or just different
+// wording) overrides only the pieces it needs.
+export interface ComboboxLabels {
+  placeholder?: string;
+  searchError?: string;
+  quickAdd?: (query: string) => string;
+}
+
 export interface ComboboxProps {
   label: string;
   // Reference API base (e.g. /api/admin/labels): GET ?q= searches, POST creates.
@@ -23,6 +32,7 @@ export interface ComboboxProps {
   // behavior) — set false for pickers over entities that can't be
   // meaningfully created from just a name (e.g. Product).
   allowCreate?: boolean;
+  labels?: ComboboxLabels;
 }
 
 const SEARCH_DEBOUNCE_MS = 200;
@@ -38,6 +48,7 @@ export function Combobox({
   id,
   required,
   allowCreate = true,
+  labels,
 }: ComboboxProps) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -70,7 +81,9 @@ export function Combobox({
         }
       } catch {
         if (seq === searchSeq.current) {
-          setSearchError("Couldn't load suggestions. Keep typing to retry.");
+          setSearchError(
+            labels?.searchError ?? "Couldn't load suggestions. Keep typing to retry.",
+          );
         }
       }
     }, SEARCH_DEBOUNCE_MS);
@@ -154,7 +167,7 @@ export function Combobox({
         aria-required={required}
         autoComplete="off"
         value={open ? query : (value?.name ?? "")}
-        placeholder={`Select ${label.toLowerCase()}`}
+        placeholder={labels?.placeholder ?? `Select ${label.toLowerCase()}`}
         onFocus={() => setOpen(true)}
         onClick={() => setOpen(true)}
         onChange={(e) => {
@@ -201,7 +214,9 @@ export function Combobox({
                 highlight === items.length ? "bg-admin-raised" : ""
               }`}
             >
-              + Add &quot;{query.trim()}&quot;
+              {labels?.quickAdd
+                ? labels.quickAdd(query.trim())
+                : `+ Add "${query.trim()}"`}
             </li>
           )}
         </ul>
