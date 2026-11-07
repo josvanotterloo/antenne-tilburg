@@ -172,3 +172,94 @@ unaffected either way.
 **Revisit when:** a Tailwind v4 migration happens for other reasons (it
 would resolve this as a side effect), or if a `6.1.5+` backport is ever
 published — check with `npm view postcss-selector-parser versions`.
+
+## Update (2026-11-07): `next` critical RCE/DoS fixes, Sentry tunnelRoute bypass, fast-uri/glob/minimatch
+
+Prompted by `npm run build`'s own security gate refusing to proceed on
+`next@16.4.0`, and by GitHub Dependabot flagging 16 vulnerabilities (3
+critical, 3 high, 7 moderate, 3 low) on `master`. Ran `npm audit fix`
+(never `--force` — see below) on a clean branch off `master`.
+
+### Fixed
+
+| Package | Was | Now | Severity | Advisory |
+|---|---|---|---|---|
+| `next` | 16.4.0 | 16.4.5 | critical | RCE in Image Optimization API via SVG (`GHSA-2464-fhr4-w9xw`); DoS in App Router Server Actions (`GHSA-p3m5-59mp-jv5r`); RCE in `use cache` functions returning typed arrays (`GHSA-673q-mjm6-r5xr`); plus the Nov 3 security release's five advisories (cache poisoning of fallback shells via request-supplied route params, HttpOnly cookie exposure via an internal response header on Edge runtime routes, cross-tenant `use cache`/`unstable_cache` disclosure, cache leak across root param values in nested `use cache`, cross-user cache disclosure with binary arguments, cross-client response injection via fetch forwarding) |
+| `@sentry/nextjs` | 10.70.0 | 10.78.0 | critical | Middleware bypass when using Sentry's `tunnelRoute` option (`GHSA-mchm-gjx6-7h55`) |
+| `fast-uri` | 3.1.8 | 3.1.9 | moderate | scheme spoofing via percent-encoding, path-equivalence bypass, WHATWG host confusion, scheme injection via unescaped colon (4 advisories, one package bump) |
+| `glob` | 13.0.6 | 13.0.7 | moderate | AbortSignal cancellation bypass allows post-timeout filesystem traversal (`GHSA-3g3m-2fjr-6pw4`) |
+| `minimatch` | 10.2.5 | 10.2.6 | moderate | DoS via globparts amplification (`GHSA-g3hv-75wg-m249`) |
+
+All five resolved via plain `npm audit fix` — no `package.json` range
+changes were needed (existing semver ranges already permitted the fixed
+versions); only `package-lock.json` changed. Verified: `npm ls next
+@sentry/nextjs fast-uri glob minimatch` and `package-lock.json`'s resolved
+versions both confirm the table above.
+
+### Exposure check (why none of these are actually reachable here)
+
+- **`next/image` with SVG** (relevant to the Image Optimization RCE): not
+  used anywhere. Grepped for both the import and the string `next/image` —
+  the only two hits are comments in
+  `app/(public)/blog/[slug]/page.tsx` and `components/admin/ProductForm.tsx`
+  explaining a deliberate plain `<img>` choice instead (same finding as the
+  2026-07-27 update above, re-confirmed).
+- **`"use cache"` directives** (relevant to three of the five advisories
+  above): none in the codebase. Grepped the full source tree.
+- **Sentry `tunnelRoute`** (relevant to the `@sentry/nextjs` advisory):
+  not configured. Checked `next.config.mjs`'s `withSentryConfig(...)`
+  options object directly — no `tunnelRoute` key present.
+
+So while `next` and `@sentry/nextjs` were both carrying critical
+advisories, none of the three vulnerable code paths were ever reachable in
+this app's actual runtime. Upgraded anyway, as the correct fix, not
+because exploitation was likely.
+
+### Next.js 16.4.1–16.4.5 release notes: Turbopack / App Router / Server Actions / proxy.ts
+
+Read via the GitHub releases/tags (PR titles, not detailed descriptions —
+see caveat below):
+
+- **16.4.1:** the App Router/Server Actions DoS fix above (`GHSA-p3m5-59mp-jv5r`). No Turbopack or proxy.ts items.
+- **16.4.2:** five Turbopack-only bug fixes (turbo-tasks snapshot consistency, Pages Router dev module graph chaining, two GC/dependency-edge fixes, lazy dynamic-import chunk-list collisions). No App Router, Server Actions, or proxy.ts items.
+- **16.4.3:** "Don't load the app-page runtime in proxy.ts" (#100423) — a proxy.ts bug fix. One Turbopack revert ("loader change invalidation"). No App Router or Server Actions items.
+- **16.4.4:** three more Turbopack fixes/reverts (missed startup CSS reload, PPR-resume CSP nonce on the Turbopack runtime bootstrap, a revert of a module-factory-chunk optimization) and two low-relevance routing/tooling changes (a disabled flaky test, an analyzer tooling change). No Server Actions or proxy.ts items. Notes a security release was coming the next day.
+- **16.4.5:** the Nov 3 security release (table above) — App Router/cache-adjacent advisories only, no Turbopack or Server Actions changelog items (security releases list advisories, not a regular changelog).
+
+**Caveat:** this was read by a sub-agent from GitHub's release/tag pages,
+which list PR/advisory titles rather than full descriptions — the
+one-liners above are paraphrases of those titles, not verified against the
+underlying PRs' diffs.
+
+### Not touched: `deepmerge-ts` → Prisma 7 cascade
+
+Still allowlisted exactly as in the 2026-08-18 update above — `npm audit`
+now additionally offers `prisma@7.10.1` as a fix (previously checked only
+through `7.9.1`), but that's `--force`-only and a major version bump.
+Added to the backlog (`tasks/todo.md` → Security): "Prisma 7 upgrade ...
+Evaluate after go-live." Not actioned here per explicit instruction.
+
+### Not touched, informational only
+
+- `@sentry/nextjs` now warns at startup: importing `withSentryConfig` from
+  `@sentry/nextjs` itself is deprecated, moving to `@sentry/nextjs/config`
+  in v11. Still works on this v10.78.0; no action needed until a v11 bump.
+- `npm audit fix` surfaced an `install-scripts` warning for 4 packages
+  (`@prisma/client`, `@prisma/engines`, `prisma`, `@sentry/cli`) not yet
+  covered by `allowScripts` — an npm policy notice, not a vulnerability;
+  didn't affect this install (Prisma client generation and the build both
+  succeeded).
+
+### Verification
+
+Full suite (172 files / 1283 tests), `tsc --noEmit`, `eslint .`, and
+`npm run build` all clean — the build in particular no longer stops on
+the security-advisory gate it hit before this update. `node
+scripts/check-npm-audit.mjs` passes (8 findings, all the pre-existing
+allowlisted `deepmerge-ts` cascade). Runtime-checked both NL and EN on a
+`next start` instance on a spare port (the existing dev server on :3000
+couldn't be restarted mid-session — Next.js 16.4.5's dev server refuses a
+second instance against the same project dir even on a different port, so
+`next start` was used instead, which doesn't have that restriction):
+`/visit` (public) and `/admin/catalog` (admin, NL then EN) both rendered
+correctly.

@@ -216,6 +216,8 @@ adjusted/holiday opening-hours overrides are deferred (noted in Active).
       while still failing on any other high/critical finding. Re-check with
       `npm view @prisma/config@<new-version> dependencies` after any future
       Prisma bump — `docs/features/security-dependency-updates.md`.
+- [ ] Prisma 7 upgrade (npm audit now offers prisma@7.10.1 for the
+      deepmerge-ts advisory). Major version change. Evaluate after go-live.
 
 ### Code quality
 - [x] Public /stock redesign (2026-08-24) — replaced the flex-row list
