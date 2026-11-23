@@ -4,12 +4,47 @@ on:
   push:
   pull_request:
     branches: [master]
+  schedule:
+    # Catches a newly-published advisory on an unchanged dependency tree —
+    # the main `ci` job only runs against a push/PR, so without this a
+    # fresh high/critical finding could sit unnoticed between pushes.
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
 
 jobs:
+  # Isolated from `ci` on purpose: a new upstream advisory can fail this job
+  # on a push that touches no dependency at all, and that must never block
+  # Semgrep or the test suite. Keep this job listed as a required status
+  # check in GitHub branch protection (Settings → Branches) alongside `ci`.
+  npm-audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Production-dependency vulnerabilities only — dev-only findings (e.g.
+      # the eslint-toolchain brace-expansion cascade) are assessed and tracked
+      # in tasks/todo.md instead of gating every push. One known finding
+      # (deepmerge-ts via prisma -> @prisma/config) is allowlisted by name in
+      # scripts/check-npm-audit.mjs — any other high/critical finding still
+      # fails this step. See docs/features/security-dependency-updates.md.
+      - name: npm audit (production dependencies)
+        run: node scripts/check-npm-audit.mjs
+
   ci:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
 
     services:
@@ -56,17 +91,10 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-      # Production-dependency vulnerabilities only — dev-only findings (e.g.
-      # the eslint-toolchain brace-expansion cascade) are assessed and tracked
-      # in tasks/todo.md instead of gating every push. One known finding
-      # (deepmerge-ts via prisma -> @prisma/config) is allowlisted by name in
-      # scripts/check-npm-audit.mjs — any other high/critical finding still
-      # fails this step. See docs/features/security-dependency-updates.md.
-      - name: npm audit (production dependencies)
-        run: node scripts/check-npm-audit.mjs
-
       # Native `semgrep scan`, not the deprecated semgrep/semgrep-action —
-      # free/token-free for this ruleset, no Semgrep account needed.
+      # free/token-free for this ruleset, no Semgrep account needed. No
+      # longer sequenced after npm audit — it must run regardless of that
+      # job's outcome.
       - name: Semgrep security scan
         run: |
           python3 -m pip install semgrep
