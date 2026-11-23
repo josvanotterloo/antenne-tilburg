@@ -50,6 +50,9 @@ numbering in `docs/qa/` (see `go-live-persistence-note.md`, now outdated).
 - [ ] Confirm a newsletter send works end to end.
 - [ ] Tell DJ DMDN the support path (text or call Jos).
 
+## Operations
+- [ ] Check the latest master CI run after every deploy-related push.
+
 ## Proposed, not yet decided
 - [ ] DYMO print mode from the VPS — the print route calls
       `localhost:41951`; DYMO Connect runs on the shop computer. Open:
