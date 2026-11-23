@@ -263,3 +263,53 @@ second instance against the same project dir even on a different port, so
 `next start` was used instead, which doesn't have that restriction):
 `/visit` (public) and `/admin/catalog` (admin, NL then EN) both rendered
 correctly.
+
+## Update (2026-11-23): `effect` via `@prisma/config` — fourth cascade entry
+
+CI's `npm-audit` job started failing on every push:
+`GHSA-7589-6fvf-x4pw` — a ReDoS in Effect's `Schema.TemplateLiteral`
+compiled regex, `effect <=3.22.0`, high severity.
+
+**Checked the chain:** `npm ls effect` →
+`prisma@6.19.3 → @prisma/config@6.19.3 → effect@3.21.0`. Same
+`@prisma/config`-via-`prisma` cascade as the existing `deepmerge-ts`
+entry (2026-08-18 update above), just a different package `@prisma/config`
+pulls in. `npm audit`'s own `fixAvailable` confirms the only fix is
+`prisma@7.10.1` — a major bump, same as `deepmerge-ts`'s. Ran `npm audit
+fix` (no `--force`) to confirm empirically: it touched neither `effect`,
+`prisma`, nor `@prisma/config` — only unrelated moderate findings
+(Sentry build-plugin chain, `glob`/`minimatch`) with non-major fixes
+available. That lockfile diff was reverted, not committed.
+
+**Exploitability assessment:** not exploitable in this project's runtime,
+for the same reason as `deepmerge-ts`/`@prisma/config`. `effect`'s
+vulnerable regex compilation only runs inside `@prisma/config`'s
+`prisma.config.ts` merge logic — i.e. whenever the `prisma` CLI runs
+(`generate`/`migrate`/`db seed`) against this repo's own trusted config
+file, never against attacker-controlled input. This is CLI/build-time
+only, not the deployed server's request path — **but** the CLI also
+runs server-side during `migrate deploy` as part of every deploy, against
+that same trusted `prisma.config.ts`; still no path from untrusted input
+to the vulnerable call.
+
+**Not fixed — allowlisted instead**, same pattern as the other three
+cascade entries, now with the format `scripts/check-npm-audit.mjs`
+gained on 2026-11-23 (expiry dates + advisory-id matching where a
+package has an advisory of its own): `effect` pinned to
+`GHSA-7589-6fvf-x4pw`, expiring 2027-01-31 — same date as the other three
+Prisma-cascade entries, so the whole cascade gets re-evaluated together
+whenever the Prisma 7 question (see `tasks/todo.md`'s pre-go-live
+evaluation item) is actually decided.
+
+**Revisit when:** a Prisma major-version evaluation happens (tracked in
+`tasks/todo.md`), or any Prisma release bumps `@prisma/config`'s `effect`
+dependency to `>3.22.0` — check with `npm view @prisma/config@<new-version>
+dependencies` after any Prisma bump, same as the `deepmerge-ts` entry's
+revisit condition.
+
+### Verification
+
+Full suite (175 files / 1341 tests) and `node scripts/check-npm-audit.mjs`
+both clean (4 findings, all allowlisted — `deepmerge-ts`, `@prisma/config`,
+`prisma`, `effect`). `npm audit fix` was not run against the committed
+tree (only as a throwaway, reverted check above).

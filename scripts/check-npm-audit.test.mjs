@@ -21,6 +21,12 @@ const effectFinding = {
   severity: "high",
   via: [{ url: "https://github.com/advisories/GHSA-7589-6fvf-x4pw" }],
 };
+// Not on the allowlist at all — used for the "unmapped" cases below, kept
+// distinct from `effect` now that effect has its own entry.
+const unlistedFinding = {
+  severity: "high",
+  via: [{ url: "https://github.com/advisories/GHSA-0000-aaaa-bbbb" }],
+};
 
 describe("extractAdvisoryIds", () => {
   it("pulls the GHSA id out of a real advisory object", () => {
@@ -39,6 +45,7 @@ describe("extractAdvisoryIds", () => {
 describe("findAllowlistEntry", () => {
   it("matches an entry with a pinned advisoryId only when that id is present", () => {
     expect(findAllowlistEntry("deepmerge-ts", deepmergeTsFinding.via)).toBeDefined();
+    expect(findAllowlistEntry("effect", effectFinding.via)).toBeDefined();
   });
 
   it("does not match a pinned-advisoryId entry against a different advisory on the same package", () => {
@@ -46,6 +53,7 @@ describe("findAllowlistEntry", () => {
       via: [{ url: "https://github.com/advisories/GHSA-0000-0000-0000" }],
     };
     expect(findAllowlistEntry("deepmerge-ts", differentAdvisory.via)).toBeUndefined();
+    expect(findAllowlistEntry("effect", differentAdvisory.via)).toBeUndefined();
   });
 
   it("matches a no-advisoryId entry by name alone (nothing to pin — no advisory of its own)", () => {
@@ -54,7 +62,7 @@ describe("findAllowlistEntry", () => {
   });
 
   it("returns undefined for a package not on the allowlist at all", () => {
-    expect(findAllowlistEntry("effect", effectFinding.via)).toBeUndefined();
+    expect(findAllowlistEntry("left-pad", unlistedFinding.via)).toBeUndefined();
   });
 });
 
@@ -79,12 +87,13 @@ describe("evaluateAudit", () => {
     return { vulnerabilities };
   }
 
-  it("allowlists the three Prisma-cascade entries before their expiry", () => {
+  it("allowlists the four Prisma-cascade entries before their expiry", () => {
     const result = evaluateAudit(
       report({
         "deepmerge-ts": deepmergeTsFinding,
         "@prisma/config": prismaConfigFinding,
         prisma: prismaFinding,
+        effect: effectFinding,
       }),
       new Date("2026-11-23T00:00:00Z"),
     );
@@ -94,29 +103,41 @@ describe("evaluateAudit", () => {
       "deepmerge-ts",
       "@prisma/config",
       "prisma",
+      "effect",
     ]);
   });
 
   it("blocks a finding on a package that isn't on the allowlist at all", () => {
     const result = evaluateAudit(
-      report({ effect: effectFinding }),
+      report({ "left-pad": unlistedFinding }),
+      new Date("2026-11-23T00:00:00Z"),
+    );
+    expect(result.blocking.map(([name]) => name)).toEqual(["left-pad"]);
+    expect(result.expired).toEqual([]);
+  });
+
+  it("blocks a DIFFERENT advisory on effect instead of silently allowlisting it", () => {
+    const newEffectAdvisory = {
+      severity: "high",
+      via: [{ url: "https://github.com/advisories/GHSA-9999-9999-9999" }],
+    };
+    const result = evaluateAudit(
+      report({ effect: newEffectAdvisory }),
       new Date("2026-11-23T00:00:00Z"),
     );
     expect(result.blocking.map(([name]) => name)).toEqual(["effect"]);
-    expect(result.expired).toEqual([]);
+    expect(result.allowlisted).toEqual([]);
   });
 
   it("treats an expired entry as expired, not as blocking or allowlisted", () => {
     const result = evaluateAudit(
-      report({ "deepmerge-ts": deepmergeTsFinding }),
+      report({ "deepmerge-ts": deepmergeTsFinding, effect: effectFinding }),
       new Date("2027-02-01T00:00:00Z"),
     );
     expect(result.blocking).toEqual([]);
     expect(result.allowlisted).toEqual([]);
-    expect(result.expired).toHaveLength(1);
-    const [name, , entry] = result.expired[0];
-    expect(name).toBe("deepmerge-ts");
-    expect(entry.expires).toBe("2027-01-31");
+    expect(result.expired).toHaveLength(2);
+    expect(result.expired.map(([name]) => name).sort()).toEqual(["deepmerge-ts", "effect"]);
   });
 
   it("ignores moderate/low severity findings entirely", () => {
@@ -131,12 +152,17 @@ describe("evaluateAudit", () => {
 });
 
 describe("the real ALLOWLIST", () => {
-  it("has the three Prisma-cascade entries expiring 2027-01-31", () => {
-    for (const pkg of ["deepmerge-ts", "@prisma/config", "prisma"]) {
+  it("has the four Prisma-cascade entries expiring 2027-01-31", () => {
+    for (const pkg of ["deepmerge-ts", "@prisma/config", "prisma", "effect"]) {
       const entry = ALLOWLIST.find((e) => e.package === pkg);
       expect(entry).toBeDefined();
       expect(entry.expires).toBe("2027-01-31");
     }
+  });
+
+  it("pins effect to its real advisory id", () => {
+    const entry = ALLOWLIST.find((e) => e.package === "effect");
+    expect(entry.advisoryId).toBe("GHSA-7589-6fvf-x4pw");
   });
 
   it("is not yet expired as of today", () => {

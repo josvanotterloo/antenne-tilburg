@@ -17,12 +17,12 @@
 // `@prisma/config` and `prisma` have no advisory of their own (their
 // `via` is just `["deepmerge-ts", "effect"]` / `["@prisma/config"]`), so
 // matching on name alone is the only option for them, same as before
-// this change. `deepmerge-ts` DOES carry its own advisory object, so its
-// entry pins the exact GHSA id — if that package were ever flagged for a
-// *different*, new advisory later, name-only matching would wrongly wave
-// it through; pinning the id closes that gap. See
-// docs/features/security-dependency-updates.md for the reasoning behind
-// each entry and its revisit condition.
+// this change. `deepmerge-ts` and `effect` DO carry their own advisory
+// object, so their entries pin the exact GHSA id — if either package
+// were ever flagged for a *different*, new advisory later, name-only
+// matching would wrongly wave it through; pinning the id closes that
+// gap. See docs/features/security-dependency-updates.md for the
+// reasoning behind each entry and its revisit condition.
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -44,6 +44,12 @@ export const ALLOWLIST = [
     advisoryId: null,
     expires: "2027-01-31",
     reason: "same GHSA-ggr8-5vv4-36mx cascade — no advisory of its own, depends on the vulnerable @prisma/config",
+  },
+  {
+    package: "effect",
+    advisoryId: "GHSA-7589-6fvf-x4pw",
+    expires: "2027-01-31",
+    reason: "(<=3.22.0) via prisma -> @prisma/config; CLI/build-time only against this repo's own trusted prisma.config.ts (including on the server during `migrate deploy`), never in the deployed server's request path",
   },
 ];
 
