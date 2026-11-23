@@ -1,6 +1,7 @@
 # Todo
 
 Current work queue. Keep Active short — move items to Backlog if not in-flight.
+Go-live is tracked separately: see `docs/go-live-checklist.md`, not this file.
 
 ## Active
 
@@ -366,6 +367,46 @@ Arrivals overhaul, 2026-08-05, down from 781 — expected, see that entry's
 history; +30 for Dymo label printing, +20 for the reference page typeahead,
 +53 net for the order & transaction redesign, which also deleted the old
 manual-order route/component tests per its Test Contract.)
+
+### QA backlog
+Open items surfaced by the Oct 2026 QA round that never made it onto this
+list. Not go-live blockers on their own — see `docs/go-live-checklist.md`
+for what actually gates launch.
+
+- [ ] **Custom 404 page.** No `app/not-found.tsx` exists; falls back to the
+      bare Next.js default. Source: `docs/qa/claude-code-handover.md`
+      (Unit 5), `docs/qa/claude-code-prompts-sequence.md` (STEP 8),
+      `docs/qa/qa-checklist.md` item 7.
+- [ ] **Required-field indicators in admin forms.** No `aria-required`/
+      asterisk markers anywhere in `components/admin/`. Enumerate which
+      fields are actually required from schema/validation before marking.
+      Source: `docs/qa/claude-code-handover.md` (Unit 6),
+      `docs/qa/claude-code-prompts-sequence.md` (STEP 9).
+- [ ] **Admin user management — decision needed.** No `POST
+      /api/admin/users`; admins still exist only via the seed. Decide:
+      build add/remove/reset-password in admin, or stay seed-only. Source:
+      `docs/qa/claude-code-handover.md` ("Decision needed"),
+      `docs/qa/claude-code-prompts-sequence.md` ("Pending decisions"),
+      `docs/qa/qa-checklist.md` item 17.
+- [ ] **Blog image findings F1–F4, all still open.** F1: inserted image
+      lands nested inside the paragraph's `<p>` (`lib/markdown.ts`'s
+      `imageMarkdown`/`insertAt` add no blank-line padding). F2: the post
+      editor has no preview pane at all, so it never shows the
+      just-inserted image back to the author. F3: uploads get a fresh
+      `randomUUID()` filename with no content-hash dedup
+      (`app/api/admin/uploads/route.ts`). F4: inserted images always get
+      `alt=""` — no alt-text field in the editor. Source:
+      `docs/qa/qa-findings-blog-images.md`.
+- [ ] **N4 — move Subscribers under the Newsletter section.** Still at
+      `/admin/settings/subscribers`; the newsletter compose UI lives at
+      `/admin/content/newsletter/new`. Move, add a redirect from the old
+      path, update nav + tests. Source: `docs/qa/qa-findings-newsletter.md`.
+- [ ] **Run the QA checklist items that were never run.** Most of
+      `docs/qa/qa-checklist.md` is still `[ ]` (sort columns, About/FAQ/
+      Visit, wrong-password login, stock adjust, notices, opening hours,
+      seed users, subscriber list, test send, mobile layout, a form
+      validation error) — run these by hand before go-live. Source:
+      `docs/qa/qa-checklist.md`.
 
 ## Done
 
