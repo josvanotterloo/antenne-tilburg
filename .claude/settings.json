@@ -6,8 +6,7 @@
     ]
   },
   "enabledPlugins": {
-    "impeccable@impeccable": true,
-    "everything-claude-code@everything-claude-code": true
+    "impeccable@impeccable": true
   },
   "extraKnownMarketplaces": {
     "impeccable": {
