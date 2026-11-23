@@ -2,7 +2,8 @@
   "permissions": {
     "deny": [
       "Read(**/node_modules/**)",
-      "Read(**/.next/**)"
+      "Read(**/.next/**)",
+      "Bash(pkill:*)"
     ]
   },
   "enabledPlugins": {
