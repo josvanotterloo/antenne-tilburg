@@ -89,6 +89,11 @@ Every feature branch must complete these steps before the session ends:
     locally as a close-out step. Reserve AI review for the parts a script can't
     decide — it saves tokens.
 12. Commit and push docs changes
+13. **After every push to master, check the CI result for that commit**
+    (`gh run list --branch master --limit 3`, then `gh run view` on the
+    run). The task is not done until both the `ci` and `npm-audit` jobs
+    are green. If a job is red, report the failing job and step first.
+    Do not wait to be asked.
 
 ## Migrations
 
