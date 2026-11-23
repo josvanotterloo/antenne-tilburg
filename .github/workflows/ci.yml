@@ -72,6 +72,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # Binary downloaded directly from GitHub Releases and checksum-verified
+      # — no marketplace action. Scans full git history; a real leak must
+      # block everything else in this job, same as a real test failure.
+      - name: Secret scan (gitleaks)
+        run: |
+          GITLEAKS_VERSION=8.30.1
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSLO "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          sha256sum --ignore-missing -c "gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          tar -xzf "gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" gitleaks
+          ./gitleaks detect --redact --no-banner
+
       # No engines field in package.json; @types/node pins the 20.x line.
       - name: Set up Node.js 20
         uses: actions/setup-node@v5
