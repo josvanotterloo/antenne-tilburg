@@ -16,6 +16,8 @@
     "test:property": "vitest run --reporter=verbose -t property",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "migrate:create": "tsx scripts/migrate-dev.ts",
+    "check:migration-drift": "tsx scripts/check-migration-drift.ts",
     "db:seed": "prisma db seed"
   },
   "dependencies": {

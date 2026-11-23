@@ -94,6 +94,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Migration drift check (search_vector/trigram)
+        run: npm run check:migration-drift
+
       - name: Generate Prisma client
         run: npx prisma generate
 

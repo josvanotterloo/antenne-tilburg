@@ -92,25 +92,31 @@ Every feature branch must complete these steps before the session ends:
 
 ## Migrations
 
-**Every** migration in this repo must go through `prisma migrate dev
---create-only`, never bare `migrate dev` — not just ones that touch the
-hand-written search infra (trigram GIN indexes, the `search_vector`
-GENERATED column — not modeled in `schema.prisma`). Prisma re-diffs the
-whole schema against the migration history on every run, so it re-proposes
-dropping that infra regardless of which tables the new migration actually
-changes; bare `migrate dev` also hangs on an interactive name prompt in a
-non-interactive shell (see `tasks/lessons.md` 2026-07-08 / 2026-07-17 /
-2026-07-29b).
+**Every** new migration in this repo must be generated with `npm run
+migrate:create -- <name>` — never `prisma migrate dev --create-only`
+directly, and never bare `migrate dev` to generate one. Not just for
+migrations that touch the hand-written search infra (trigram GIN indexes,
+the `search_vector` GENERATED column — not modeled in `schema.prisma`):
+Prisma re-diffs the whole schema against the migration history on every
+run, so it re-proposes dropping that infra regardless of which tables the
+new migration actually changes; bare `migrate dev` also hangs on an
+interactive name prompt in a non-interactive shell (see `tasks/lessons.md`
+2026-07-08 / 2026-07-17 / 2026-07-29b).
 
-After generating, run `npx tsx scripts/clean-migration.ts
-prisma/migrations/<name>/migration.sql` **once, directly on the raw
-generated output, before any hand-editing** — it strips the known-spurious
-drift lines (trigram index drops, `search_vector ... DROP DEFAULT`) and
-prints what it stripped. **This assists the hand-verify step — it does not
-replace it.** Known gap: a combined `ALTER TABLE` statement that bundles a
-real column change with the spurious `search_vector DROP DEFAULT` clause on
-the same line isn't split apart — that one still needs a manual edit.
-Always read the remaining diff yourself before `prisma migrate deploy`.
+`migrate:create` (`scripts/migrate-dev.ts`) runs `prisma migrate dev
+--create-only` and then `scripts/clean-migration.ts` on the raw generated
+output automatically, before any hand-editing — no separate manual step to
+forget. It strips the known-spurious drift lines (trigram index drops,
+`search_vector ... DROP DEFAULT`) and prints what it stripped. **This
+assists the hand-verify step — it does not replace it.** Known gap: a
+combined `ALTER TABLE` statement that bundles a real column change with the
+spurious `search_vector DROP DEFAULT` clause on the same line isn't split
+apart — that one still needs a manual edit. Always read the remaining diff
+yourself, then apply with `npm run prisma:migrate`.
+
+CI (`npm run check:migration-drift`) is the net behind this: it fails the
+build if any committed migration still drops the search_vector/trigram
+objects, regardless of how it was generated or hand-edited afterward.
 
 ## Verification shortcuts
 
