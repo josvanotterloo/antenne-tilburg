@@ -63,6 +63,9 @@ Binding for all work in this repo.
   not "add validation".
 - **If you find yourself restructuring code you were not asked to change,
   stop and ask.**
+- **Any list or checklist that a prompt refers to by item number must exist
+  in the repo. Do not refer to items in a list you have not read from a
+  file.**
 
 ## Testing Philosophy
 Binding for all work in this repo. Full version: `docs/instructions/testing.md`.
