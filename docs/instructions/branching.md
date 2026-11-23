@@ -94,6 +94,10 @@ Every feature branch must complete these steps before the session ends:
     run). The task is not done until both the `ci` and `npm-audit` jobs
     are green. If a job is red, report the failing job and step first.
     Do not wait to be asked.
+14. **`git status` shows no unexpected untracked files.** Working prompts,
+    handover notes, and similar files that don't belong in the tracked
+    repo go in `.scratch/` (gitignored), not left loose in the working
+    tree.
 
 ## Migrations
 

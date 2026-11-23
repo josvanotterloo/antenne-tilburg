@@ -41,3 +41,8 @@ next-env.d.ts
 strix_runs/
 # Contains a live admin credential in plaintext — never commit.
 docs/security/strix-instruction.md
+
+# Scratch space for working prompts, handover notes, and similar files
+# that don't belong in the tracked repo — see .scratch/README.md.
+/.scratch/*
+!/.scratch/README.md
