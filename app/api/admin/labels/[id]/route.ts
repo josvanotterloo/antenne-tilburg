@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 import { parseLabelInput } from "@/lib/label-input";
 import {
   normalizeReferenceName,
@@ -9,10 +10,6 @@ import {
 } from "@/lib/reference-dedupe";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
-}
 
 export async function PATCH(req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
@@ -55,15 +52,16 @@ export async function PATCH(req: Request, ctx: RouteContext) {
       supplierName: updated.supplier?.name ?? null,
     });
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json(
-        { error: `"${parsed.data.name}" already exists` },
-        { status: 409 },
-      );
-    }
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    // supplierId is written as a plain scalar FK (not a nested connect —
+    // see prisma/schema.prisma's Label.supplierId), so a supplier deleted
+    // out from under this write surfaces as P2003 (FK violation), not
+    // P2025.
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `"${parsed.data.name}" already exists` } },
+      P2025: NOT_FOUND,
+      P2003: { status: 400, body: { error: "Selected supplier no longer exists" } },
+    });
+    if (response) return response;
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 import { parseEmailChange } from "@/lib/user-input";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -37,16 +38,11 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     });
     return NextResponse.json(updated);
   } catch (error) {
-    const code = (error as { code?: string } | null)?.code;
-    if (code === "P2002") {
-      return NextResponse.json(
-        { error: "That email is already in use" },
-        { status: 409 },
-      );
-    }
-    if (code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: "That email is already in use" } },
+      P2025: NOT_FOUND,
+    });
+    if (response) return response;
     throw error;
   }
 }

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
 
 import { clientIp } from "@/lib/client-ip";
 import { db } from "@/lib/db";
@@ -7,6 +6,7 @@ import { emailHash, encryptEmail } from "@/lib/email-crypto";
 import { getRequestId, withRequestContext } from "@/lib/log/context";
 import { logEvent } from "@/lib/log/log";
 import { parseNewsletterInput } from "@/lib/newsletter-input";
+import { prismaErrorResponse } from "@/lib/prisma-error";
 import { newToken } from "@/lib/token";
 import { sendEmail } from "@/lib/email/send";
 import { renderConfirmEmail } from "@/lib/email/confirm";
@@ -68,12 +68,23 @@ async function postNewsletterSignup(req: Request) {
     // Duplicate email (unique emailHash constraint) → return the *same* 201 as a
     // fresh signup. Idempotent and non-enumerating: the response must not reveal
     // whether the address was already subscribed.
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return NextResponse.json({ ok: true }, { status: 201 });
-    }
+    //
+    // prismaErrorCode() duck-types (`.code === "P2002"`) rather than the
+    // `error instanceof Prisma.PrismaClientKnownRequestError` check this
+    // route had before — a precision loss /code-review flagged on this
+    // public, non-enumerating endpoint. Not changed: every other route's
+    // existing tests mock Prisma errors as plain `{code}` objects, not
+    // real PrismaClientKnownRequestError instances, so an instanceof
+    // check here (or centrally) would need either a repo-wide mocking
+    // convention change (out of this task's scope and a Test Contract
+    // risk) or a one-off special case for just this file (reintroducing
+    // the inconsistency this module exists to remove). The only code this
+    // try block can throw is from db.newsletterSubscriber.create, which
+    // only ever throws real Prisma errors — not a reachable gap today.
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 201, body: { ok: true } },
+    });
+    if (response) return response;
     console.error("newsletter subscribe failed", error);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },

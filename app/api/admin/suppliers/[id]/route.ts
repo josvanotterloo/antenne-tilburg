@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 import { parseSupplierInput } from "@/lib/supplier-input";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
-}
 
 export async function PATCH(req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
@@ -22,12 +19,11 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     const updated = await db.supplier.update({ where: { id }, data: parsed.data });
     return NextResponse.json(updated);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json({ error: `"${parsed.data.name}" already exists` }, { status: 409 });
-    }
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `"${parsed.data.name}" already exists` } },
+      P2025: NOT_FOUND,
+    });
+    if (response) return response;
     throw error;
   }
 }

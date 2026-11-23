@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { prismaErrorResponse } from "@/lib/prisma-error";
 import { parsePostInput } from "@/lib/post-input";
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
-}
 
 export async function GET() {
   const denied = await requireAdmin();
@@ -34,12 +31,10 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json(
-        { error: `Slug "${parsed.data.slug}" already exists` },
-        { status: 409 },
-      );
-    }
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `Slug "${parsed.data.slug}" already exists` } },
+    });
+    if (response) return response;
     throw error;
   }
 }

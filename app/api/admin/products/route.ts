@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { withRequestContext } from "@/lib/log/context";
+import { prismaErrorResponse } from "@/lib/prisma-error";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 import { resolveGenres } from "@/lib/resolve-genres";
@@ -102,15 +103,18 @@ export async function POST(req: Request) {
       if (error instanceof StockWriteFailed) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      // A labelId/genreId/productTypeId that doesn't exist (e.g. deleted by the
-      // other admin) makes the nested connect throw P2025 — a client error, not a
-      // 500 leaking Prisma internals.
-      if ((error as { code?: string } | null)?.code === "P2025") {
-        return NextResponse.json(
-          { error: "Selected label, genre, product type, or supplier no longer exists" },
-          { status: 400 },
-        );
-      }
+      // A labelId/genreId/productTypeId that doesn't exist (e.g. deleted by
+      // the other admin) makes the nested connect throw P2025 — a client
+      // error, not a 500 leaking Prisma internals. 400 here, not the
+      // default 404: it's a bad reference on *this* create, not a missing
+      // product.
+      const response = prismaErrorResponse(error, {
+        P2025: {
+          status: 400,
+          body: { error: "Selected label, genre, product type, or supplier no longer exists" },
+        },
+      });
+      if (response) return response;
       throw error;
     }
   });

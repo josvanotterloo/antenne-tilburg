@@ -78,6 +78,12 @@ describe("PATCH /api/admin/labels/[id]", () => {
     expect(res.status).toBe(409);
   });
 
+  it("400s when the supplier no longer exists (P2003, not an unhandled 500)", async () => {
+    label.update.mockRejectedValue({ code: "P2003" });
+    const res = await PATCH(patchReq({ name: "Warp", supplierId: "gone" }), ctx("l1"));
+    expect(res.status).toBe(400);
+  });
+
   it("returns the 401 from requireAdmin without hitting the db", async () => {
     mockRequireAdmin.mockResolvedValue(new Response(null, { status: 401 }) as never);
     const res = await PATCH(patchReq({ name: "Warp" }), ctx("l1"));

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 import { parseProductInput, toProductData } from "@/lib/product-input";
 import { resolveArtists, resolveVariousArtists } from "@/lib/resolve-artists";
 import { resolveGenres } from "@/lib/resolve-genres";
@@ -72,11 +73,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     });
     return NextResponse.json(updated);
   } catch (error) {
-    // Product deleted concurrently, or a connected relation no longer exists →
-    // P2025. Return 404 like GET/DELETE rather than an unhandled 500.
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    // Product deleted concurrently, or a connected relation no longer exists
+    // → P2025. Return 404 like GET/DELETE rather than an unhandled 500.
+    const response = prismaErrorResponse(error, { P2025: NOT_FOUND });
+    if (response) return response;
     throw error;
   }
 }
@@ -89,20 +89,16 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   try {
     await db.product.delete({ where: { id } });
   } catch (error) {
-    const code = (error as { code?: string } | null)?.code;
-    // Prisma "record not found" (e.g. already deleted by another admin).
-    if (code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    // Restricted by StockTransaction/SupplyOrderLine FKs once a product has
-    // any stock history (a sale, adjustment, receive, or the opening-balance
-    // backfill) — surfaced as a clean guard, not an unhandled 500.
-    if (code === "P2003") {
-      return NextResponse.json(
-        { error: "Cannot delete a product with stock history" },
-        { status: 409 },
-      );
-    }
+    // P2025: "record not found" (e.g. already deleted by another admin).
+    // P2003: restricted by StockTransaction/SupplyOrderLine FKs once a
+    // product has any stock history (a sale, adjustment, receive, or the
+    // opening-balance backfill) — surfaced as a clean guard, not an
+    // unhandled 500.
+    const response = prismaErrorResponse(error, {
+      P2025: NOT_FOUND,
+      P2003: { status: 409, body: { error: "Cannot delete a product with stock history" } },
+    });
+    if (response) return response;
     throw error;
   }
   return NextResponse.json({ ok: true });

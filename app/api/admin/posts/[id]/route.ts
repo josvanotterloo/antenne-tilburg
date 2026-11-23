@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 import { parsePostInput } from "@/lib/post-input";
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
-}
 
 export async function GET(_req: Request, ctx: RouteContext) {
   const denied = await requireAdmin();
@@ -48,12 +45,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     });
     return NextResponse.json(updated);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json(
-        { error: `Slug "${parsed.data.slug}" already exists` },
-        { status: 409 },
-      );
-    }
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `Slug "${parsed.data.slug}" already exists` } },
+    });
+    if (response) return response;
     throw error;
   }
 }
@@ -66,9 +61,8 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   try {
     await db.post.delete({ where: { id } });
   } catch (error) {
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const response = prismaErrorResponse(error, { P2025: NOT_FOUND });
+    if (response) return response;
     throw error;
   }
   return NextResponse.json({ ok: true });

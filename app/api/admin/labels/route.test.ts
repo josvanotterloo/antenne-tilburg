@@ -75,6 +75,12 @@ describe("POST /api/admin/labels", () => {
     expect(res.status).toBe(409);
   });
 
+  it("400s when the supplier no longer exists (P2003, not an unhandled 500)", async () => {
+    label.create.mockRejectedValue({ code: "P2003" });
+    const res = await POST(postReq({ name: "Warp", supplierId: "gone" }));
+    expect(res.status).toBe(400);
+  });
+
   it("409s a normalized-duplicate name (case/whitespace/& variant) without writing", async () => {
     label.findFirst.mockResolvedValue({ id: "existing" });
     const res = await POST(postReq({ name: "WARP" }));

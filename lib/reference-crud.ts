@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, requireAdminUserId } from "@/lib/api-auth";
 import { getRequestId, withRequestContext } from "@/lib/log/context";
 import { logEvent } from "@/lib/log/log";
+import { prismaErrorCode } from "@/lib/prisma-error";
 import {
   normalizeReferenceName,
   findDuplicateByNormalizedName,
@@ -61,11 +62,6 @@ function duplicateNameResponse(name: string) {
 function readName(body: unknown): string {
   const value = (body as { name?: unknown } | null)?.name;
   return typeof value === "string" ? value.trim() : "";
-}
-
-// Prisma unique-constraint violation (duplicate name).
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
 }
 
 // Typeahead page size: enough to pick from, small enough to stay fast at
@@ -135,7 +131,7 @@ export function collectionHandlers(
         });
         return NextResponse.json(created, { status: 201 });
       } catch (error) {
-        if (isUniqueViolation(error)) {
+        if (prismaErrorCode(error) === "P2002") {
           logEvent({
             event: "admin.mutation",
             requestId: getRequestId(),
@@ -206,7 +202,7 @@ export function itemHandlers(
         });
         return NextResponse.json(updated);
       } catch (error) {
-        if (isUniqueViolation(error)) {
+        if (prismaErrorCode(error) === "P2002") {
           logEvent({
             event: "admin.mutation",
             requestId: getRequestId(),

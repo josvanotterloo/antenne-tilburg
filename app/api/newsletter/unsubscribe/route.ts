@@ -1,6 +1,7 @@
 import { EMAIL } from "@/lib/email/theme";
 import { db } from "@/lib/db";
 import { newsletterPage } from "@/lib/newsletter-page";
+import { prismaErrorCode } from "@/lib/prisma-error";
 
 // Unsubscribe reuses the subscriber's confirmToken as the unsubscribe token.
 // The actual deletion happens on POST, never GET: email clients and security
@@ -56,8 +57,11 @@ export async function POST(req: Request) {
     await db.newsletterSubscriber.delete({ where: { id: subscriber.id } });
   } catch (error) {
     // Double-submit / concurrent unsubscribe: the row is already gone. That is
-    // the desired end state — treat it as success, not a 500.
-    if ((error as { code?: string } | null)?.code !== "P2025") {
+    // the desired end state — treat it as success, not a 500. Not a
+    // prismaErrorResponse() case: there's no alternate response to build,
+    // just "don't treat this one code as an error" — continue to the same
+    // 200 below.
+    if (prismaErrorCode(error) !== "P2025") {
       throw error;
     }
   }

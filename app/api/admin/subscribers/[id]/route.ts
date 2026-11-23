@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { NOT_FOUND, prismaErrorResponse } from "@/lib/prisma-error";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -13,9 +14,8 @@ export async function DELETE(_req: Request, ctx: RouteContext) {
   try {
     await db.newsletterSubscriber.delete({ where: { id } });
   } catch (error) {
-    if ((error as { code?: string } | null)?.code === "P2025") {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+    const response = prismaErrorResponse(error, { P2025: NOT_FOUND });
+    if (response) return response;
     throw error;
   }
   return NextResponse.json({ ok: true });

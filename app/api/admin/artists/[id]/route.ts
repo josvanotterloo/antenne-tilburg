@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { prismaErrorResponse } from "@/lib/prisma-error";
 import { VARIOUS_ARTISTS_NAME } from "@/lib/resolve-artists";
 import {
   normalizeReferenceName,
@@ -18,10 +19,6 @@ type RouteContext = { params: Promise<{ id: string }> };
 function readName(body: unknown): string {
   const value = (body as { name?: unknown } | null)?.name;
   return typeof value === "string" ? value.trim() : "";
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
 }
 
 export async function PATCH(req: Request, ctx: RouteContext) {
@@ -70,12 +67,10 @@ export async function PATCH(req: Request, ctx: RouteContext) {
     ]);
     return NextResponse.json(updated);
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json(
-        { error: `"${name}" already exists` },
-        { status: 409 },
-      );
-    }
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `"${name}" already exists` } },
+    });
+    if (response) return response;
     throw error;
   }
 }

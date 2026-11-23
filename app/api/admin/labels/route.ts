@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import { prismaErrorResponse } from "@/lib/prisma-error";
 import { parseLabelInput } from "@/lib/label-input";
 import {
   normalizeReferenceName,
@@ -9,10 +10,6 @@ import {
 } from "@/lib/reference-dedupe";
 
 const SEARCH_LIMIT = 20;
-
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === "P2002";
-}
 
 // Bespoke, not lib/reference-crud.ts's generic factory — Label carries an
 // optional supplierId that Genre/ProductType don't, same reason Supplier
@@ -69,12 +66,13 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return NextResponse.json(
-        { error: `"${parsed.data.name}" already exists` },
-        { status: 409 },
-      );
-    }
+    // Same P2003-not-P2025 reasoning as labels/[id]/route.ts's PATCH: a
+    // dangling supplierId is a scalar FK violation on create too.
+    const response = prismaErrorResponse(error, {
+      P2002: { status: 409, body: { error: `"${parsed.data.name}" already exists` } },
+      P2003: { status: 400, body: { error: "Selected supplier no longer exists" } },
+    });
+    if (response) return response;
     throw error;
   }
 }
