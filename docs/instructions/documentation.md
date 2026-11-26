@@ -11,7 +11,8 @@ sits beside it, not instead of it.
 ## `lib/` functions
 
 An exported `lib/` function whose behaviour isn't obvious from its name
-and signature gets a doc comment with **2–5 input→output examples** —
+and signature gets a doc comment with **as many input→output examples as
+earn their place, usually one to three** —
 but only examples that earn their place. An example is worth writing
 when it shows something the signature alone doesn't: a design decision
 ("P2025 maps to 404 here, not the 400 another route uses"), the
