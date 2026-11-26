@@ -85,13 +85,10 @@ export function findAllowlistEntry(name, via, allowlist = ALLOWLIST) {
   return entry;
 }
 
-//   isExpired({expires: "2027-01-31"}, new Date("2026-11-23")) → false
-//   isExpired({expires: "2027-01-31"}, new Date("2027-01-31")) → false  (edge case: the date itself is not yet expired)
-//   isExpired({expires: "2027-01-31"}, new Date("2027-02-01")) → true   (one day later, it is)
-// No failure case — `entry.expires` is always a valid "YYYY-MM-DD"
-// string by construction (every ALLOWLIST entry is a literal in this
-// file); there's no runtime input path that could make this throw.
-// Asserted in scripts/check-npm-audit.test.mjs's "isExpired" describe block.
+// No failure mode: `entry.expires` is always a literal "YYYY-MM-DD" string
+// in this file, never runtime input, so there's nothing to show beyond
+// the plain `>` comparison below. See scripts/check-npm-audit.test.mjs's
+// "isExpired" describe block for the boundary tests.
 export function isExpired(entry, now = new Date()) {
   return now.getTime() > new Date(`${entry.expires}T00:00:00Z`).getTime();
 }

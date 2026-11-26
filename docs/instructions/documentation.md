@@ -11,11 +11,25 @@ sits beside it, not instead of it.
 ## `lib/` functions
 
 An exported `lib/` function whose behaviour isn't obvious from its name
-and signature gets a doc comment with **2–5 input→output examples**.
-Include at least one edge case (empty input, a boundary value, `null`)
-and one failure case (what it throws or returns on bad input). If the
-function is normally called alongside another one — a validator before
-a writer, a formatter before a sender — say so and name it.
+and signature gets a doc comment with **2–5 input→output examples** —
+but only examples that earn their place. An example is worth writing
+when it shows something the signature alone doesn't: a design decision
+("P2025 maps to 404 here, not the 400 another route uses"), the
+specific case that once broke in production, or a result a reader
+would genuinely not predict. An example that just restates the obvious
+happy path is not worth the line.
+
+If the function has no real failure mode — it never throws, never
+validates its input, every input just lands in one branch or another —
+say that in one line instead of inventing a failure example to satisfy
+a quota. If the function is normally called alongside another one — a
+validator before a writer, a formatter before a sender — say so and
+name it.
+
+When an example documents a regression (the input that once broke
+something), cite both the fixing commit's hash and the `tasks/lessons.md`
+entry's date, where one exists — the commit shows what changed, the
+dated entry carries the fuller story of how it was found.
 
 A function whose behaviour *is* obvious from its name and types (a
 one-line wrapper, a trivial getter) gets no examples. Padding simple

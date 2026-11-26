@@ -62,6 +62,13 @@ repo.
    abstraction, overly defensive code guarding impossible states. Prefer the
    simpler design when it is genuinely equivalent.
 
+7. **Documentation examples.** Per `docs/instructions/documentation.md`: a new
+   `lib/` function gets example comments only where the rule there says it
+   should (something the signature doesn't already show — not a quota of
+   edge/failure cases, and not the obvious happy path). Flag any example
+   present without a matching assertion in a test — that is a defect, the
+   same as a wrong example.
+
 ## How to report
 
 Group findings by severity: BLOCKER, SHOULD-FIX, NIT. For each:
