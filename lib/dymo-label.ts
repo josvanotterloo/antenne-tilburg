@@ -78,6 +78,16 @@ function textObject(spec: TextSpec): string {
 
 // Row layout (twips), landscape 5040x2040 canvas — sums exactly:
 // 60 (top margin) + 640 + 560 + 380 + 340 + 60 (bottom margin) = 2040.
+//
+// The full output is a ~50-line XML document (see below) — these examples
+// show the non-obvious parts of what goes into it, not the whole thing:
+//   price "9.5" → output contains "€ 9.50" (always two decimals)
+//   title "Rock & Roll <Live>" → output contains "Rock &amp; Roll &lt;Live&gt;",
+//     never a literal "<Live>" (XML-escaped, not just passed through)
+//   catalogNumber null → "LP · Nieuw" (no leading "· ", no literal "null")
+//   no genres at all (edge case) → the GENRE object's <String></String> is
+//     empty, not "undefined" — missing optional data renders blank, never throws
+// Asserted in lib/dymo-label.test.ts's "generateLabelXml" describe block.
 export function generateLabelXml(product: CatalogProduct): string {
   const artistLine = joinArtistNames(product.productArtists).toUpperCase();
   const conditionLabel = CONDITION_LABEL[product.condition];

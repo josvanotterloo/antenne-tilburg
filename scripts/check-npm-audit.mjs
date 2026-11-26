@@ -26,6 +26,14 @@
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
+// Entry format — every field is required, none is optional even when it
+// looks like it could be:
+//   {
+//     package: "effect",                  // the exact npm package name
+//     advisoryId: "GHSA-7589-6fvf-x4pw",  // or null — see the module comment above
+//     expires: "2027-01-31",              // "YYYY-MM-DD"; past it, isExpired() below fails the job
+//     reason: "...",                      // the exploitability writeup, read by a human in the failure message
+//   }
 export const ALLOWLIST = [
   {
     package: "deepmerge-ts",
@@ -77,6 +85,13 @@ export function findAllowlistEntry(name, via, allowlist = ALLOWLIST) {
   return entry;
 }
 
+//   isExpired({expires: "2027-01-31"}, new Date("2026-11-23")) → false
+//   isExpired({expires: "2027-01-31"}, new Date("2027-01-31")) → false  (edge case: the date itself is not yet expired)
+//   isExpired({expires: "2027-01-31"}, new Date("2027-02-01")) → true   (one day later, it is)
+// No failure case — `entry.expires` is always a valid "YYYY-MM-DD"
+// string by construction (every ALLOWLIST entry is a literal in this
+// file); there's no runtime input path that could make this throw.
+// Asserted in scripts/check-npm-audit.test.mjs's "isExpired" describe block.
 export function isExpired(entry, now = new Date()) {
   return now.getTime() > new Date(`${entry.expires}T00:00:00Z`).getTime();
 }

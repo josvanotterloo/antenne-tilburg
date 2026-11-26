@@ -33,6 +33,7 @@ row to `tasks/lessons.md` immediately with the date, mistake, and rule.
 - Generate a new module/route: see `docs/instructions/generate-route.md`
 - Interrogate before generating: see `docs/instructions/interrogate.md`
 - Testing philosophy: see `docs/instructions/testing.md`
+- Documentation (examples over prose): see `docs/instructions/documentation.md`
 - Session log template: see `docs/session-log-template.md`
 - Always read context files in full — never use head, tail, or any
   truncation when reading CLAUDE.md, branching.md, testing.md,

@@ -80,6 +80,16 @@ export const STILL_REFERENCED: PrismaErrorResponse = commonResponseFor("P2003");
 // codes that route handled before migration, and lets everything else
 // propagate to Next.js's framework handling and Sentry's onRequestError
 // auto-capture, exactly as an unmapped error already did.
+//
+//   mapPrismaError({code: "P2025"}, {P2025: NOT_FOUND})
+//     → {status: 404, body: {error: "Not found"}}
+//   mapPrismaError({code: "P2002"}, {P2002: {status: 201, body: {ok: true}}})
+//     → {status: 201, body: {ok: true}}            (an override can mean "not an error at all" — see app/api/newsletter/route.ts)
+//   mapPrismaError({code: "P2025"}, {P2002: ALREADY_EXISTS})
+//     → undefined       (edge case: P2025 fired but only P2002 is handled here — stays unmapped, caller rethrows)
+//   mapPrismaError(new Error("connection refused"), {P2025: NOT_FOUND})
+//     → undefined       (failure case: not a Prisma error at all — caller rethrows, Sentry sees it)
+// Asserted in lib/prisma-error.test.ts's "mapPrismaError" describe block.
 export function mapPrismaError(
   error: unknown,
   handlers: Partial<Record<KnownPrismaErrorCode, PrismaErrorResponse>>,

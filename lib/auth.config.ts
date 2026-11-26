@@ -9,6 +9,15 @@ import { ADMIN_LOCALES } from "@/lib/user-input";
 // custom middleware function does NOT auto-apply `authorized`'s redirect,
 // confirmed by a live test that let an unauthenticated request straight
 // through to /admin/catalog, so that mechanism isn't used here).
+//   isProtectedAdminPath("/admin/catalog") → true
+//   isProtectedAdminPath("/admin/login") → false
+//   isProtectedAdminPath("/admin/login-audit") → true
+//     (edge case: starts with "login" but isn't the login page — the exact
+//     bug ec64f81 fixed; see lib/auth.config.test.ts's property tests)
+//   isProtectedAdminPath("/api/catalog") → false
+//     (no failure case exists — a plain string check, never throws; this
+//     is simply "not under /admin at all")
+// Asserted in lib/auth.config.test.ts's "isProtectedAdminPath" describe block.
 export function isProtectedAdminPath(pathname: string): boolean {
   if (pathname === "/admin") return true;
   if (!pathname.startsWith("/admin/")) return false;

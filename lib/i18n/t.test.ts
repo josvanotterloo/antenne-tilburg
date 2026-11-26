@@ -42,4 +42,13 @@ describe("tCount", () => {
       "products",
     );
   });
+
+  it("treats any count other than exactly 1 as plural, including negative and fractional counts", () => {
+    expect(tCount(-3, "products.countSingular", "products.countPlural", "EN")).toBe(
+      "products",
+    );
+    expect(tCount(1.5, "products.countSingular", "products.countPlural", "EN")).toBe(
+      "products",
+    );
+  });
 });
